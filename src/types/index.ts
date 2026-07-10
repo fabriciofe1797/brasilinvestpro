@@ -2,6 +2,10 @@ export type AssetCategory =
   | 'FII Tijolo' 
   | 'FII Papel' 
   | 'FII Agro' 
+  | 'FIAGRO'
+  | 'FI-Infra'
+  | 'FIDC'
+  | 'FIP'
   | 'Ações Dividendos' 
   | 'Cripto'
   | 'Renda Fixa'
@@ -36,6 +40,49 @@ export type AssetSubCategory =
   | 'ETF Internacional'
   | 'Geral';
 
+export type FundType = 'FIAGRO' | 'FI-Infra' | 'FIDC' | 'FIP' | 'FIF' | 'FII';
+
+export interface FundIndicator {
+  symbol: string;
+  cnpj?: string;
+  name: string;
+  fundType: FundType;
+  price: number;           // Preço de mercado
+  navPerShare: number;     // Valor patrimonial por cota (VP/cota)
+  patrimony: number;       // Patrimônio líquido (R$)
+  totalAssets: number;     // Total de ativos (R$)
+  shareholders: number;    // Número de cotistas
+  changePercent: number;   // Variação %
+  currency: 'BRL';
+}
+
+export interface FundDividend {
+  symbol: string;
+  cnpj?: string;
+  name: string;
+  dividendType: string;    // 'Rendimento' | 'Amortização' | etc.
+  valuePerShare: number;
+  exDate: string;          // Data-com
+  paymentDate: string;     // Data de pagamento
+  recordDate?: string;     // Data de registro
+}
+
+export interface FundNavPoint {
+  date: string;
+  nav: number;             // Valor da cota
+  return?: number;         // Rentabilidade (%)
+}
+
+export interface FundPortfolioHolding {
+  issuer?: string;
+  assetType?: string;
+  quantity?: number;
+  unitValue?: number;
+  totalValue?: number;
+  percentage?: number;
+  description?: string;
+}
+
 export interface Asset {
   id: string;
   ticker: string;
@@ -56,6 +103,10 @@ export interface Asset {
   patrimonioLiquido?: number; // Em milhoes (opcional, para FIIs)
   liquidezDiaria?: number; // Em milhoes (opcional, para FIIs)
   variacao12m?: number; // % variacao 12 meses (opcional)
+  fundType?: FundType; // Tipo do fundo estruturado (FIAGRO, FIDC, FIP, FI-Infra)
+  cnpj?: string; // CNPJ do fundo
+  navPerShare?: number; // VP/cota para fundos
+  shareholders?: number; // Número de cotistas
 }
 
 export type MissionStatus = 'pending' | 'completed';
@@ -178,7 +229,7 @@ export interface PortfolioYieldOnCost {
 }
 
 // ─── Data Pipeline (Fase 5 — Confiança de Dados) ─────────────────────────────
-export type QuoteSource = 'brapi' | 'coingecko' | 'awesomeapi' | 'awesomeapi-direct' | 'exchangerate' | 'manual' | 'derived' | 'mock';
+export type QuoteSource = 'brapi' | 'brapi-funds' | 'coingecko' | 'awesomeapi' | 'awesomeapi-direct' | 'exchangerate' | 'manual' | 'derived' | 'mock';
 export type FreshnessStatus = 'live' | 'delayed' | 'stale' | 'unavailable';
 
 export interface MarketQuote {

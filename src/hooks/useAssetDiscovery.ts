@@ -27,7 +27,9 @@ export interface DiscoveredAsset {
   price: number;
   change: number;
   logo: string | null;
-  type: 'stock' | 'fii' | 'crypto';
+  type: 'stock' | 'fii' | 'fiagro' | 'fiinfra' | 'fidc' | 'fip' | 'crypto';
+  fundType?: string; // Tipo do fundo estruturado
+  cnpj?: string; // CNPJ do fundo
   id?: string; // CoinGecko ID para cripto
   marketCapRank?: number | null;
   marketCap?: number;
@@ -37,7 +39,9 @@ export interface DiscoveredAsset {
 export interface WatchlistItem {
   ticker: string;
   name: string;
-  type: 'stock' | 'fii' | 'crypto';
+  type: 'stock' | 'fii' | 'fiagro' | 'fiinfra' | 'fidc' | 'fip' | 'crypto';
+  fundType?: string;
+  cnpj?: string;
   coinGeckoId?: string; // para cripto
   addedAt: string;
 }
@@ -115,7 +119,9 @@ export const useAssetDiscovery = () => {
             price: r.price || 0,
             change: r.change || 0,
             logo: r.logo || null,
-            type: r.type as 'stock' | 'fii',
+            type: (r.type || 'stock') as DiscoveredAsset['type'],
+            fundType: r.fundType || undefined,
+            cnpj: r.cnpj || undefined,
             currency: 'BRL' as const,
           }))
         : [];
@@ -157,6 +163,28 @@ export const useAssetDiscovery = () => {
   const loadPopularStocks = useCallback(async (category: string = 'all') => {
     setIsLoadingPopular(true);
     try {
+      // Categorias de fundos estruturados
+      const fundCategories = ['fiagro', 'fiinfra', 'fidc', 'fip'];
+      if (fundCategories.includes(category)) {
+        const result = await proxyFetch({ action: 'get_popular_funds', fundType: category });
+        if (!mountedRef.current) return;
+        if (result?.ok) {
+          setPopularStocks(
+            (result.results || []).map((r: any) => ({
+              ticker: r.ticker,
+              name: r.name,
+              price: r.price || 0,
+              change: r.change || 0,
+              logo: r.logo || null,
+              type: (r.fundType || category) as DiscoveredAsset['type'],
+              fundType: r.fundType || category,
+              cnpj: r.cnpj || undefined,
+              currency: 'BRL' as const,
+            }))
+          );
+        }
+        return;
+      }
       const result = await proxyFetch({ action: 'get_popular_stocks', category });
       if (!mountedRef.current) return;
       if (result?.ok) {
@@ -167,7 +195,8 @@ export const useAssetDiscovery = () => {
             price: r.price || 0,
             change: r.change || 0,
             logo: r.logo || null,
-            type: r.type as 'stock' | 'fii',
+            type: (r.type || 'stock') as DiscoveredAsset['type'],
+            fundType: r.fundType || undefined,
             currency: 'BRL' as const,
           }))
         );

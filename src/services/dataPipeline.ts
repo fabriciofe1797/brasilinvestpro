@@ -45,6 +45,7 @@ export function getFreshnessLabel(status: FreshnessStatus): string {
 export function getSourceLabel(source: QuoteSource): string {
   switch (source) {
     case 'brapi': return 'BrAPI';
+    case 'brapi-funds': return 'BrAPI Funds';
     case 'coingecko': return 'CoinGecko';
     case 'awesomeapi': return 'AwesomeAPI';
     case 'awesomeapi-direct': return 'AwesomeAPI';
@@ -58,6 +59,7 @@ export function getSourceLabel(source: QuoteSource): string {
 export function getSourceColor(source: QuoteSource): string {
   switch (source) {
     case 'brapi': return 'text-blue-400 bg-blue-500/10 border-blue-500/20';
+    case 'brapi-funds': return 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20';
     case 'coingecko': return 'text-purple-400 bg-purple-500/10 border-purple-500/20';
     case 'awesomeapi': return 'text-green-400 bg-green-500/10 border-green-500/20';
     case 'awesomeapi-direct': return 'text-green-400 bg-green-500/10 border-green-500/20';

@@ -52,7 +52,9 @@ export interface SearchResult {
   ticker: string; // Symbol (e.g., PETR4, BTC)
   name: string;
   logo?: string;
-  type: 'stock' | 'fii' | 'crypto';
+  type: 'stock' | 'fii' | 'fiagro' | 'fiinfra' | 'fidc' | 'fip' | 'crypto';
+  fundType?: string; // Tipo do fundo estruturado
+  cnpj?: string; // CNPJ do fundo
   id?: string; // ID for CoinGecko (e.g., bitcoin)
 }
 

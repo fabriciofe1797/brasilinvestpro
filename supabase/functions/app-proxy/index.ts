@@ -485,9 +485,33 @@ if (nonCryptoForFetch.length) {
     const fetched = new Set(Object.keys(br).map(normalizeTicker));
     const remaining = nonCryptoForFetch.filter((t) => !fetched.has(normalizeTicker(t)));
     if (remaining.length) {
-      const b3 = await fetchB3Quotes(remaining);
-      for (const [t, p] of Object.entries(b3)) {
-        if (typeof p === "number" && p > 0) bySymbol[normalizeTicker(t)] = { price: p, source: "b3", updatedAt: new Date().toISOString() };
+      // PRIORITY 2a: BrAPI Funds (FIAGRO, FIDC, FIP, FI-Infra)
+      try {
+        const brapiKey2 = Deno.env.get("BRAPI_API_KEY");
+        const fundHeaders: Record<string, string> = {};
+        if (brapiKey2) fundHeaders["Authorization"] = `Bearer ${brapiKey2}`;
+        const fundUrl = `${BRAPI}/v2/funds/indicators?symbols=${encodeURIComponent(remaining.join(","))}`;
+        const fr = await fetchWithRetry(fundUrl, { headers: fundHeaders });
+        if (fr?.ok) {
+          const fd = await fr.json().catch(() => ({} as any));
+          const fundResults = Array.isArray(fd?.results) ? fd.results : [];
+          for (const it of fundResults) {
+            const d = it?.data || it;
+            const sym = normalizeTicker(String(d?.symbol || d?.ticker || ""));
+            const price = Number(d?.regularMarketPrice ?? d?.price ?? 0);
+            if (sym && price > 0) bySymbol[sym] = { price, source: "brapi-funds", updatedAt: new Date().toISOString() };
+          }
+        }
+      } catch { /* funds fallback optional */ }
+
+      // PRIORITY 2b: B3 API (only if configured and still remaining)
+      const fetchedAfterFunds = new Set(Object.keys(bySymbol).map(normalizeTicker));
+      const stillRemaining = remaining.filter((t) => !fetchedAfterFunds.has(normalizeTicker(t)));
+      if (stillRemaining.length) {
+        const b3 = await fetchB3Quotes(stillRemaining);
+        for (const [t, p] of Object.entries(b3)) {
+          if (typeof p === "number" && p > 0) bySymbol[normalizeTicker(t)] = { price: p, source: "b3", updatedAt: new Date().toISOString() };
+        }
       }
     }
   }
@@ -743,14 +767,25 @@ Deno.serve(async (req) => {
         return json(cached);
       }
       try {
+        const brapiKey = Deno.env.get("BRAPI_API_KEY");
+        const headers: Record<string, string> = {};
+        if (brapiKey) headers["Authorization"] = `Bearer ${brapiKey}`;
+
+        // Busca stocks/FIIs tradicionais
         const r = await fetchWithRetry(`${BRAPI}/quote/list?search=${encodeURIComponent(query)}&limit=${limit}&fundamental=true`);
-        if (!r?.ok) {
-          console.log(`[search_brapi] BrAPI HTTP ${r?.status}`);
-          return json({ ok: true, results: [] });
-        }
-        const data = await r.json().catch(() => ({} as any));
-        const stocks = Array.isArray(data.stocks) ? data.stocks : [];
-        const results = stocks.map((s: any) => ({
+        const stocks = r?.ok ? (Array.isArray((await r.json().catch(() => ({} as any))).stocks) ? (await r.json().catch(() => ({} as any))).stocks : []) : [];
+
+        // Busca fundos estruturados (FIAGRO, FIDC, FIP, FI-Infra)
+        let funds: any[] = [];
+        try {
+          const fr = await fetchWithRetry(`${BRAPI}/v2/funds/list?symbols=${encodeURIComponent(query)}&limit=${limit}`, { headers });
+          if (fr?.ok) {
+            const fd = await fr.json().catch(() => ({} as any));
+            funds = Array.isArray(fd?.results) ? fd.results : [];
+          }
+        } catch { /* fundos opcionais */ }
+
+        const stockResults = stocks.map((s: any) => ({
           ticker: s.stock || s.symbol || "",
           name: s.name || "",
           price: Number(s.regularMarketPrice ?? s.close ?? 0),
@@ -759,6 +794,37 @@ Deno.serve(async (req) => {
           type: (s.stock || "").endsWith("11") ? "fii" : "stock",
           currency: "BRL",
         }));
+
+        const fundResults = funds.map((f: any) => {
+          const d = f?.data || f;
+          const sym = String(d?.symbol || d?.ticker || "");
+          const fundTypeVal = String(d?.fundType || d?.type || "").toUpperCase();
+          let mappedType = "fiagro";
+          if (fundTypeVal.includes("FIDC")) mappedType = "fidc";
+          else if (fundTypeVal.includes("FIP")) mappedType = "fip";
+          else if (fundTypeVal.includes("INFRA") || fundTypeVal.includes("FIF")) mappedType = "fiinfra";
+          else if (fundTypeVal.includes("FII")) mappedType = "fii";
+          return {
+            ticker: sym,
+            name: String(d?.name || d?.longName || ""),
+            price: Number(d?.regularMarketPrice ?? d?.price ?? 0),
+            change: Number(d?.regularMarketChangePercent ?? 0),
+            logo: d?.logoURL || d?.logo || null,
+            type: mappedType,
+            fundType: mappedType,
+            cnpj: String(d?.cnpj || ""),
+            currency: "BRL",
+          };
+        });
+
+        // Remover duplicados (ticker)
+        const seen = new Set<string>();
+        const results = [...stockResults, ...fundResults].filter(r => {
+          if (seen.has(r.ticker)) return false;
+          seen.add(r.ticker);
+          return true;
+        });
+
         const response = { ok: true, results };
         setCache(cacheKey, response, 5 * 60 * 1000); // 5 min cache para buscas
         return json(response);
@@ -857,7 +923,10 @@ Deno.serve(async (req) => {
         all: ["PETR4", "VALE3", "ITUB4", "BBAS3", "WEGE3", "BBSE3", "TAEE11", "CPLE6", "KLBN11", "CXSE3", "HGLG11", "MXRF11", "KNCR11", "BTLG11", "XPML11"],
         acoes: ["PETR4", "VALE3", "ITUB4", "BBAS3", "WEGE3", "BBSE3", "TAEE11", "CPLE6", "KLBN11", "CXSE3", "SAPR11", "SUZB3", "JBSS3", "MGLU3", "B3SA3"],
         fii: ["HGLG11", "MXRF11", "KNCR11", "BTLG11", "XPML11", "HGRU11", "KNCA11", "VISC11", "TRXF11", "IRDM11", "HGCR11", "ALZR11", "GGRC11", "CPTS11", "PVBI11"],
-        fiagro: ["KNCA11", "SNAG11", "VGIA11", "RURA11", "FGAA11", "AGRO11", "HGBS11", "CNES11", "FGAG11", "RBRR11"],
+        fiagro: ["SNAG11", "VGIA11", "RURA11", "FGAA11", "AGRO11", "HGBS11", "CNES11", "FGAG11", "RBRR11", "JURO11"],
+        fiinfra: ["XPCA11", "IRFM11", "BCFF11", "GGRC11", "HGRU11"],
+        fidc: ["JURO11", "CRED11", "RBDD11", "RVIR11", "RBRF11"],
+        fip: ["BRIA11", "TOP11", "TEPP11", "SHPH11", "XPLG11"],
       };
       const tickers = popularTickers[category] || popularTickers.all;
 
@@ -897,6 +966,284 @@ Deno.serve(async (req) => {
         return json(response);
       } catch (e) {
         console.error("[get_popular_stocks] Erro:", e);
+        return json({ ok: true, results: [] });
+      }
+    }
+
+    // ─── BrAPI Funds API — Fundos Estruturados (FIAGRO, FIDC, FIP, FI-Infra) ───
+
+    // search_funds: busca fundos estruturados na BrAPI por simbolo, CNPJ ou nome
+    if (action_peek === "search_funds") {
+      const body_s = (await req.clone().json().catch(() => ({}))) as { query?: string; limit?: number; fundType?: string };
+      const query = String(body_s.query || "").trim().slice(0, 50);
+      const limit = Math.min(Number(body_s.limit) || 20, 50);
+      const fundType = body_s.fundType || "";
+      if (!query || query.length < 2) {
+        return json({ ok: true, results: [] });
+      }
+      const cacheKey = `search_funds_${query.toLowerCase()}_${limit}_${fundType}`;
+      const cached = getCached<{ ok: boolean; results: any[] }>(cacheKey);
+      if (cached) return json(cached);
+      try {
+        const brapiKey = Deno.env.get("BRAPI_API_KEY");
+        const headers: Record<string, string> = {};
+        if (brapiKey) headers["Authorization"] = `Bearer ${brapiKey}`;
+        let url = `${BRAPI}/v2/funds/list?symbols=${encodeURIComponent(query)}&limit=${limit}`;
+        if (fundType) url += `&type=${encodeURIComponent(fundType)}`;
+        const r = await fetchWithRetry(url, { headers });
+        if (!r?.ok) {
+          console.log(`[search_funds] BrAPI HTTP ${r?.status}`);
+          return json({ ok: true, results: [] });
+        }
+        const data = await r.json().catch(() => ({} as any));
+        const funds = Array.isArray(data?.results) ? data.results : [];
+        const results = funds.map((f: any) => {
+          const d = f?.data || f;
+          const sym = String(d?.symbol || d?.ticker || "");
+          const fundTypeVal = String(d?.fundType || d?.type || "").toUpperCase();
+          let mappedType = "fiagro";
+          if (fundTypeVal.includes("FIDC")) mappedType = "fidc";
+          else if (fundTypeVal.includes("FIP")) mappedType = "fip";
+          else if (fundTypeVal.includes("INFRA") || fundTypeVal.includes("FIF")) mappedType = "fiinfra";
+          else if (fundTypeVal.includes("FII")) mappedType = "fii";
+          return {
+            ticker: sym,
+            cnpj: String(d?.cnpj || ""),
+            name: String(d?.name || d?.longName || d?.shortName || ""),
+            fundType: mappedType,
+            price: Number(d?.regularMarketPrice ?? d?.price ?? d?.nav ?? 0),
+            change: Number(d?.regularMarketChangePercent ?? d?.pctChange ?? 0),
+            logo: d?.logoURL || d?.logo || null,
+            currency: "BRL",
+          };
+        });
+        const response = { ok: true, results };
+        setCache(cacheKey, response, 5 * 60 * 1000);
+        return json(response);
+      } catch (e) {
+        console.error("[search_funds] Erro:", e);
+        return json({ ok: true, results: [] });
+      }
+    }
+
+    // get_fund_indicators: indicadores de fundos (preco, VP/cota, PL, patrimonio, cotistas)
+    if (action_peek === "get_fund_indicators") {
+      const body_s = (await req.clone().json().catch(() => ({}))) as { symbols?: string[]; cnpjs?: string[] };
+      const symbols = Array.isArray(body_s.symbols) ? body_s.symbols.map(String).filter(Boolean) : [];
+      const cnpjs = Array.isArray(body_s.cnpjs) ? body_s.cnpjs.map(String).filter(Boolean) : [];
+      if (!symbols.length && !cnpjs.length) return json({ ok: true, results: [] });
+      const cacheKey = `fund_indicators_${symbols.join(",")}_${cnpjs.join(",")}`;
+      const cached = getCached<{ ok: boolean; results: any[] }>(cacheKey);
+      if (cached) return json(cached);
+      try {
+        const brapiKey = Deno.env.get("BRAPI_API_KEY");
+        const headers: Record<string, string> = {};
+        if (brapiKey) headers["Authorization"] = `Bearer ${brapiKey}`;
+        let url = `${BRAPI}/v2/funds/indicators?`;
+        const params: string[] = [];
+        if (symbols.length) params.push(`symbols=${encodeURIComponent(symbols.join(","))}`);
+        if (cnpjs.length) params.push(`cnpjs=${encodeURIComponent(cnpjs.join(","))}`);
+        url += params.join("&");
+        const r = await fetchWithRetry(url, { headers });
+        if (!r?.ok) return json({ ok: true, results: [] });
+        const data = await r.json().catch(() => ({} as any));
+        const funds = Array.isArray(data?.results) ? data.results : [];
+        const results = funds.map((f: any) => {
+          const d = f?.data || f;
+          const fundTypeVal = String(d?.fundType || d?.type || "").toUpperCase();
+          let mappedType = "fiagro";
+          if (fundTypeVal.includes("FIDC")) mappedType = "fidc";
+          else if (fundTypeVal.includes("FIP")) mappedType = "fip";
+          else if (fundTypeVal.includes("INFRA") || fundTypeVal.includes("FIF")) mappedType = "fiinfra";
+          else if (fundTypeVal.includes("FII")) mappedType = "fii";
+          return {
+            symbol: String(d?.symbol || d?.ticker || ""),
+            cnpj: String(d?.cnpj || ""),
+            name: String(d?.name || d?.longName || ""),
+            fundType: mappedType,
+            price: Number(d?.regularMarketPrice ?? d?.price ?? 0),
+            navPerShare: Number(d?.navPerShare ?? d?.netAssetValuePerShare ?? d?.vpCota ?? 0),
+            patrimony: Number(d?.patrimony ?? d?.netAssets ?? d?.patrimonioLiquido ?? 0),
+            totalAssets: Number(d?.totalAssets ?? d?.ativos ?? 0),
+            shareholders: Number(d?.shareholders ?? d?.cotistas ?? d?.quotaHolders ?? 0),
+            changePercent: Number(d?.regularMarketChangePercent ?? d?.pctChange ?? 0),
+            currency: "BRL" as const,
+          };
+        });
+        const response = { ok: true, results };
+        setCache(cacheKey, response, 2 * 60 * 1000);
+        return json(response);
+      } catch (e) {
+        console.error("[get_fund_indicators] Erro:", e);
+        return json({ ok: true, results: [] });
+      }
+    }
+
+    // get_fund_dividends: dividendos oficiais de fundos nao-FII
+    if (action_peek === "get_fund_dividends") {
+      const body_s = (await req.clone().json().catch(() => ({}))) as { symbols?: string[]; cnpjs?: string[] };
+      const symbols = Array.isArray(body_s.symbols) ? body_s.symbols.map(String).filter(Boolean) : [];
+      const cnpjs = Array.isArray(body_s.cnpjs) ? body_s.cnpjs.map(String).filter(Boolean) : [];
+      if (!symbols.length && !cnpjs.length) return json({ ok: true, results: [] });
+      const cacheKey = `fund_divs_${symbols.join(",")}_${cnpjs.join(",")}`;
+      const cached = getCached<{ ok: boolean; results: any[] }>(cacheKey);
+      if (cached) return json(cached);
+      try {
+        const brapiKey = Deno.env.get("BRAPI_API_KEY");
+        const headers: Record<string, string> = {};
+        if (brapiKey) headers["Authorization"] = `Bearer ${brapiKey}`;
+        let url = `${BRAPI}/v2/funds/dividends?`;
+        const params: string[] = [];
+        if (symbols.length) params.push(`symbols=${encodeURIComponent(symbols.join(","))}`);
+        if (cnpjs.length) params.push(`cnpjs=${encodeURIComponent(cnpjs.join(","))}`);
+        url += params.join("&");
+        const r = await fetchWithRetry(url, { headers });
+        if (!r?.ok) return json({ ok: true, results: [] });
+        const data = await r.json().catch(() => ({} as any));
+        const dividends = Array.isArray(data?.results) ? data.results : [];
+        const results = dividends.map((d: any) => ({
+          symbol: String(d?.symbol || d?.ticker || ""),
+          cnpj: String(d?.cnpj || ""),
+          name: String(d?.name || ""),
+          dividendType: String(d?.dividendType || d?.type || "Rendimento"),
+          valuePerShare: Number(d?.valuePerShare ?? d?.value ?? 0),
+          exDate: String(d?.exDate || d?.dataCom || ""),
+          paymentDate: String(d?.paymentDate || d?.dataPagamento || ""),
+          recordDate: String(d?.recordDate || d?.dataRegistro || ""),
+        }));
+        const response = { ok: true, results };
+        setCache(cacheKey, response, 5 * 60 * 1000);
+        return json(response);
+      } catch (e) {
+        console.error("[get_fund_dividends] Erro:", e);
+        return json({ ok: true, results: [] });
+      }
+    }
+
+    // get_fund_nav_history: historico do valor da cota
+    if (action_peek === "get_fund_nav_history") {
+      const body_s = (await req.clone().json().catch(() => ({}))) as { symbols?: string[]; cnpjs?: string[]; startDate?: string; endDate?: string };
+      const symbols = Array.isArray(body_s.symbols) ? body_s.symbols.map(String).filter(Boolean) : [];
+      const cnpjs = Array.isArray(body_s.cnpjs) ? body_s.cnpjs.map(String).filter(Boolean) : [];
+      if (!symbols.length && !cnpjs.length) return json({ ok: true, results: [] });
+      const cacheKey = `fund_nav_${symbols.join(",")}_${cnpjs.join(",")}`;
+      const cached = getCached<{ ok: boolean; results: any[] }>(cacheKey);
+      if (cached) return json(cached);
+      try {
+        const brapiKey = Deno.env.get("BRAPI_API_KEY");
+        const headers: Record<string, string> = {};
+        if (brapiKey) headers["Authorization"] = `Bearer ${brapiKey}`;
+        let url = `${BRAPI}/v2/funds/nav/history?`;
+        const params: string[] = [];
+        if (symbols.length) params.push(`symbols=${encodeURIComponent(symbols.join(","))}`);
+        if (cnpjs.length) params.push(`cnpjs=${encodeURIComponent(cnpjs.join(","))}`);
+        if (body_s.startDate) params.push(`startDate=${encodeURIComponent(body_s.startDate)}`);
+        if (body_s.endDate) params.push(`endDate=${encodeURIComponent(body_s.endDate)}`);
+        url += params.join("&");
+        const r = await fetchWithRetry(url, { headers });
+        if (!r?.ok) return json({ ok: true, results: [] });
+        const data = await r.json().catch(() => ({} as any));
+        const results = Array.isArray(data?.results) ? data.results : [];
+        const response = { ok: true, results };
+        setCache(cacheKey, response, 5 * 60 * 1000);
+        return json(response);
+      } catch (e) {
+        console.error("[get_fund_nav_history] Erro:", e);
+        return json({ ok: true, results: [] });
+      }
+    }
+
+    // get_fund_portfolio: carteira do fundo (posicoes CVM CDA)
+    if (action_peek === "get_fund_portfolio") {
+      const body_s = (await req.clone().json().catch(() => ({}))) as { symbols?: string[]; cnpjs?: string[] };
+      const symbols = Array.isArray(body_s.symbols) ? body_s.symbols.map(String).filter(Boolean) : [];
+      const cnpjs = Array.isArray(body_s.cnpjs) ? body_s.cnpjs.map(String).filter(Boolean) : [];
+      if (!symbols.length && !cnpjs.length) return json({ ok: true, results: [] });
+      const cacheKey = `fund_portfolio_${symbols.join(",")}_${cnpjs.join(",")}`;
+      const cached = getCached<{ ok: boolean; results: any[] }>(cacheKey);
+      if (cached) return json(cached);
+      try {
+        const brapiKey = Deno.env.get("BRAPI_API_KEY");
+        const headers: Record<string, string> = {};
+        if (brapiKey) headers["Authorization"] = `Bearer ${brapiKey}`;
+        let url = `${BRAPI}/v2/funds/portfolio?`;
+        const params: string[] = [];
+        if (symbols.length) params.push(`symbols=${encodeURIComponent(symbols.join(","))}`);
+        if (cnpjs.length) params.push(`cnpjs=${encodeURIComponent(cnpjs.join(","))}`);
+        url += params.join("&");
+        const r = await fetchWithRetry(url, { headers });
+        if (!r?.ok) return json({ ok: true, results: [] });
+        const data = await r.json().catch(() => ({} as any));
+        const results = Array.isArray(data?.results) ? data.results : [];
+        const response = { ok: true, results };
+        setCache(cacheKey, response, 5 * 60 * 1000);
+        return json(response);
+      } catch (e) {
+        console.error("[get_fund_portfolio] Erro:", e);
+        return json({ ok: true, results: [] });
+      }
+    }
+
+    // get_popular_funds: lista fundos estruturados populares por tipo
+    if (action_peek === "get_popular_funds") {
+      const body_s = (await req.clone().json().catch(() => ({}))) as { fundType?: string };
+      const fundType = body_s.fundType || "fiagro";
+      const cacheKey = `popular_funds_${fundType}`;
+      const cached = getCached<{ ok: boolean; results: any[] }>(cacheKey);
+      if (cached) return json(cached);
+
+      const popularFunds: Record<string, string[]> = {
+        fiagro: ["SNAG11", "VGIA11", "RURA11", "FGAA11", "AGRO11", "HGBS11", "CNES11", "FGAG11", "RBRR11", "JURO11"],
+        fiinfra: ["XPCA11", "IRFM11", "BCFF11", "GGRC11", "HGRU11"],
+        fidc: ["JURO11", "CRED11", "RBDD11", "RVIR11", "RBRF11"],
+        fip: ["BRIA11", "TOP11", "TEPP11", "SHPH11", "XPLG11"],
+      };
+      const tickers = popularFunds[fundType] || popularFunds.fiagro;
+
+      try {
+        const brapiKey = Deno.env.get("BRAPI_API_KEY");
+        const headers: Record<string, string> = {};
+        if (brapiKey) headers["Authorization"] = `Bearer ${brapiKey}`;
+        const results = await Promise.allSettled(
+          tickers.map(async (t) => {
+            try {
+              const r = await fetchWithRetry(`${BRAPI}/v2/funds/indicators?symbols=${t}`, { headers });
+              if (!r?.ok) return null;
+              const j = await r.json().catch(() => ({} as any));
+              const items = Array.isArray(j?.results) ? j.results : [];
+              for (const it of items) {
+                const d = it?.data || it;
+                const fundTypeVal = String(d?.fundType || d?.type || "").toUpperCase();
+                let mappedType = "fiagro";
+                if (fundTypeVal.includes("FIDC")) mappedType = "fidc";
+                else if (fundTypeVal.includes("FIP")) mappedType = "fip";
+                else if (fundTypeVal.includes("INFRA") || fundTypeVal.includes("FIF")) mappedType = "fiinfra";
+                else if (fundTypeVal.includes("FII")) mappedType = "fii";
+                return {
+                  ticker: t,
+                  name: String(d?.name || d?.longName || ""),
+                  price: Number(d?.regularMarketPrice ?? d?.price ?? 0),
+                  change: Number(d?.regularMarketChangePercent ?? 0),
+                  logo: d?.logoURL || d?.logo || null,
+                  fundType: mappedType,
+                  navPerShare: Number(d?.navPerShare ?? d?.vpCota ?? 0),
+                  patrimony: Number(d?.patrimony ?? d?.patrimonioLiquido ?? 0),
+                  shareholders: Number(d?.shareholders ?? d?.cotistas ?? 0),
+                  currency: "BRL",
+                };
+              }
+              return null;
+            } catch { return null; }
+          })
+        );
+        const filtered = results
+          .filter((r): r is PromiseFulfilledResult<any> => r.status === "fulfilled" && r.value !== null)
+          .map(r => r.value);
+        const response = { ok: true, results: filtered };
+        setCache(cacheKey, response, 2 * 60 * 1000);
+        return json(response);
+      } catch (e) {
+        console.error("[get_popular_funds] Erro:", e);
         return json({ ok: true, results: [] });
       }
     }
@@ -941,6 +1288,29 @@ Deno.serve(async (req) => {
             return null;
           })
         );
+
+        // Fallback: tickers sem preco via stocks -> tentar funds/indicators
+        const missingTickers = tickers.filter(t => !prices[t]);
+        if (missingTickers.length > 0) {
+          try {
+            const fundUrl = `${BRAPI}/v2/funds/indicators?symbols=${encodeURIComponent(missingTickers.join(","))}`;
+            const fr = await fetchWithRetry(fundUrl, { headers });
+            if (fr?.ok) {
+              const fd = await fr.json().catch(() => ({} as any));
+              const fundResults = Array.isArray(fd?.results) ? fd.results : [];
+              for (const it of fundResults) {
+                const d = it?.data || it;
+                const sym = String(d?.symbol || d?.ticker || "");
+                const price = Number(d?.regularMarketPrice ?? d?.price ?? 0);
+                const change = Number(d?.regularMarketChangePercent ?? 0);
+                if (sym && price > 0) {
+                  prices[sym] = price;
+                  changes[sym] = change;
+                }
+              }
+            }
+          } catch { /* funds fallback optional */ }
+        }
       }
 
       // Buscar crypto via CoinGecko (uma unica chamada)

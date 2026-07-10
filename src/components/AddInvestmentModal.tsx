@@ -398,8 +398,19 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                                     <div className="font-bold text-white text-sm">{result.ticker}</div>
                                     <div className="text-xs text-gray-400 truncate max-w-[200px]">{result.name}</div>
                                   </div>
-                                  <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-gray-400 uppercase">
-                                    {result.type}
+                                  <span className={cn("ml-auto text-[10px] px-1.5 py-0.5 rounded uppercase font-bold", 
+                                    result.type === 'fii' ? 'bg-blue-500/10 text-blue-400' :
+                                    result.type === 'fiagro' ? 'bg-green-500/10 text-green-400' :
+                                    result.type === 'fiinfra' ? 'bg-cyan-500/10 text-cyan-400' :
+                                    result.type === 'fidc' ? 'bg-violet-500/10 text-violet-400' :
+                                    result.type === 'fip' ? 'bg-pink-500/10 text-pink-400' :
+                                    result.type === 'crypto' ? 'bg-amber-500/10 text-amber-400' :
+                                    'bg-white/10 text-gray-400'
+                                  )}>
+                                    {result.type === 'fii' ? 'FII' : result.type === 'fiagro' ? 'FIAGRO' :
+                                     result.type === 'fiinfra' ? 'FI-Infra' : result.type === 'fidc' ? 'FIDC' :
+                                     result.type === 'fip' ? 'FIP' : result.type === 'crypto' ? 'Cripto' :
+                                     result.type === 'stock' ? 'Ação' : result.type}
                                   </span>
                                 </button>
                              ))}

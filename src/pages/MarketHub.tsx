@@ -16,6 +16,10 @@ const CATEGORIES: { label: string; value: string | null }[] = [
   { label: 'Tijolo', value: 'FII Tijolo' },
   { label: 'Papel', value: 'FII Papel' },
   { label: 'Agro', value: 'FII Agro' },
+  { label: 'FIAGRO', value: 'FIAGRO' },
+  { label: 'FI-Infra', value: 'FI-Infra' },
+  { label: 'FIDC', value: 'FIDC' },
+  { label: 'FIP', value: 'FIP' },
   { label: 'Ações', value: 'Ações Dividendos' },
   { label: 'Renda Fixa', value: 'Renda Fixa' },
   { label: 'Internacional', value: 'Ações Internacional' },
@@ -23,13 +27,16 @@ const CATEGORIES: { label: string; value: string | null }[] = [
 ];
 
 type Tab = 'catalogo' | 'descobrir' | 'watchlist';
-type PopularCategory = 'all' | 'acoes' | 'fii' | 'fiagro';
+type PopularCategory = 'all' | 'acoes' | 'fii' | 'fiagro' | 'fiinfra' | 'fidc' | 'fip';
 
 const POPULAR_CATS: { label: string; value: PopularCategory }[] = [
   { label: 'Todos', value: 'all' },
   { label: 'Ações', value: 'acoes' },
   { label: 'FIIs', value: 'fii' },
   { label: 'Fiagros', value: 'fiagro' },
+  { label: 'FI-Infra', value: 'fiinfra' },
+  { label: 'FIDC', value: 'fidc' },
+  { label: 'FIP', value: 'fip' },
 ];
 
 const MarketHub: React.FC = () => {
@@ -64,7 +71,9 @@ const MarketHub: React.FC = () => {
           ? (asset.category === 'Renda Fixa' || asset.category === 'Renda Fixa ETF')
           : selectedCategory === 'Internacional'
             ? asset.category === 'Ações Internacional'
-            : asset.category === selectedCategory)
+            : selectedCategory === 'Agro'
+              ? (asset.category === 'FII Agro' || asset.category === 'FIAGRO')
+              : asset.category === selectedCategory)
         : true;
       return matchesSearch && matchesCategory;
     });
@@ -146,9 +155,16 @@ const MarketHub: React.FC = () => {
             <span className={cn(
               "text-[9px] font-black uppercase px-1.5 py-0.5 rounded",
               item.type === 'crypto' ? 'bg-amber-500/10 text-amber-400' :
-              item.type === 'fii' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'
+              item.type === 'fii' ? 'bg-blue-500/10 text-blue-400' :
+              item.type === 'fiagro' ? 'bg-green-500/10 text-green-400' :
+              item.type === 'fiinfra' ? 'bg-cyan-500/10 text-cyan-400' :
+              item.type === 'fidc' ? 'bg-violet-500/10 text-violet-400' :
+              item.type === 'fip' ? 'bg-pink-500/10 text-pink-400' :
+              'bg-emerald-500/10 text-emerald-400'
             )}>
-              {item.type === 'fii' ? 'FII' : item.type === 'crypto' ? 'Cripto' : 'Ação'}
+              {item.type === 'fii' ? 'FII' : item.type === 'crypto' ? 'Cripto' :
+               item.type === 'fiagro' ? 'FIAGRO' : item.type === 'fiinfra' ? 'FI-Infra' :
+               item.type === 'fidc' ? 'FIDC' : item.type === 'fip' ? 'FIP' : 'Ação'}
             </span>
             {item.marketCapRank && (
               <span className="text-[9px] font-bold text-gray-600">#{item.marketCapRank}</span>
@@ -204,9 +220,16 @@ const MarketHub: React.FC = () => {
             <span className={cn(
               "text-[9px] font-black uppercase px-1.5 py-0.5 rounded",
               item.type === 'crypto' ? 'bg-amber-500/10 text-amber-400' :
-              item.type === 'fii' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'
+              item.type === 'fii' ? 'bg-blue-500/10 text-blue-400' :
+              item.type === 'fiagro' ? 'bg-green-500/10 text-green-400' :
+              item.type === 'fiinfra' ? 'bg-cyan-500/10 text-cyan-400' :
+              item.type === 'fidc' ? 'bg-violet-500/10 text-violet-400' :
+              item.type === 'fip' ? 'bg-pink-500/10 text-pink-400' :
+              'bg-emerald-500/10 text-emerald-400'
             )}>
-              {item.type === 'fii' ? 'FII' : item.type === 'crypto' ? 'Cripto' : 'Ação'}
+              {item.type === 'fii' ? 'FII' : item.type === 'crypto' ? 'Cripto' :
+               item.type === 'fiagro' ? 'FIAGRO' : item.type === 'fiinfra' ? 'FI-Infra' :
+               item.type === 'fidc' ? 'FIDC' : item.type === 'fip' ? 'FIP' : 'Ação'}
             </span>
           </div>
           <p className="text-[10px] text-gray-500 font-medium truncate">{item.name}</p>
