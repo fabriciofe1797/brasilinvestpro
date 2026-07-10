@@ -166,11 +166,13 @@ export const useAssetDiscovery = () => {
       // Categorias de fundos estruturados
       const fundCategories = ['fiagro', 'fiinfra', 'fidc', 'fip'];
       if (fundCategories.includes(category)) {
+        console.log(`[loadPopularStocks] Carregando fundos: ${category}`);
         const result = await proxyFetch({ action: 'get_popular_funds', fundType: category });
+        console.log(`[loadPopularStocks] get_popular_funds resultado:`, result?.ok ? `${result.results?.length || 0} resultados` : 'falhou');
         if (!mountedRef.current) return;
-        if (result?.ok) {
+        if (result?.ok && Array.isArray(result.results)) {
           setPopularStocks(
-            (result.results || []).map((r: any) => ({
+            result.results.map((r: any) => ({
               ticker: r.ticker,
               name: r.name,
               price: r.price || 0,
@@ -182,6 +184,9 @@ export const useAssetDiscovery = () => {
               currency: 'BRL' as const,
             }))
           );
+        } else {
+          console.warn(`[loadPopularStocks] Resultado invalido para ${category}:`, result);
+          setPopularStocks([]);
         }
         return;
       }

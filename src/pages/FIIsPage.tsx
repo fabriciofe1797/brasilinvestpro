@@ -8,11 +8,33 @@
  * - Rankings de FIIs
  */
 
-import React, { useState, useMemo } from 'react';
-import { Building2, TrendingUp, TrendingDown, Filter, Star, BarChart3, Sprout } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Building2, TrendingUp, TrendingDown, Filter, Star, BarChart3, Sprout, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { MOCK_ASSETS } from '../data/mockData';
-import type { Asset, AssetCategory } from '../types';
+import type { Asset } from '../types';
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const EDGE_FN_URL = `${SUPABASE_URL}/functions/v1/app-proxy`;
+
+const proxyFetch = async (body: Record<string, unknown>) => {
+  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
+  try {
+    const r = await fetch(EDGE_FN_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch {
+    return null;
+  }
+};
 
 type SegmentFilter = 'Todos' | 'FII Tijolo' | 'FII Papel' | 'FII Agro';
 
@@ -31,9 +53,66 @@ const FIIsPage: React.FC = () => {
   const [segment, setSegment] = useState<SegmentFilter>('Todos');
   const [sortBy, setSortBy] = useState<'dy' | 'pvp' | 'pl' | 'liquidez' | 'variacao'>('dy');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+  const [fiiAssets, setFiiAssets] = useState<Asset[]>([]);
+  const [fiagroAssets, setFiagroAssets] = useState<Asset[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const fiiAssets = useMemo(() => {
-    return MOCK_ASSETS.filter(a => a.category.includes('FII'));
+  // Busca dados reais da BrAPI
+  useEffect(() => {
+    let mounted = true;
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // Busca FIIs
+        const fiiResult = await proxyFetch({ action: 'get_popular_stocks', category: 'fii' });
+        // Busca FIAGRO
+        const fiagroResult = await proxyFetch({ action: 'get_popular_funds', fundType: 'fiagro' });
+        
+        if (!mounted) return;
+        
+        // Mapeia FIIs
+        if (fiiResult?.ok && Array.isArray(fiiResult.results)) {
+          const mapped: Asset[] = fiiResult.results.map((r: any) => ({
+            id: r.ticker,
+            ticker: r.ticker,
+            name: r.name,
+            category: 'FII Tijolo', // Default, pode ser refinado
+            price: r.price || 0,
+            dividendYield: 0, // BrAPI nao retorna DY diretamente
+            pvp: r.navPerShare && r.price ? r.price / r.navPerShare : undefined,
+            patrimonioLiquido: r.patrimonioLiquido || 0,
+            liquidezDiaria: r.liquidezDiaria || 0,
+            variacao12m: r.variacao12m,
+            currency: 'BRL',
+          }));
+          setFiiAssets(mapped);
+        }
+        
+        // Mapeia FIAGRO
+        if (fiagroResult?.ok && Array.isArray(fiagroResult.results)) {
+          const mapped: Asset[] = fiagroResult.results.map((r: any) => ({
+            id: r.ticker,
+            ticker: r.ticker,
+            name: r.name,
+            category: 'FII Agro',
+            price: r.price || 0,
+            dividendYield: 0,
+            pvp: r.navPerShare && r.price ? r.price / r.navPerShare : undefined,
+            patrimonioLiquido: r.patrimonioLiquido || 0,
+            liquidezDiaria: r.liquidezDiaria || 0,
+            variacao12m: r.variacao12m,
+            currency: 'BRL',
+          }));
+          setFiagroAssets(mapped);
+        }
+      } catch (err) {
+        console.error('[FIIsPage] Erro ao buscar dados:', err);
+      } finally {
+        if (mounted) setIsLoading(false);
+      }
+    };
+    fetchData();
+    return () => { mounted = false; };
   }, []);
 
   const filteredAssets = useMemo(() => {
@@ -41,7 +120,6 @@ const FIIsPage: React.FC = () => {
     if (segment !== 'Todos') {
       filtered = filtered.filter(a => a.category === segment);
     }
-    // Sort
     const sorted = [...filtered].sort((a, b) => {
       let valA = 0, valB = 0;
       switch (sortBy) {
@@ -56,12 +134,10 @@ const FIIsPage: React.FC = () => {
     return sorted;
   }, [fiiAssets, segment, sortBy, sortDir]);
 
-  const fiagros = useMemo(() => {
-    return MOCK_ASSETS.filter(a => a.category === 'FII Agro');
-  }, []);
+  const fiagros = fiagroAssets;
 
   // Rankings
-  const topDY = [...fiiAssets].sort((a, b) => b.dividendYield - a.dividendYield).slice(0, 5);
+  const topDY = [...fiiAssets].filter(a => a.dividendYield > 0).sort((a, b) => b.dividendYield - a.dividendYield).slice(0, 5);
   const topPL = [...fiiAssets].filter(a => a.patrimonioLiquido).sort((a, b) => (b.patrimonioLiquido ?? 0) - (a.patrimonioLiquido ?? 0)).slice(0, 5);
   const topLiquidez = [...fiiAssets].filter(a => a.liquidezDiaria).sort((a, b) => (b.liquidezDiaria ?? 0) - (a.liquidezDiaria ?? 0)).slice(0, 5);
   const topPVP = [...fiiAssets].filter(a => a.pvp && a.pvp > 0).sort((a, b) => (a.pvp ?? 99) - (b.pvp ?? 99)).slice(0, 5);
@@ -105,7 +181,9 @@ const FIIsPage: React.FC = () => {
         <div className="p-6 border-b border-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h2 className="text-sm font-black text-white uppercase tracking-tight">Todos os FIIs</h2>
-            <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">{filteredAssets.length} ativos encontrados</p>
+            <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">
+              {isLoading ? 'Carregando...' : `${filteredAssets.length} ativos encontrados`}
+            </p>
           </div>
           {/* Segment Filter */}
           <div className="flex items-center gap-2">
@@ -141,7 +219,22 @@ const FIIsPage: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.02]">
-              {filteredAssets.map(asset => (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center">
+                    <div className="flex items-center justify-center gap-3">
+                      <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+                      <span className="text-sm text-gray-500 font-bold">Carregando dados da BrAPI...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filteredAssets.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
+                    Nenhum ativo encontrado.
+                  </td>
+                </tr>
+              ) : filteredAssets.map(asset => (
                 <tr key={asset.ticker} className="group hover:bg-white/[0.02] transition-all">
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-3">
@@ -198,7 +291,14 @@ const FIIsPage: React.FC = () => {
           <h2 className="text-sm font-black text-white uppercase tracking-tight">Fiagros em Destaque</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {fiagros.map(f => (
+          {isLoading ? (
+            <div className="col-span-full flex items-center justify-center py-8">
+              <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
+              <span className="ml-3 text-sm text-gray-500 font-bold">Carregando Fiagros...</span>
+            </div>
+          ) : fiagros.length === 0 ? (
+            <div className="col-span-full text-center py-8 text-gray-500">Nenhum Fiagro encontrado.</div>
+          ) : fiagros.map(f => (
             <div key={f.ticker} className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-green-500/20 transition-all">
               <p className="text-xs font-black text-white">{f.ticker}</p>
               <p className="text-[9px] text-gray-500 mb-3">{f.name}</p>
