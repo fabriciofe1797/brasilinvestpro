@@ -1221,6 +1221,7 @@ Deno.serve(async (req) => {
       if (cached) return json(cached);
 
       const popularFunds: Record<string, string[]> = {
+        fii: ["HGLG11", "MXRF11", "KNCR11", "BTLG11", "XPML11", "HGRU11", "KNCA11", "VISC11", "TRXF11", "IRDM11", "HGCR11", "ALZR11", "GGRC11", "CPTS11", "PVBI11"],
         fiagro: ["SNAG11", "VGIA11", "RURA11", "FGAA11", "AGRO11", "HGBS11", "CNES11", "FGAG11", "RBRR11", "JURO11"],
         fiinfra: ["XPCA11", "IRFM11", "BCFF11", "GGRC11", "HGRU11"],
         fidc: ["JURO11", "CRED11", "RBDD11", "RVIR11", "RBRF11"],

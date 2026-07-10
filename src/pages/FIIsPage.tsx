@@ -63,8 +63,8 @@ const FIIsPage: React.FC = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // Busca FIIs
-        const fiiResult = await proxyFetch({ action: 'get_popular_stocks', category: 'fii' });
+        // Busca FIIs via get_popular_funds (usa v2 funds/indicators com navPerShare, patrimony, etc)
+        const fiiResult = await proxyFetch({ action: 'get_popular_funds', fundType: 'fii' });
         // Busca FIAGRO
         const fiagroResult = await proxyFetch({ action: 'get_popular_funds', fundType: 'fiagro' });
         
