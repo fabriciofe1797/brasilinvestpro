@@ -67,6 +67,7 @@ const UpgradePrompt: React.FC = () => {
   };
 
   if (!showUpgradeModal) return null;
+  if ((settings.plan ?? 'free') === 'elite') return null; // elite nunca vê prompt de upgrade
 
   const onPrimaryClick = () => {
     try {

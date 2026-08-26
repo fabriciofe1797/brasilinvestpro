@@ -155,7 +155,8 @@ const SidebarContent = () => (
            })}
         </nav>
 
-       {/* Premium CTA - Extreme Modern Glow */}
+       {/* Premium CTA - Extreme Modern Glow (oculto para usuários elite) */}
+       {(settings.plan ?? 'free') !== 'elite' && (
        <div className="p-6 relative z-10">
           <Link to="/premium" onClick={() => setIsMobileMenuOpen(false)}>
              <div className="relative group p-[2px] rounded-[2rem] overflow-hidden transition-all hover:scale-[1.02] active:scale-95 shadow-2xl">
@@ -179,6 +180,7 @@ const SidebarContent = () => (
              </div>
           </Link>
        </div>
+       )}
 
        {/* User Footer - Sophisticated Dark */}
        <div className="p-6 border-t border-white/[0.03] bg-black/40 backdrop-blur-3xl">
