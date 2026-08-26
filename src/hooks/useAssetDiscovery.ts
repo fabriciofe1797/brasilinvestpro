@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -52,7 +53,7 @@ export interface WatchlistQuote {
   currency: 'BRL' | 'USD';
 }
 
-const proxyFetch = async (body: Record<string, unknown>) => {
+const proxyFetch = async (body: Record<string, unknown>, token?: string | null) => {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
   try {
     const r = await fetch(EDGE_FN_URL, {
@@ -60,7 +61,7 @@ const proxyFetch = async (body: Record<string, unknown>) => {
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${token ?? SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify(body),
     });
@@ -73,6 +74,13 @@ const proxyFetch = async (body: Record<string, unknown>) => {
 
 export const useAssetDiscovery = () => {
   const mountedRef = useRef(true);
+  const { getToken } = useAuth();
+
+  // Proxy autenticado com JWT do Clerk (mesmo padrao dos demais servicos)
+  const authFetch = useCallback(async (body: Record<string, unknown>) => {
+    const token = await getToken({ template: 'supabase' }).catch(() => null);
+    return proxyFetch(body, token);
+  }, [getToken]);
 
   // ─── State ──────────────────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,8 +112,8 @@ export const useAssetDiscovery = () => {
     setIsSearching(true);
     try {
       const [brapiResult, cgResult] = await Promise.all([
-        proxyFetch({ action: 'search_brapi', query, limit: 20 }),
-        proxyFetch({ action: 'search_coingecko', query, limit: 15 }),
+        authFetch({ action: 'search_brapi', query, limit: 20 }),
+        authFetch({ action: 'search_coingecko', query, limit: 15 }),
       ]);
 
       if (!mountedRef.current) return;
@@ -144,7 +152,7 @@ export const useAssetDiscovery = () => {
     } finally {
       setIsSearching(false);
     }
-  }, []);
+  }, [authFetch]);
 
   const handleSearchInput = useCallback((query: string) => {
     setSearchQuery(query);
@@ -165,7 +173,7 @@ export const useAssetDiscovery = () => {
       const fundCategories = ['fiagro', 'fiinfra', 'fidc', 'fip'];
       if (fundCategories.includes(category)) {
         console.log(`[loadPopularStocks] Carregando fundos: ${category}`);
-        const result = await proxyFetch({ action: 'get_popular_funds', fundType: category });
+        const result = await authFetch({ action: 'get_popular_funds', fundType: category });
         console.log(`[loadPopularStocks] get_popular_funds resultado:`, result?.ok ? `${result.results?.length || 0} resultados` : 'falhou');
         if (!mountedRef.current) return;
         if (result?.ok && Array.isArray(result.results)) {
@@ -188,7 +196,7 @@ export const useAssetDiscovery = () => {
         }
         return;
       }
-      const result = await proxyFetch({ action: 'get_popular_stocks', category });
+      const result = await authFetch({ action: 'get_popular_stocks', category });
       if (!mountedRef.current) return;
       if (result?.ok) {
         setPopularStocks(
@@ -209,14 +217,14 @@ export const useAssetDiscovery = () => {
     } finally {
       setIsLoadingPopular(false);
     }
-  }, []);
+  }, [authFetch]);
 
   // ─── Top Cryptos ────────────────────────────────────────────────────
 
   const loadTopCryptos = useCallback(async (limit: number = 30) => {
     setIsLoadingTopCryptos(true);
     try {
-      const result = await proxyFetch({ action: 'get_top_cryptos', limit });
+      const result = await authFetch({ action: 'get_top_cryptos', limit });
       if (!mountedRef.current) return;
       if (result?.ok) {
         setTopCryptos(
@@ -239,13 +247,13 @@ export const useAssetDiscovery = () => {
     } finally {
       setIsLoadingTopCryptos(false);
     }
-  }, []);
+  }, [authFetch]);
 
   // ─── Watchlist Persistence ──────────────────────────────────────────
 
   const loadWatchlist = useCallback(async () => {
     try {
-      const result = await proxyFetch({ action: 'get_user_data', data_keys: [WATCHLIST_KEY] });
+      const result = await authFetch({ action: 'get_user_data', data_keys: [WATCHLIST_KEY] });
       if (!mountedRef.current) return;
       if (result?.ok && result.data?.[WATCHLIST_KEY]) {
         const saved = result.data[WATCHLIST_KEY];
@@ -257,13 +265,13 @@ export const useAssetDiscovery = () => {
     } catch {
       setIsWatchlistLoaded(true);
     }
-  }, []);
+  }, [authFetch]);
 
   const saveWatchlist = useCallback(async (items: WatchlistItem[]) => {
     if (isSavingWatchlist) return;
     setIsSavingWatchlist(true);
     try {
-      await proxyFetch({
+      await authFetch({
         action: 'set_user_data',
         items: [{ data_key: WATCHLIST_KEY, data_value: items }],
       });
@@ -272,7 +280,7 @@ export const useAssetDiscovery = () => {
     } finally {
       setIsSavingWatchlist(false);
     }
-  }, [isSavingWatchlist]);
+  }, [isSavingWatchlist, authFetch]);
 
   const addToWatchlist = useCallback((item: Omit<WatchlistItem, 'addedAt'>) => {
     setWatchlist(prev => {
@@ -304,7 +312,7 @@ export const useAssetDiscovery = () => {
       const stockTickers = watchlist.filter(w => w.type !== 'crypto').map(w => w.ticker);
       const cryptoIds = watchlist.filter(w => w.type === 'crypto').map(w => w.coinGeckoId || w.ticker.toLowerCase());
 
-      const result = await proxyFetch({
+      const result = await authFetch({
         action: 'get_watchlist_quotes',
         tickers: stockTickers,
         cryptoIds,
@@ -347,7 +355,7 @@ export const useAssetDiscovery = () => {
     } finally {
       setIsLoadingQuotes(false);
     }
-  }, [watchlist]);
+  }, [watchlist, authFetch]);
 
   // ─── Effects ────────────────────────────────────────────────────────
 

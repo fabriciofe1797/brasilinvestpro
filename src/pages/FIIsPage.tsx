@@ -10,6 +10,7 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { Building2, TrendingUp, TrendingDown, Filter, Star, BarChart3, Sprout, Loader2 } from 'lucide-react';
+import { useAuth } from '@clerk/clerk-react';
 import { cn } from '../lib/utils';
 import type { Asset } from '../types';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +20,7 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const EDGE_FN_URL = `${SUPABASE_URL}/functions/v1/app-proxy`;
 
-const proxyFetch = async (body: Record<string, unknown>) => {
+const proxyFetch = async (body: Record<string, unknown>, token?: string | null) => {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
   try {
     const r = await fetch(EDGE_FN_URL, {
@@ -27,7 +28,7 @@ const proxyFetch = async (body: Record<string, unknown>) => {
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${token ?? SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify(body),
     });
@@ -53,6 +54,7 @@ function formatMillions(n: number): string {
 
 const FIIsPage: React.FC = () => {
   const { t } = useTranslation();
+  const { getToken } = useAuth();
   const [segment, setSegment] = useState<SegmentFilter>('Todos');
   const [sortBy, setSortBy] = useState<'dy' | 'pvp' | 'pl' | 'liquidez' | 'variacao'>('dy');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -66,10 +68,12 @@ const FIIsPage: React.FC = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
+        // JWT do Clerk para autenticar no app-proxy (mesmo padrao dos demais servicos)
+        const token = await getToken({ template: 'supabase' }).catch(() => null);
         // Busca FIIs via get_popular_funds (usa v2 funds/indicators com navPerShare, patrimony, etc)
-        const fiiResult = await proxyFetch({ action: 'get_popular_funds', fundType: 'fii' });
+        const fiiResult = await proxyFetch({ action: 'get_popular_funds', fundType: 'fii' }, token);
         // Busca FIAGRO
-        const fiagroResult = await proxyFetch({ action: 'get_popular_funds', fundType: 'fiagro' });
+        const fiagroResult = await proxyFetch({ action: 'get_popular_funds', fundType: 'fiagro' }, token);
         
         if (!mounted) return;
         
@@ -81,7 +85,7 @@ const FIIsPage: React.FC = () => {
             name: r.name,
             category: 'FII Tijolo', // Default, pode ser refinado
             price: r.price || 0,
-            dividendYield: 0, // BrAPI nao retorna DY diretamente
+            dividendYield: r.dividendYield || 0,
             pvp: r.navPerShare && r.price ? r.price / r.navPerShare : undefined,
             patrimonioLiquido: r.patrimonioLiquido || 0,
             liquidezDiaria: r.liquidezDiaria || 0,
@@ -99,7 +103,7 @@ const FIIsPage: React.FC = () => {
             name: r.name,
             category: 'FII Agro',
             price: r.price || 0,
-            dividendYield: 0,
+            dividendYield: r.dividendYield || 0,
             pvp: r.navPerShare && r.price ? r.price / r.navPerShare : undefined,
             patrimonioLiquido: r.patrimonioLiquido || 0,
             liquidezDiaria: r.liquidezDiaria || 0,
@@ -116,7 +120,7 @@ const FIIsPage: React.FC = () => {
     };
     fetchData();
     return () => { mounted = false; };
-  }, []);
+  }, [getToken]);
 
   const filteredAssets = useMemo(() => {
     let filtered = fiiAssets;

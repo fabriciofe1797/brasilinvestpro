@@ -299,6 +299,8 @@
     "estMonthlyIncome": "Rent. Mensual Est.",
     "snowballIndex": "Índice Bola de Nieve",
     "snowballHint": "Eficiencia de los dividendos para reinvertir automáticamente en 1 cuota entera/mes.",
+    "colSnowball": "Bola de Nieve",
+    "snowballUnits": "{{atual}} de {{meta}} cuotas",
     "sharesRemaining": "{{qtd}} Cuotas Restantes",
     "goalIntegrated": "Meta Integrada",
     "neededSuffix": "Necesario"

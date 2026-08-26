@@ -6,6 +6,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 
 export interface WidgetConfig {
   id: string;
@@ -34,6 +35,7 @@ export const useDashboardWidgets = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const mountedRef = useRef(true);
+  const { getToken } = useAuth();
 
   // Initialize with defaults
   useEffect(() => {
@@ -50,12 +52,18 @@ export const useDashboardWidgets = () => {
     const load = async () => {
       if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
       try {
+        // JWT do Clerk para autenticar no app-proxy
+        const token = await getToken({ template: 'supabase' }).catch(() => null);
+        if (!token) {
+          setIsLoaded(true);
+          return;
+        }
         const r = await fetch(EDGE_FN_URL, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'apikey': SUPABASE_ANON_KEY,
-            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'Authorization': `Bearer ${token}`,
           },
           body: JSON.stringify({ action: 'get_user_data', data_keys: [DATA_KEY] }),
         });
@@ -74,7 +82,7 @@ export const useDashboardWidgets = () => {
     };
     load();
     return () => { mountedRef.current = false; };
-  }, []);
+  }, [getToken]);
 
   const toggleWidget = useCallback(async (widgetId: string) => {
     setEnabledWidgets(prev => {
@@ -87,6 +95,8 @@ export const useDashboardWidgets = () => {
 
   const saveToServer = async (widgets: Record<string, boolean>) => {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY || isSaving) return;
+    const token = await getToken({ template: 'supabase' }).catch(() => null);
+    if (!token) return;
     setIsSaving(true);
     try {
       await fetch(EDGE_FN_URL, {
@@ -94,7 +104,7 @@ export const useDashboardWidgets = () => {
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({
           action: 'set_user_data',

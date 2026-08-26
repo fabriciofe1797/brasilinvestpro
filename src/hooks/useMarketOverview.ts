@@ -8,6 +8,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 
 const POLL_INTERVAL = 3 * 60 * 1000; // 3 minutos
 const RETRY_DELAY = 30 * 1000; // 30 segundos para retry apos falha
@@ -72,10 +73,19 @@ export const useMarketOverview = () => {
   const [error, setError] = useState<string | null>(null);
   const mountedRef = useRef(true);
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { getToken } = useAuth();
 
   const fetchOverview = useCallback(async () => {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
       setError('Supabase nao configurado');
+      setIsLoading(false);
+      return;
+    }
+
+    // JWT do Clerk para autenticar no app-proxy
+    const token = await getToken({ template: 'supabase' }).catch(() => null);
+    if (!token) {
+      setError('not_signed_in');
       setIsLoading(false);
       return;
     }
@@ -92,7 +102,7 @@ export const useMarketOverview = () => {
         headers: {
           'Content-Type': 'application/json',
           'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ action: 'get_market_overview' }),
       });
@@ -146,7 +156,7 @@ export const useMarketOverview = () => {
         }, RETRY_DELAY);
       }
     }
-  }, []);
+  }, [getToken]);
 
   useEffect(() => {
     mountedRef.current = true;

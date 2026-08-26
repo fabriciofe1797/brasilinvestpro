@@ -323,12 +323,18 @@ const Dashboard: React.FC = () => {
                        <th className="px-8 py-6 text-right">{t('dashboard.colPrice')}</th>
                        <th className="px-8 py-6 text-right">{t('dashboard.colProfitLoss')}</th>
                        <th className="px-8 py-6 text-right">{t('dashboard.colDividendYield')}</th>
+                       <th className="px-8 py-6">{t('dashboard.colSnowball')}</th>
                        <th className="px-8 py-6 text-right">{t('dashboard.colWeight')}</th>
                        <th className="px-8 py-6 text-right">{t('dashboard.colConfidence')}</th>
                     </tr>
                  </thead>
                  <tbody className="divide-y divide-white/[0.02]">
-                    {metrics.assets.slice(0, 5).map((asset) => (
+                    {metrics.assets.slice(0, 5).map((asset) => {
+                       const storeAsset = assets.find(a => a.id === asset.assetId || a.ticker === asset.assetId);
+                       const magicNumber = storeAsset?.magicNumber || (asset.dividendYield > 0 ? Math.ceil(1200 / asset.dividendYield) : 0);
+                       const snowballPct = magicNumber > 0 ? (asset.quantity / magicNumber) * 100 : 0;
+                       const snowballDone = snowballPct >= 100;
+                       return (
                        <tr key={asset.assetId} className="group hover:bg-white/[0.02] transition-all">
                           <td className="px-8 py-6">
                              <div className="flex items-center gap-4">
@@ -366,6 +372,28 @@ const Dashboard: React.FC = () => {
                           <td className="px-8 py-6 text-right text-gray-400 font-black text-sm">
                              {asset.dividendYield.toFixed(1)}%
                           </td>
+                          <td className="px-8 py-6" title={t('dashboard.snowballHint')}>
+                             {magicNumber > 0 ? (
+                                <div className="w-32">
+                                   <div className="flex justify-between items-center mb-1">
+                                      <span className="text-[10px] font-mono font-bold text-gray-400">
+                                         {t('dashboard.snowballUnits', { atual: asset.quantity, meta: magicNumber })}
+                                      </span>
+                                      <span className={`text-[10px] font-black ${snowballDone ? 'text-emerald-400' : 'text-cyan-400'}`}>
+                                         {snowballPct.toFixed(0)}%
+                                      </span>
+                                   </div>
+                                   <div className="h-1.5 rounded-full bg-white/5 border border-white/5 overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full transition-all ${snowballDone ? 'bg-emerald-500' : 'bg-gradient-to-r from-cyan-500 to-emerald-400'}`}
+                                        style={{ width: `${Math.min(100, snowballPct)}%` }}
+                                      />
+                                   </div>
+                                </div>
+                             ) : (
+                                <span className="text-gray-600 font-black text-xs">---</span>
+                             )}
+                          </td>
                           <td className="px-8 py-6 text-right text-gray-400 font-black text-sm">
                              {asset.weight.toFixed(1)}%
                           </td>
@@ -377,7 +405,8 @@ const Dashboard: React.FC = () => {
                              />
                           </td>
                        </tr>
-                    ))}
+                       );
+                    })}
                  </tbody>
               </table>
            </div>

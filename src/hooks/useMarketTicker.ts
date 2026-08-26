@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import { useAuth } from '@clerk/clerk-react';
 import i18n from '../i18n';
 
 export interface TickerItem {
@@ -63,7 +64,7 @@ interface TickerProxyResponse {
   stocks: Record<string, { price: number; prevClose: number }>;
 }
 
-async function fetchFromProxy(): Promise<TickerProxyResponse | null> {
+async function fetchFromProxy(token: string): Promise<TickerProxyResponse | null> {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
   try {
     const r = await fetch(EDGE_FN_URL, {
@@ -71,7 +72,7 @@ async function fetchFromProxy(): Promise<TickerProxyResponse | null> {
       headers: {
         'Content-Type': 'application/json',
         'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({ action: 'get_ticker_data' }),
     });
@@ -133,6 +134,7 @@ export const useMarketTicker = () => {
   const [items, setItems] = useState<TickerItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const mountedRef = useRef(true);
+  const { getToken } = useAuth();
 
   const buildItems = (
     exchange: { EURBRL: { bid: number; pctChange: number } | null; USDBRL: { bid: number; pctChange: number } | null },
@@ -228,8 +230,9 @@ export const useMarketTicker = () => {
 
   const fetchAll = useCallback(async () => {
     try {
-      // Tentar via Edge Function (proxy server-side) primeiro
-      const proxyData = await fetchFromProxy();
+      // Tentar via Edge Function (proxy server-side) primeiro — requer JWT do Clerk
+      const token = await getToken({ template: 'supabase' }).catch(() => null);
+      const proxyData = token ? await fetchFromProxy(token) : null;
 
       if (proxyData && mountedRef.current) {
         const newItems = buildItems(proxyData.exchange, proxyData.crypto, proxyData.stocks);
@@ -276,7 +279,7 @@ export const useMarketTicker = () => {
     } catch {
       setIsLoading(false);
     }
-  }, []);
+  }, [getToken]);
 
   useEffect(() => {
     mountedRef.current = true;

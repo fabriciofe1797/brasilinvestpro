@@ -299,6 +299,8 @@
     "estMonthlyIncome": "Est. Monthly Income",
     "snowballIndex": "Snowball Index",
     "snowballHint": "Dividend efficiency to automatically reinvest in 1 full share/month.",
+    "colSnowball": "Snowball",
+    "snowballUnits": "{{atual}} of {{meta}} shares",
     "sharesRemaining": "{{qtd}} Shares Remaining",
     "goalIntegrated": "Goal Integrated",
     "neededSuffix": "Needed"
