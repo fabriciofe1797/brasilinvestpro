@@ -105,11 +105,6 @@ const SidebarContent = () => (
           </div>
        </div>
 
-       {/* Language Switcher */}
-       <div className="px-4 pb-3 flex-shrink-0 relative z-10">
-          <LanguageSwitcher />
-       </div>
-
 {/* Nav - Fixed height with internal scrolling */}
         <nav className="flex-1 px-3 py-2 overflow-y-auto no-scrollbar relative z-10">
            {navItems.map((item, idx) => {
@@ -192,7 +187,7 @@ const SidebarContent = () => (
 
        {/* User Footer - Sophisticated Dark */}
        <div className="p-6 border-t border-white/[0.03] bg-black/40 backdrop-blur-3xl">
-          <div className="flex items-center gap-4 justify-between">
+          <div className="flex items-center gap-2 justify-between">
              <div className="flex items-center gap-3">
                 <UserButton 
                     appearance={{
@@ -223,6 +218,7 @@ const SidebarContent = () => (
                     </div>
                 </div>
              </div>
+             <LanguageSwitcher compact dropDirection="up" className="flex-shrink-0" />
              <NotificationCenter />
           </div>
        </div>
@@ -254,12 +250,13 @@ const SidebarContent = () => (
              </button>
              <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center text-black font-black text-sm">B</div>
-                <span className="font-black text-white text-lg tracking-tighter uppercase">BrasilInvest</span>
+                <span className="font-black text-white text-lg tracking-tighter uppercase hidden min-[420px]:block">BrasilInvest</span>
              </div>
           </div>
-          <div className="flex items-center gap-4">
-             <NotificationCenter />
+          <div className="flex items-center gap-2">
              <UserButton />
+             <LanguageSwitcher compact />
+             <NotificationCenter />
           </div>
        </div>
 

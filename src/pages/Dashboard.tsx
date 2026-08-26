@@ -5,6 +5,7 @@ import { cn } from '../lib/utils';
 import { Wallet, TrendingUp, ArrowRight, Plus, CheckCircle, Bell, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AddInvestmentModal from '../components/AddInvestmentModal';
+import LanguageSwitcher from '../components/LanguageSwitcher';
 import RebalancingWidget from '../components/RebalancingWidget';
 import DividendCalendar from '../components/DividendCalendar';
 import HealthScoreWidget from '../components/HealthScoreWidget';
@@ -97,6 +98,7 @@ const Dashboard: React.FC = () => {
             <p className="text-gray-500 text-sm font-medium">{t('dashboard.subtitle')}</p>
           </div>
           <div className="flex items-center gap-4">
+            <LanguageSwitcher className="hidden md:block w-32" />
             <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer">
               <Bell className="h-5 w-5" />
             </div>
