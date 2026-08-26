@@ -2,9 +2,12 @@ import React, { useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { formatCurrency } from '../lib/utils';
 import { ArrowUpRight, ArrowDownLeft, Calendar, FileText, TrendingUp, TrendingDown, Wallet, Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 const TransactionsPage: React.FC = () => {
   const { transactions, assets, settings } = useStore();
+  const { t } = useTranslation();
 
   // Sort transactions by date desc
   const sortedTransactions = [...transactions].sort((a, b) => 
@@ -40,9 +43,9 @@ const TransactionsPage: React.FC = () => {
 
       <div className="relative z-10 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20 pt-4">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-white uppercase underline decoration-emerald-500 decoration-4 underline-offset-8">Extrato <span className="text-emerald-500">Global</span></h1>
+          <h1 className="text-3xl font-black tracking-tight text-white uppercase underline decoration-emerald-500 decoration-4 underline-offset-8">{t('transactions.titleStart')}<span className="text-emerald-500">{t('transactions.titleHighlight')}</span></h1>
           <p className="text-gray-500 text-sm font-bold uppercase mt-4 tracking-widest">
-            Histórico completo de sua inteligência financeira.
+            {t('transactions.subtitle')}
           </p>
         </div>
 
@@ -53,10 +56,10 @@ const TransactionsPage: React.FC = () => {
               <TrendingUp className="w-24 h-24 text-emerald-500" />
             </div>
             <div className="flex flex-col relative z-10">
-              <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Capital Alocado</span>
+              <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">{t('transactions.kpiInvested')}</span>
               <span className="text-4xl font-black text-white px-1 tracking-tighter">{formatCurrency(kpis.totalInvested, 'BRL')}</span>
               <div className="flex items-center gap-2 mt-6 text-[10px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 w-fit px-4 py-1.5 rounded-full border border-emerald-500/20">
-                 <ArrowDownLeft className="w-3 h-3" /> BUY ORDERS
+                 <ArrowDownLeft className="w-3 h-3" /> {t('transactions.kpiInvestedBadge')}
               </div>
             </div>
           </div>
@@ -66,10 +69,10 @@ const TransactionsPage: React.FC = () => {
               <TrendingDown className="w-24 h-24 text-red-500" />
             </div>
             <div className="flex flex-col relative z-10">
-              <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Capital Realizado</span>
+              <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">{t('transactions.kpiSold')}</span>
               <span className="text-4xl font-black text-white px-1 tracking-tighter">{formatCurrency(kpis.totalSold, 'BRL')}</span>
               <div className="flex items-center gap-2 mt-6 text-[10px] font-black text-red-400 uppercase tracking-widest bg-red-500/10 w-fit px-4 py-1.5 rounded-full border border-red-500/20">
-                 <ArrowUpRight className="w-3 h-3" /> SELL ORDERS
+                 <ArrowUpRight className="w-3 h-3" /> {t('transactions.kpiSoldBadge')}
               </div>
             </div>
           </div>
@@ -79,10 +82,10 @@ const TransactionsPage: React.FC = () => {
               <Wallet className="w-24 h-24 text-blue-500" />
             </div>
             <div className="flex flex-col relative z-10">
-              <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Net Balance Outcome</span>
+              <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4">{t('transactions.kpiNet')}</span>
               <span className="text-4xl font-black text-white px-1 tracking-tighter">{formatCurrency(kpis.netResult, 'BRL')}</span>
               <div className="flex items-center gap-2 mt-6 text-[10px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 w-fit px-4 py-1.5 rounded-full border border-blue-500/20">
-                 Portfolio Flow
+                 {t('transactions.kpiNetBadge')}
               </div>
             </div>
           </div>
@@ -93,24 +96,24 @@ const TransactionsPage: React.FC = () => {
             <div className="bg-white/5 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/5">
               <FileText className="h-8 w-8 text-gray-700" />
             </div>
-            <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">No intelligence record found.</p>
+            <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">{t('transactions.empty')}</p>
           </div>
         ) : (
           <div className="glass-card rounded-[2rem] overflow-hidden border-white/5 shadow-2xl">
             <div className="p-8 border-b border-white/5 bg-white/[0.01]">
-               <h3 className="text-sm font-black text-white uppercase tracking-widest">Transaction Ledger</h3>
+               <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('transactions.tableTitle')}</h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] border-b border-white/5">
-                    <th className="px-8 py-6">Asset Intelligence</th>
-                    <th className="px-8 py-6">Operation</th>
-                    <th className="px-8 py-6 text-right">Volume</th>
-                    <th className="px-8 py-6 text-right">Execution Price</th>
-                    <th className="px-8 py-6 text-right">Total Exposure</th>
-                    <th className="px-8 py-6 text-right">Settled P/L</th>
-                    <th className="px-8 py-6 text-center">Execution Date</th>
+                    <th className="px-8 py-6">{t('transactions.colAsset')}</th>
+                    <th className="px-8 py-6">{t('transactions.colOperation')}</th>
+                    <th className="px-8 py-6 text-right">{t('transactions.colVolume')}</th>
+                    <th className="px-8 py-6 text-right">{t('transactions.colPrice')}</th>
+                    <th className="px-8 py-6 text-right">{t('transactions.colExposure')}</th>
+                    <th className="px-8 py-6 text-right">{t('transactions.colPnl')}</th>
+                    <th className="px-8 py-6 text-center">{t('transactions.colDate')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.02]">
@@ -127,7 +130,7 @@ const TransactionsPage: React.FC = () => {
                             </div>
                             <div>
                                <p className="text-sm font-black text-white leading-none mb-1">{asset?.ticker || '???'}</p>
-                               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter truncate max-w-[120px]">{asset?.name || 'UNKNOWN ENTITY'}</p>
+                               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-tighter truncate max-w-[120px]">{asset?.name || t('transactions.unknownEntity')}</p>
                             </div>
                           </div>
                         </td>
@@ -138,7 +141,7 @@ const TransactionsPage: React.FC = () => {
                               : 'bg-red-500/10 text-red-500 border border-red-500/10'
                           }`}>
                             {isBuy ? <ArrowDownLeft className="w-3 h-3" /> : <ArrowUpRight className="w-3 h-3" />}
-                            {isBuy ? 'IN' : 'OUT'}
+                            {isBuy ? t('transactions.entry') : t('transactions.exit')}
                           </span>
                         </td>
                         <td className="px-8 py-6 text-right font-black text-sm text-gray-400">
@@ -164,7 +167,7 @@ const TransactionsPage: React.FC = () => {
                         <td className="px-8 py-6 text-center">
                            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-white/5 border border-white/5 text-[10px] font-black text-gray-500 uppercase tracking-tighter">
                               <Calendar className="w-2.5 h-2.5" />
-                              {new Date(tx.date).toLocaleDateString('pt-BR')}
+                              {new Date(tx.date).toLocaleDateString(i18n.language)}
                            </div>
                         </td>
                       </tr>

@@ -4,10 +4,12 @@ import { formatCurrency } from '../lib/utils';
 import { Plus, X, TrendingUp, Calendar, DollarSign, CheckCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStore } from '../store/useStore';
+import { useTranslation } from 'react-i18next';
 
 const GoalSimulator: React.FC = () => {
   const { projections, addGoal, removeGoal } = useGoalSimulator();
   const { settings } = useStore();
+  const { t } = useTranslation();
   const [isAdding, setIsAdding] = useState(false);
   const [newGoal, setNewGoal] = useState<Omit<Goal, 'id'>>({
     name: '',
@@ -43,11 +45,11 @@ const GoalSimulator: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col space-y-4">
           <div className="flex items-center gap-4">
-             <h1 className="text-3xl font-black tracking-tight text-white uppercase underline decoration-blue-500 decoration-4 underline-offset-8">Simulador de <span className="text-blue-400">Metas</span></h1>
-             <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-blue-500/20">Dual Currency</span>
+             <h1 className="text-3xl font-black tracking-tight text-white uppercase underline decoration-blue-500 decoration-4 underline-offset-8">{t('goalSim.titleStart')}<span className="text-blue-400">{t('goalSim.titleHighlight')}</span></h1>
+             <span className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-blue-500/20">{t('goalSim.badge')}</span>
           </div>
           <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">
-            Projete sua jornada financeira em EUR ou BRL com o poder dos dividendos compostos.
+            {t('goalSim.subtitle')}
           </p>
         </div>
 
@@ -56,10 +58,10 @@ const GoalSimulator: React.FC = () => {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <DollarSign className="w-5 h-5 text-emerald-400" />
-              <span className="text-gray-500 text-sm">Câmbio Atual</span>
+              <span className="text-gray-500 text-sm">{t('goalSim.exchangeLabel')}</span>
             </div>
             <div className="text-2xl font-bold text-white">
-              1 EUR = {settings.exchangeRate.toFixed(2)} BRL
+              {t('goalSim.exchangeRate', { value: settings.exchangeRate.toFixed(2) })}
             </div>
           </div>
         </div>
@@ -67,11 +69,11 @@ const GoalSimulator: React.FC = () => {
         {/* Add New Goal */}
         {isAdding && (
           <div className="glass-card rounded-[2rem] p-8 border border-blue-500/20">
-            <h3 className="text-lg font-black text-white mb-6">Nova Meta</h3>
+            <h3 className="text-lg font-black text-white mb-6">{t('goalSim.newGoalTitle')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <input 
                 type="text"
-                placeholder="Nome da meta"
+                placeholder={t('goalSim.namePlaceholder')}
                 value={newGoal.name}
                 onChange={e => setNewGoal(prev => ({ ...prev, name: e.target.value }))}
                 className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-gray-600"
@@ -79,7 +81,7 @@ const GoalSimulator: React.FC = () => {
               <div className="flex gap-2">
                 <input 
                   type="number"
-                  placeholder="Valor alvo"
+                  placeholder={t('goalSim.targetPlaceholder')}
                   value={newGoal.targetAmount || ''}
                   onChange={e => setNewGoal(prev => ({ ...prev, targetAmount: Number(e.target.value) }))}
                   className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
@@ -102,7 +104,7 @@ const GoalSimulator: React.FC = () => {
               <div className="flex gap-2">
                 <input 
                   type="number"
-                  placeholder="Aporte mensal"
+                  placeholder={t('goalSim.contributionPlaceholder')}
                   value={newGoal.monthlyContribution || ''}
                   onChange={e => setNewGoal(prev => ({ ...prev, monthlyContribution: Number(e.target.value) }))}
                   className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white"
@@ -119,10 +121,10 @@ const GoalSimulator: React.FC = () => {
             </div>
             <div className="flex gap-2 mt-4">
               <button onClick={handleAdd} className="px-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-400">
-                Criar Meta
+                {t('goalSim.create')}
               </button>
               <button onClick={() => setIsAdding(false)} className="px-6 py-3 bg-white/5 text-gray-400 rounded-xl hover:text-white">
-                Cancelar
+                {t('goalSim.cancel')}
               </button>
             </div>
           </div>
@@ -136,7 +138,7 @@ const GoalSimulator: React.FC = () => {
                 <div>
                   <h3 className="text-xl font-bold text-white">{proj.goal.name}</h3>
                   <p className="text-sm text-gray-500 mt-1">
-                    Meta: {formatCurrency(proj.goal.targetAmount, proj.goal.currency)} • Prazo: {proj.monthsRemaining} meses
+                    {t('goalSim.goalMeta', { target: formatCurrency(proj.goal.targetAmount, proj.goal.currency), months: t('goalSim.monthsRemaining', { count: proj.monthsRemaining }) })}
                   </p>
                 </div>
                 <button onClick={() => removeGoal(proj.goal.id)} className="text-gray-600 hover:text-red-400">
@@ -147,7 +149,7 @@ const GoalSimulator: React.FC = () => {
               {/* Progress */}
               <div className="mb-6">
                 <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-500">Progresso atual</span>
+                  <span className="text-gray-500">{t('goalSim.progressLabel')}</span>
                   <span className="font-bold text-white">{proj.progressPct.toFixed(1)}%</span>
                 </div>
                 <div className="h-3 w-full bg-white/10 rounded-full overflow-hidden">
@@ -165,7 +167,7 @@ const GoalSimulator: React.FC = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-white/5 rounded-xl p-4">
                   <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                    <TrendingUp className="w-3 h-3" />Proj. Final
+                    <TrendingUp className="w-3 h-3" />{t('goalSim.statFinal')}
                   </div>
                   <div className="text-lg font-bold text-white">
                     {formatCurrency(proj.finalAmount, proj.goal.currency)}
@@ -173,7 +175,7 @@ const GoalSimulator: React.FC = () => {
                 </div>
                 <div className="bg-white/5 rounded-xl p-4">
                   <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                    <Calendar className="w-3 h-3" />Renda Mensal
+                    <Calendar className="w-3 h-3" />{t('goalSim.statIncome')}
                   </div>
                   <div className="text-lg font-bold text-emerald-400">
                     +{formatCurrency(proj.monthlyIncomeGenerated, proj.goal.currency)}
@@ -189,13 +191,13 @@ const GoalSimulator: React.FC = () => {
                 {proj.achievable ? (
                   <>
                     <CheckCircle className="w-5 h-5 text-emerald-400" />
-                    <span className="text-emerald-400 font-bold">Meta alcançável!</span>
+                    <span className="text-emerald-400 font-bold">{t('goalSim.achievable')}</span>
                   </>
                 ) : (
                   <>
                     <AlertTriangle className="w-5 h-5 text-amber-400" />
                     <span className="text-amber-400 font-bold">
-                      Faltam {formatCurrency(proj.shortfall, proj.goal.currency)}
+                      {t('goalSim.shortfall', { value: formatCurrency(proj.shortfall, proj.goal.currency) })}
                     </span>
                   </>
                 )}
@@ -210,7 +212,7 @@ const GoalSimulator: React.FC = () => {
               className="glass-card rounded-[2rem] p-8 border border-dashed border-white/10 hover:border-blue-500/30 flex items-center justify-center gap-3 transition-all"
             >
               <Plus className="w-6 h-6 text-gray-600" />
-              <span className="text-gray-600 font-bold">Adicionar Nova Meta</span>
+              <span className="text-gray-600 font-bold">{t('goalSim.addButton')}</span>
             </button>
           )}
         </div>

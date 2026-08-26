@@ -5,44 +5,35 @@ import { MOCK_ASSETS } from '../data/mockData';
 import AssetCard from '../components/AssetCard';
 import AddInvestmentModal from '../components/AddInvestmentModal';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { Asset, MarketQuote, QuoteSource } from '../types';
 import { useAuth } from '@clerk/clerk-react';
 import { getQuotesDetailed } from '../services/database';
 import { getFreshnessStatus } from '../services/dataPipeline';
 import { useAssetDiscovery, DiscoveredAsset } from '../hooks/useAssetDiscovery';
 
-const CATEGORIES: { label: string; value: string | null }[] = [
-  { label: 'Todos', value: null },
-  { label: 'Tijolo', value: 'FII Tijolo' },
-  { label: 'Papel', value: 'FII Papel' },
-  { label: 'Agro', value: 'FII Agro' },
-  { label: 'FIAGRO', value: 'FIAGRO' },
-  { label: 'FI-Infra', value: 'FI-Infra' },
-  { label: 'FIDC', value: 'FIDC' },
-  { label: 'FIP', value: 'FIP' },
-  { label: 'Ações', value: 'Ações Dividendos' },
-  { label: 'Renda Fixa', value: 'Renda Fixa' },
-  { label: 'Internacional', value: 'Ações Internacional' },
-  { label: 'Cripto', value: 'Cripto' },
-];
+const CATEGORY_VALUES: (string | null)[] = [null, 'FII Tijolo', 'FII Papel', 'FII Agro', 'FIAGRO', 'FI-Infra', 'FIDC', 'FIP', 'Ações Dividendos', 'Renda Fixa', 'Ações Internacional', 'Cripto'];
 
 type Tab = 'catalogo' | 'descobrir' | 'watchlist';
 type PopularCategory = 'all' | 'acoes' | 'fii' | 'fiagro' | 'fiinfra' | 'fidc' | 'fip';
 
-const POPULAR_CATS: { label: string; value: PopularCategory }[] = [
-  { label: 'Todos', value: 'all' },
-  { label: 'Ações', value: 'acoes' },
-  { label: 'FIIs', value: 'fii' },
-  { label: 'Fiagros', value: 'fiagro' },
-  { label: 'FI-Infra', value: 'fiinfra' },
-  { label: 'FIDC', value: 'fidc' },
-  { label: 'FIP', value: 'fip' },
-];
+const POPULAR_CAT_VALUES: PopularCategory[] = ['all', 'acoes', 'fii', 'fiagro', 'fiinfra', 'fidc', 'fip'];
 
 const MarketHub: React.FC = () => {
   const { assets, updateAssetsWithQuotes } = useStore();
   const { getToken } = useAuth();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<Tab>('catalogo');
+
+  const categories = useMemo(
+    () => (t('market.categories', { returnObjects: true }) as string[]).map((label, i) => ({ label, value: CATEGORY_VALUES[i] })),
+    [t]
+  );
+  const popularCats = useMemo(
+    () => (t('market.popularCategories', { returnObjects: true }) as string[]).map((label, i) => ({ label, value: POPULAR_CAT_VALUES[i] })),
+    [t]
+  );
 
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -133,7 +124,7 @@ const MarketHub: React.FC = () => {
   };
 
   const formatBRL = (v: number) =>
-    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
+    v.toLocaleString(i18n.language, { style: 'currency', currency: 'BRL', minimumFractionDigits: 2 });
 
   const formatUSD = (v: number) =>
     v >= 1e9 ? `$${(v / 1e9).toFixed(1)}B` : v >= 1e6 ? `$${(v / 1e6).toFixed(1)}M` : `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -162,9 +153,9 @@ const MarketHub: React.FC = () => {
               item.type === 'fip' ? 'bg-pink-500/10 text-pink-400' :
               'bg-emerald-500/10 text-emerald-400'
             )}>
-              {item.type === 'fii' ? 'FII' : item.type === 'crypto' ? 'Cripto' :
+              {item.type === 'fii' ? 'FII' : item.type === 'crypto' ? t('market.typeCrypto') :
                item.type === 'fiagro' ? 'FIAGRO' : item.type === 'fiinfra' ? 'FI-Infra' :
-               item.type === 'fidc' ? 'FIDC' : item.type === 'fip' ? 'FIP' : 'Ação'}
+               item.type === 'fidc' ? 'FIDC' : item.type === 'fip' ? 'FIP' : t('market.typeStock')}
             </span>
             {item.marketCapRank && (
               <span className="text-[9px] font-bold text-gray-600">#{item.marketCapRank}</span>
@@ -199,7 +190,7 @@ const MarketHub: React.FC = () => {
             "p-2 rounded-xl transition-all flex-shrink-0",
             inWatchlist ? 'bg-amber-500/10 text-amber-400 hover:bg-amber-500/20' : 'bg-white/5 text-gray-600 hover:text-amber-400 hover:bg-amber-500/10'
           )}
-          title={inWatchlist ? 'Remover da watchlist' : 'Adicionar à watchlist'}
+          title={inWatchlist ? t('market.removeFromWatchlist') : t('market.addToWatchlist')}
         >
           <Star className="w-4 h-4" fill={inWatchlist ? 'currentColor' : 'none'} />
         </button>
@@ -227,9 +218,9 @@ const MarketHub: React.FC = () => {
               item.type === 'fip' ? 'bg-pink-500/10 text-pink-400' :
               'bg-emerald-500/10 text-emerald-400'
             )}>
-              {item.type === 'fii' ? 'FII' : item.type === 'crypto' ? 'Cripto' :
+              {item.type === 'fii' ? 'FII' : item.type === 'crypto' ? t('market.typeCrypto') :
                item.type === 'fiagro' ? 'FIAGRO' : item.type === 'fiinfra' ? 'FI-Infra' :
-               item.type === 'fidc' ? 'FIDC' : item.type === 'fip' ? 'FIP' : 'Ação'}
+               item.type === 'fidc' ? 'FIDC' : item.type === 'fip' ? 'FIP' : t('market.typeStock')}
             </span>
           </div>
           <p className="text-[10px] text-gray-500 font-medium truncate">{item.name}</p>
@@ -251,14 +242,14 @@ const MarketHub: React.FC = () => {
             </>
           ) : (
             <p className="text-xs text-gray-600 font-bold">
-              {discovery.isLoadingQuotes ? 'Atualizando...' : 'Sem dados'}
+              {discovery.isLoadingQuotes ? t('market.updating') : t('market.noData')}
             </p>
           )}
         </div>
         <button
           onClick={() => discovery.removeFromWatchlist(item.ticker)}
           className="p-2 rounded-xl bg-red-500/5 text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-all flex-shrink-0"
-          title="Remover da watchlist"
+          title={t('market.removeFromWatchlist')}
         >
           <EyeOff className="w-4 h-4" />
         </button>
@@ -267,9 +258,9 @@ const MarketHub: React.FC = () => {
   };
 
   const TABS: { id: Tab; label: string; icon: React.ReactNode; count?: number }[] = [
-    { id: 'catalogo', label: 'Catálogo', icon: <Search className="w-4 h-4" /> },
-    { id: 'descobrir', label: 'Descobrir', icon: <Star className="w-4 h-4" /> },
-    { id: 'watchlist', label: 'Watchlist', icon: <Eye className="w-4 h-4" />, count: discovery.watchlist.length },
+    { id: 'catalogo', label: t('market.tabCatalog'), icon: <Search className="w-4 h-4" /> },
+    { id: 'descobrir', label: t('market.tabDiscover'), icon: <Star className="w-4 h-4" /> },
+    { id: 'watchlist', label: t('market.tabWatchlist'), icon: <Eye className="w-4 h-4" />, count: discovery.watchlist.length },
   ];
 
   return (
@@ -281,17 +272,17 @@ const MarketHub: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div className="flex flex-col">
             <h1 className="text-3xl font-black tracking-tight text-white uppercase underline decoration-emerald-500 decoration-4 underline-offset-8">
-              Hub de <span className="text-emerald-500">Mercado</span>
+              {t('market.titleStart')} <span className="text-emerald-500">{t('market.titleHighlight')}</span>
             </h1>
             <p className="text-gray-500 text-sm font-bold uppercase mt-4 tracking-widest">
-              Descubra, acompanhe e monitore todos os ativos disponíveis.
+              {t('market.subtitle')}
             </p>
           </div>
           {activeTab === 'catalogo' && (
             <button type="button" onClick={refreshQuotes} disabled={isRefreshing}
               className="self-start md:self-auto px-6 py-3 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/10 transition-all disabled:opacity-50 flex items-center gap-2">
               <RefreshCw className={cn("w-3 h-3", isRefreshing && "animate-spin")} />
-              {isRefreshing ? 'Sincronizando...' : 'Sincronizar Cotações'}
+              {isRefreshing ? t('market.syncing') : t('market.syncQuotes')}
             </button>
           )}
         </div>
@@ -317,12 +308,12 @@ const MarketHub: React.FC = () => {
             <div className="space-y-4">
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-600 group-focus-within:text-emerald-500 transition-colors" />
-                <input type="text" placeholder="Buscar por ticker ou nome (ex: HGLG11, Banco...)"
+                <input type="text" placeholder={t('market.searchCatalog')}
                   value={search} onChange={(e) => setSearch(e.target.value)}
                   className="w-full h-14 rounded-2xl bg-white/[0.02] border border-white/5 focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5 pl-12 pr-4 transition-all placeholder:text-gray-600 text-white font-medium" />
               </div>
               <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide no-scrollbar">
-                {CATEGORIES.map((cat) => (
+                {categories.map((cat) => (
                   <button key={cat.label} onClick={() => setSelectedCategory(cat.value)}
                     className={cn("px-5 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all border whitespace-nowrap",
                       selectedCategory === cat.value ? "bg-emerald-500 text-black border-emerald-500 shadow-lg shadow-emerald-500/20" : "bg-white/5 border-white/5 text-gray-500 hover:border-emerald-500/30 hover:text-white")}>
@@ -339,7 +330,7 @@ const MarketHub: React.FC = () => {
                   <div className="bg-white/5 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/5">
                     <Search className="h-8 w-8 text-gray-700" />
                   </div>
-                  <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">Nenhum ativo encontrado.</p>
+                  <p className="text-gray-400 font-bold uppercase text-xs tracking-widest">{t('market.noAssetsFound')}</p>
                 </div>
               )}
             </div>
@@ -352,7 +343,7 @@ const MarketHub: React.FC = () => {
             <div className="space-y-3">
               <div className="relative group">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-600 group-focus-within:text-emerald-500 transition-colors" />
-                <input type="text" placeholder="Buscar qualquer ativo na B3 ou criptomoeda... (ex: PETR4, Apple, SOL)"
+                <input type="text" placeholder={t('market.searchDiscover')}
                   value={discovery.searchQuery} onChange={(e) => discovery.handleSearchInput(e.target.value)}
                   className="w-full h-14 rounded-2xl bg-white/[0.02] border border-white/5 focus:border-emerald-500/50 focus:ring-4 focus:ring-emerald-500/5 pl-12 pr-12 transition-all placeholder:text-gray-600 text-white font-medium" />
                 {discovery.isSearching && (
@@ -361,7 +352,7 @@ const MarketHub: React.FC = () => {
               </div>
               {discovery.searchResults.length > 0 && (
                 <div className="space-y-2">
-                  <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Resultados ({discovery.searchResults.length})</h3>
+                  <h3 className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('market.searchResults', { count: discovery.searchResults.length })}</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {discovery.searchResults.map((item, i) => (
                       <DiscoveryCard key={`${item.ticker}-${i}`} item={item} />
@@ -373,14 +364,14 @@ const MarketHub: React.FC = () => {
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-white uppercase tracking-tight">Ativos Populares na B3</h3>
+                <h3 className="text-sm font-black text-white uppercase tracking-tight">{t('market.popularAssets')}</h3>
                 <button onClick={() => discovery.loadPopularStocks(popularCat)} disabled={discovery.isLoadingPopular}
                   className="p-2 rounded-lg bg-white/5 text-gray-500 hover:text-emerald-400 transition-all">
                   <RefreshCw className={cn("w-4 h-4", discovery.isLoadingPopular && "animate-spin")} />
                 </button>
               </div>
               <div className="flex gap-2">
-                {POPULAR_CATS.map(cat => (
+                {popularCats.map(cat => (
                   <button key={cat.value} onClick={() => setPopularCat(cat.value)}
                     className={cn("px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest transition-all border",
                       popularCat === cat.value ? "bg-emerald-500 text-black border-emerald-500" : "bg-white/5 border-white/5 text-gray-500 hover:text-white hover:border-emerald-500/30")}>
@@ -392,21 +383,21 @@ const MarketHub: React.FC = () => {
                 {discovery.isLoadingPopular && discovery.popularStocks.length === 0 ? (
                   <div className="col-span-full flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
-                    <span className="ml-3 text-sm text-gray-500 font-bold">Carregando ativos...</span>
+                    <span className="ml-3 text-sm text-gray-500 font-bold">{t('market.loadingAssets')}</span>
                   </div>
                 ) : discovery.popularStocks.length > 0 ? (
                   discovery.popularStocks.map((item, i) => (
                     <DiscoveryCard key={`pop-${item.ticker}-${i}`} item={item} />
                   ))
                 ) : (
-                  <p className="col-span-full text-center py-8 text-gray-600 text-sm">Nenhum ativo carregado.</p>
+                  <p className="col-span-full text-center py-8 text-gray-600 text-sm">{t('market.noAssetsLoaded')}</p>
                 )}
               </div>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-black text-white uppercase tracking-tight">Top Criptomoedas por Market Cap</h3>
+                <h3 className="text-sm font-black text-white uppercase tracking-tight">{t('market.topCryptos')}</h3>
                 <button onClick={() => discovery.loadTopCryptos(30)} disabled={discovery.isLoadingTopCryptos}
                   className="p-2 rounded-lg bg-white/5 text-gray-500 hover:text-emerald-400 transition-all">
                   <RefreshCw className={cn("w-4 h-4", discovery.isLoadingTopCryptos && "animate-spin")} />
@@ -416,14 +407,14 @@ const MarketHub: React.FC = () => {
                 {discovery.isLoadingTopCryptos && discovery.topCryptos.length === 0 ? (
                   <div className="col-span-full flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 text-amber-500 animate-spin" />
-                    <span className="ml-3 text-sm text-gray-500 font-bold">Carregando criptos...</span>
+                    <span className="ml-3 text-sm text-gray-500 font-bold">{t('market.loadingCryptos')}</span>
                   </div>
                 ) : discovery.topCryptos.length > 0 ? (
                   discovery.topCryptos.map((item, i) => (
                     <DiscoveryCard key={`crypto-${item.id || item.ticker}-${i}`} item={item} />
                   ))
                 ) : (
-                  <p className="col-span-full text-center py-8 text-gray-600 text-sm">Nenhuma cripto carregada.</p>
+                  <p className="col-span-full text-center py-8 text-gray-600 text-sm">{t('market.noCryptosLoaded')}</p>
                 )}
               </div>
             </div>
@@ -435,16 +426,16 @@ const MarketHub: React.FC = () => {
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-black text-white">Minha Watchlist</h3>
+                <h3 className="text-lg font-black text-white">{t('market.myWatchlist')}</h3>
                 <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mt-1">
-                  {discovery.watchlist.length} ativo{discovery.watchlist.length !== 1 ? 's' : ''} monitorado{discovery.watchlist.length !== 1 ? 's' : ''}
+                  {t('market.watchlistCount', { count: discovery.watchlist.length })}
                 </p>
               </div>
               <button onClick={() => discovery.refreshWatchlistQuotes()}
                 disabled={discovery.isLoadingQuotes || discovery.watchlist.length === 0}
                 className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/10 transition-all disabled:opacity-50 flex items-center gap-2">
                 <RefreshCw className={cn("w-3 h-3", discovery.isLoadingQuotes && "animate-spin")} />
-                Atualizar
+                {t('market.refreshBtn')}
               </button>
             </div>
             {discovery.watchlist.length === 0 ? (
@@ -452,11 +443,11 @@ const MarketHub: React.FC = () => {
                 <div className="bg-white/5 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6 border border-white/5">
                   <Star className="h-8 w-8 text-gray-700" />
                 </div>
-                <p className="text-gray-400 font-bold uppercase text-xs tracking-widest mb-2">Watchlist vazia</p>
-                <p className="text-gray-600 text-sm">Vá para a aba "Descobrir" e adicione ativos para monitorar.</p>
+                <p className="text-gray-400 font-bold uppercase text-xs tracking-widest mb-2">{t('market.emptyWatchlist')}</p>
+                <p className="text-gray-600 text-sm">{t('market.emptyWatchlistHint')}</p>
                 <button onClick={() => setActiveTab('descobrir')}
                   className="mt-6 px-6 py-2.5 rounded-xl bg-emerald-500 text-black text-[10px] font-black uppercase tracking-widest hover:bg-emerald-400 transition-all">
-                  Descobrir Ativos
+                  {t('market.discoverAssets')}
                 </button>
               </div>
             ) : (

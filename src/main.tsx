@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { ClerkProvider } from '@clerk/clerk-react'
 import App from './App'
 import ErrorBoundary from './components/ErrorBoundary'
+import './i18n'
 import './index.css'
 
 // Import your publishable key

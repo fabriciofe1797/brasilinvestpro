@@ -6,8 +6,11 @@ import { simulateTesouroPrefixado, simulateCdb, simulateLciLca, simulateTesouroS
 import { Calculator, Info, Sparkles, Zap, Shield, TrendingUp, Calendar, ArrowRight } from 'lucide-react';
 import { getSavingsProducts } from '../services/database';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 type TabId = 'prefixado' | 'cdb' | 'lci' | 'selic' | 'ipca';
+
+const TAB_IDS: TabId[] = ['prefixado', 'cdb', 'lci', 'selic', 'ipca'];
 
 type SavingsProduct = {
   id: string;
@@ -22,6 +25,8 @@ type SavingsProduct = {
 const SimulatorsPage: React.FC = () => {
   const { settings } = useStore();
   const { getToken } = useAuth();
+  const { t } = useTranslation();
+  const tabLabels = t('fixedIncome.tabLabels', { returnObjects: true }) as string[];
   const [tab, setTab] = useState<TabId>('prefixado');
   const [initial, setInitial] = useState('1000');
   const [days, setDays] = useState('365');
@@ -149,14 +154,6 @@ const SimulatorsPage: React.FC = () => {
 
   const baseCurrency = settings.baseCurrency;
 
-  const tabs = [
-    { id: 'prefixado', label: 'Treasury Fixed' },
-    { id: 'cdb', label: 'Bank CDB' },
-    { id: 'lci', label: 'LCI / LCA' },
-    { id: 'selic', label: 'Treasury Selic' },
-    { id: 'ipca', label: 'Treasury IPCA+' },
-  ];
-
   return (
     <div className="bg-premium min-h-screen">
       <div className="premium-glow-1" />
@@ -167,27 +164,27 @@ const SimulatorsPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col space-y-4">
           <div className="flex items-center gap-4">
-             <h1 className="text-3xl font-black tracking-tight text-white uppercase underline decoration-emerald-500 decoration-4 underline-offset-8">Fixed <span className="text-emerald-500">Income</span></h1>
-             <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-emerald-500/20 shadow-lg shadow-emerald-500/10">Yield Simulation</span>
+             <h1 className="text-3xl font-black tracking-tight text-white uppercase underline decoration-emerald-500 decoration-4 underline-offset-8">{t('fixedIncome.titleStart')}<span className="text-emerald-500">{t('fixedIncome.titleHighlight')}</span></h1>
+             <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest border border-emerald-500/20 shadow-lg shadow-emerald-500/10">{t('fixedIncome.badge')}</span>
           </div>
           <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">
-            Compare products with precise IR and B3 custody calculations.
+            {t('fixedIncome.subtitle')}
           </p>
         </div>
 
         {/* Tab Navigation */}
         <div className="glass-card rounded-[2.5rem] p-3 border-white/5 shadow-2xl overflow-x-auto no-scrollbar">
            <div className="flex gap-2 min-w-max">
-              {tabs.map(t => (
+              {TAB_IDS.map((tid, i) => (
                 <button
-                  key={t.id}
-                  onClick={() => setTab(t.id as TabId)}
+                  key={tid}
+                  onClick={() => setTab(tid)}
                   className={cn(
                     "px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all",
-                    tab === t.id ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20" : "text-gray-500 hover:text-white hover:bg-white/5"
+                    tab === tid ? "bg-emerald-500 text-black shadow-lg shadow-emerald-500/20" : "text-gray-500 hover:text-white hover:bg-white/5"
                   )}
                 >
-                  {t.label}
+                  {tabLabels[i] ?? tid}
                 </button>
               ))}
            </div>
@@ -198,14 +195,14 @@ const SimulatorsPage: React.FC = () => {
           <div className="glass-card rounded-[2.5rem] p-10 border-white/5 shadow-2xl relative overflow-hidden">
              <div className="flex items-center justify-between mb-10">
                 <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
-                   <Calculator className="w-5 h-5 text-emerald-500" /> Control Unit
+                   <Calculator className="w-5 h-5 text-emerald-500" /> {t('fixedIncome.controlTitle')}
                 </h3>
                 <Sparkles className="w-4 h-4 text-emerald-500/30" />
              </div>
 
              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                <div className="space-y-4">
-                  <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">Initial Capital</label>
+                  <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.initialLabel')}</label>
                   <div className="relative">
                     <input
                       className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter focus:border-emerald-500/30 transition-all outline-none"
@@ -216,7 +213,7 @@ const SimulatorsPage: React.FC = () => {
                   </div>
                </div>
                <div className="space-y-4">
-                  <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">Time Horizon (Days)</label>
+                  <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.daysLabel')}</label>
                   <div className="relative">
                     <input
                       className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter focus:border-emerald-500/30 transition-all outline-none"
@@ -231,7 +228,7 @@ const SimulatorsPage: React.FC = () => {
                {tab === 'prefixado' && (
                  <>
                    <div className="space-y-4">
-                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">Fixed Rate (Annual)</label>
+                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.fixedRateLabel')}</label>
                      <input
                        className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter outline-none"
                        value={ratePrefixado}
@@ -239,7 +236,7 @@ const SimulatorsPage: React.FC = () => {
                      />
                    </div>
                    <div className="space-y-4">
-                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">Accretion Logic</label>
+                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.compoundingLabel')}</label>
                      <div className="flex gap-2">
                        {['annual', 'daily'].map(type => (
                          <button
@@ -250,7 +247,7 @@ const SimulatorsPage: React.FC = () => {
                              preCompounding === type ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-500" : "bg-black/20 border-white/5 text-gray-700"
                            )}
                          >
-                           {type === 'annual' ? 'Fractional' : 'Daily'}
+                           {type === 'annual' ? t('fixedIncome.compoundingAnnual') : t('fixedIncome.compoundingDaily')}
                          </button>
                        ))}
                      </div>
@@ -260,7 +257,7 @@ const SimulatorsPage: React.FC = () => {
                {tab === 'cdb' && (
                  <>
                    <div className="space-y-4">
-                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">CDI Base (Market)</label>
+                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.cdiBaseLabel')}</label>
                      <input
                        className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter outline-none"
                        value={cdiAnnual}
@@ -268,7 +265,7 @@ const SimulatorsPage: React.FC = () => {
                      />
                    </div>
                    <div className="space-y-4">
-                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">Yield Performance (% CDI)</label>
+                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.cdbYieldLabel')}</label>
                      <input
                        className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter outline-none"
                        value={cdiPercentCdb}
@@ -280,7 +277,7 @@ const SimulatorsPage: React.FC = () => {
                {tab === 'lci' && (
                  <>
                    <div className="space-y-4">
-                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">CDI Base (Market)</label>
+                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.cdiBaseLabel')}</label>
                      <input
                        className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter outline-none"
                        value={cdiAnnual}
@@ -288,7 +285,7 @@ const SimulatorsPage: React.FC = () => {
                      />
                    </div>
                    <div className="space-y-4">
-                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">Tax-Free Yield (% CDI)</label>
+                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.lciYieldLabel')}</label>
                      <input
                        className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter outline-none"
                        value={cdiPercentLci}
@@ -300,7 +297,7 @@ const SimulatorsPage: React.FC = () => {
                {tab === 'selic' && (
                  <>
                    <div className="space-y-4">
-                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">Selic Base (Official)</label>
+                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.selicBaseLabel')}</label>
                      <input
                        className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter outline-none"
                        value={selicAnnual}
@@ -308,7 +305,7 @@ const SimulatorsPage: React.FC = () => {
                      />
                    </div>
                    <div className="space-y-4">
-                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">Fixed Offset</label>
+                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.spreadLabel')}</label>
                      <input
                        className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter outline-none"
                        value={selicFixed}
@@ -320,7 +317,7 @@ const SimulatorsPage: React.FC = () => {
                {tab === 'ipca' && (
                  <>
                    <div className="space-y-4">
-                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">Inflation Forecast (IPCA)</label>
+                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.ipcaLabel')}</label>
                      <input
                        className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter outline-none"
                        value={ipcaAnnual}
@@ -328,7 +325,7 @@ const SimulatorsPage: React.FC = () => {
                      />
                    </div>
                    <div className="space-y-4">
-                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">Real Yield Offset</label>
+                     <label className="text-[10px] text-gray-600 font-black uppercase tracking-[0.2em] ml-1">{t('fixedIncome.realGainLabel')}</label>
                      <input
                        className="w-full bg-white/[0.02] border border-white/5 rounded-2xl px-6 py-4 text-sm text-white font-black tracking-tighter outline-none"
                        value={ipcaFixed}
@@ -347,7 +344,7 @@ const SimulatorsPage: React.FC = () => {
                        <Shield className="w-6 h-6" />
                     </div>
                     <div>
-                       <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Active Product Calibration</p>
+                       <p className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{t('fixedIncome.productActive')}</p>
                        <p className="text-white font-black uppercase tracking-tighter">{selectedSavings.bank_name} • {selectedSavings.product_name}</p>
                     </div>
                  </div>
@@ -355,7 +352,7 @@ const SimulatorsPage: React.FC = () => {
                     onClick={() => { setSelectedSavings(null); try { localStorage.removeItem('selected_savings_id'); } catch {} }}
                     className="text-[9px] font-black uppercase tracking-widest text-emerald-500 hover:text-white transition-colors"
                  >
-                    Reset Constants
+                    {t('fixedIncome.resetConstants')}
                  </button>
                </div>
              )}
@@ -365,7 +362,7 @@ const SimulatorsPage: React.FC = () => {
                <div className="mt-12 space-y-6">
                  <div className="flex items-center gap-3 ml-1">
                     <TrendingUp className="w-4 h-4 text-gray-700" />
-                    <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest">Available Bank Protocols</span>
+                    <span className="text-[10px] font-black text-gray-700 uppercase tracking-widest">{t('fixedIncome.productsTitle')}</span>
                  </div>
                  <div className="grid grid-cols-1 gap-4 max-h-[280px] overflow-y-auto pr-4 no-scrollbar">
                    {savings.map(p => (
@@ -387,7 +384,7 @@ const SimulatorsPage: React.FC = () => {
                          <div className="font-black text-emerald-500 text-lg tracking-tighter">
                            {(p.rate_value * (p.rate_type.includes('%') ? 100 : 1)).toFixed(p.rate_type.includes('%') ? 0 : 2)}{p.rate_type.includes('%') ? '%' : ''}
                          </div>
-                         <div className="text-[8px] text-gray-700 font-black uppercase tracking-widest mt-0.5">{p.rate_type.replace('%', '')} Rate</div>
+                         <div className="text-[8px] text-gray-700 font-black uppercase tracking-widest mt-0.5">{t('fixedIncome.rateSuffix', { type: p.rate_type.replace('%', '') })}</div>
                        </div>
                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity" />
                      </button>
@@ -404,58 +401,58 @@ const SimulatorsPage: React.FC = () => {
                 
                 <div className="flex items-center justify-between mb-10">
                    <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
-                      Output Analysis
+                      {t('fixedIncome.analysisTitle')}
                    </h3>
                    <div className="bg-emerald-500 text-black text-[9px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-emerald-500/20">
-                      Projected Net
+                      {t('fixedIncome.netBadge')}
                    </div>
                 </div>
 
                 {result ? (
                   <div className="space-y-10 relative z-10">
                     <div className="space-y-2">
-                       <span className="text-[10px] text-gray-600 font-black uppercase tracking-[0.3em] block">TOTAL ACCUMULATED</span>
+                       <span className="text-[10px] text-gray-600 font-black uppercase tracking-[0.3em] block">{t('fixedIncome.totalLabel')}</span>
                        <div className="text-6xl font-black text-white tracking-tighter">
                          {formatCurrency(result.netValue, baseCurrency)}
                        </div>
                        <p className="text-emerald-500 font-black uppercase text-[10px] tracking-widest mt-4 flex items-center gap-2">
-                          <TrendingUp className="w-3.5 h-3.5" /> Effective Growth Horizon
+                          <TrendingUp className="w-3.5 h-3.5" /> {t('fixedIncome.growthLabel')}
                        </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-6">
                        <div className="space-y-2 border-l-2 border-white/5 pl-4">
-                          <span className="text-[9px] text-gray-700 font-black uppercase tracking-widest">Gross Yield</span>
+                          <span className="text-[9px] text-gray-700 font-black uppercase tracking-widest">{t('fixedIncome.grossReturn')}</span>
                           <p className="text-white font-black tracking-tight">{formatCurrency(result.grossReturn, baseCurrency)}</p>
                        </div>
                        <div className="space-y-2 border-l-2 border-white/5 pl-4">
-                          <span className="text-[9px] text-gray-700 font-black uppercase tracking-widest">Principal</span>
+                          <span className="text-[9px] text-gray-700 font-black uppercase tracking-widest">{t('fixedIncome.principal')}</span>
                           <p className="text-gray-500 font-black tracking-tight">{formatCurrency(result.totalInvested, baseCurrency)}</p>
                        </div>
                     </div>
 
                     <div className="space-y-6 pt-6 border-t border-white/5">
                        <div className="flex justify-between items-center">
-                          <span className="text-[9px] text-gray-700 font-black uppercase tracking-widest">Tax Provision (IR)</span>
+                          <span className="text-[9px] text-gray-700 font-black uppercase tracking-widest">{t('fixedIncome.irTax')}</span>
                           <span className="text-red-500/80 font-black tracking-tighter">-{formatCurrency(result.irTax, baseCurrency)}</span>
                        </div>
                        <div className="flex justify-between items-center">
-                          <span className="text-[9px] text-gray-700 font-black uppercase tracking-widest">Operational Fees (B3)</span>
+                          <span className="text-[9px] text-gray-700 font-black uppercase tracking-widest">{t('fixedIncome.feeTax')}</span>
                           <span className="text-red-500/80 font-black tracking-tighter">-{formatCurrency(result.feeTax, baseCurrency)}</span>
                        </div>
                        
                        <div className="mt-8 p-6 rounded-3xl bg-white/5 border border-white/5 space-y-4">
                           <div className="flex items-center gap-3">
                              <Info className="w-4 h-4 text-emerald-500" />
-                             <span className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">Protocol Metadata</span>
+                             <span className="text-[9px] text-emerald-500 font-black uppercase tracking-widest">{t('fixedIncome.protocolParams')}</span>
                           </div>
                           <div className="grid grid-cols-1 gap-3">
                              <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-gray-700">
-                                <span>Custody Rate</span>
-                                <span>{(Number(settings.custodyRate ?? 0.002) * 100).toFixed(2)}% A.A</span>
+                                <span>{t('fixedIncome.custodyRate')}</span>
+                                <span>{t('fixedIncome.custodyValue', { value: (Number(settings.custodyRate ?? 0.002) * 100).toFixed(2) })}</span>
                              </div>
                              <div className="flex justify-between text-[8px] font-black uppercase tracking-widest text-gray-700">
-                                <span>Selic Exemption</span>
+                                <span>{t('fixedIncome.selicExemption')}</span>
                                 <span>{formatCurrency(Number(settings.selicCustodyThreshold ?? 10000), 'BRL')}</span>
                              </div>
                           </div>
@@ -468,7 +465,7 @@ const SimulatorsPage: React.FC = () => {
                         <TrendingUp className="w-8 h-8" />
                      </div>
                      <p className="text-[10px] text-gray-700 font-black uppercase tracking-widest leading-relaxed max-w-[200px]">
-                        Initialize engine parameters to generate projective data.
+                        {t('fixedIncome.emptyHint')}
                      </p>
                   </div>
                 )}
@@ -479,13 +476,13 @@ const SimulatorsPage: React.FC = () => {
                    <ArrowRight className="w-24 h-24 text-purple-500" />
                 </div>
                 <h4 className="font-black text-white uppercase tracking-[0.2em] mb-3 flex items-center gap-3 relative z-10">
-                   <Sparkles className="w-4 h-4 text-purple-400" /> Intelligence Advisor
+                   <Sparkles className="w-4 h-4 text-purple-400" /> {t('fixedIncome.assistantTitle')}
                 </h4>
                 <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest leading-relaxed mb-6 relative z-10">
-                   Let our AI engine find the most efficient fixed income allocation for your horizon.
+                   {t('fixedIncome.assistantDesc')}
                 </p>
                 <div className="bg-purple-500 text-white text-[9px] font-black uppercase px-6 py-3 rounded-xl w-fit relative z-10 hover:bg-white hover:text-purple-600 transition-all cursor-pointer shadow-lg shadow-purple-500/20">
-                   Consult Protocol
+                   {t('fixedIncome.assistantBtn')}
                 </div>
              </div>
           </div>

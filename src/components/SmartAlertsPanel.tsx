@@ -16,6 +16,7 @@ import {
   Eye,
   Zap,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface SmartAlertsPanelProps {
   compact?: boolean; // For Dashboard widget mode
@@ -42,17 +43,8 @@ const typeIcons: Record<SmartAlertType, React.ElementType> = {
   exchange_alert: DollarSign,
 };
 
-const filterOptions: { id: SmartAlertType | 'all' | 'unread'; label: string }[] = [
-  { id: 'all', label: 'Todos' },
-  { id: 'unread', label: 'Nao Lidos' },
-  { id: 'dividend_upcoming', label: 'Dividendos' },
-  { id: 'opportunity', label: 'Oportunidades' },
-  { id: 'price_target_hit', label: 'Price Target' },
-  { id: 'contribution_reminder', label: 'Aportes' },
-  { id: 'health_score_change', label: 'Health' },
-];
-
 const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ compact = false, maxItems = 10 }) => {
+  const { t } = useTranslation();
   const {
     smartAlerts,
     unreadCount,
@@ -60,6 +52,16 @@ const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ compact = false, ma
     markAllAsRead,
     dismissAlert,
   } = useAlertEngine();
+
+  const filterOptions: { id: SmartAlertType | 'all' | 'unread'; label: string }[] = [
+    { id: 'all', label: t('smartAlerts.filterAll') },
+    { id: 'unread', label: t('smartAlerts.filterUnread') },
+    { id: 'dividend_upcoming', label: t('smartAlerts.filterDividends') },
+    { id: 'opportunity', label: t('smartAlerts.filterOpportunities') },
+    { id: 'price_target_hit', label: t('smartAlerts.filterPriceTarget') },
+    { id: 'contribution_reminder', label: t('smartAlerts.filterContributions') },
+    { id: 'health_score_change', label: t('smartAlerts.filterHealth') },
+  ];
 
   const [filter, setFilter] = useState<'all' | 'unread' | SmartAlertType>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -78,13 +80,13 @@ const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ compact = false, ma
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-emerald-500" />
-            <h3 className="text-lg font-bold text-white">Alertas Inteligentes</h3>
+            <h3 className="text-lg font-bold text-white">{t('smartAlerts.title')}</h3>
           </div>
         </div>
         <div className="p-6 rounded-xl bg-white/[0.01] border border-dashed border-white/10 text-center">
           <Bell className="w-8 h-8 text-gray-600 mx-auto mb-2" />
-          <p className="text-xs text-gray-500 font-bold">Nenhum alerta para sua carteira no momento.</p>
-          <p className="text-[10px] text-gray-600 mt-1">Adicione ativos para receber alertas personalizados.</p>
+          <p className="text-xs text-gray-500 font-bold">{t('smartAlerts.empty')}</p>
+          <p className="text-[10px] text-gray-600 mt-1">{t('smartAlerts.emptyHint')}</p>
         </div>
       </div>
     );
@@ -96,7 +98,7 @@ const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ compact = false, ma
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Bell className="w-5 h-5 text-emerald-500" />
-          <h3 className="text-lg font-bold text-white">Alertas Inteligentes</h3>
+          <h3 className="text-lg font-bold text-white">{t('smartAlerts.title')}</h3>
           {unreadCount > 0 && (
             <span className="px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 text-[10px] font-black border border-red-500/30">
               {unreadCount}
@@ -109,7 +111,7 @@ const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ compact = false, ma
             className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 hover:text-emerald-300 transition-colors"
           >
             <CheckCheck className="w-3.5 h-3.5" />
-            Marcar todos como lidos
+            {t('smartAlerts.markAllRead')}
           </button>
         )}
       </div>
@@ -151,7 +153,7 @@ const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ compact = false, ma
       <div className="space-y-2 max-h-[400px] overflow-y-auto no-scrollbar">
         {filteredAlerts.length === 0 ? (
           <div className="p-4 text-center">
-            <p className="text-xs text-gray-500">Nenhum alerta neste filtro.</p>
+            <p className="text-xs text-gray-500">{t('smartAlerts.noFilterAlerts')}</p>
           </div>
         ) : (
           filteredAlerts.map(alert => {
@@ -196,7 +198,7 @@ const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ compact = false, ma
                         <div className="flex items-start gap-2">
                           <SeverityIcon className={`w-3 h-3 mt-0.5 flex-shrink-0 ${severity.color}`} />
                           <p className="text-[10px] text-gray-400 font-medium">
-                            <span className={`font-bold ${severity.color}`}>Acao sugerida: </span>
+                            <span className={`font-bold ${severity.color}`}>{t('smartAlerts.suggestedAction')}</span>
                             {alert.actionable}
                           </p>
                         </div>
@@ -223,7 +225,7 @@ const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ compact = false, ma
                     {alert.value !== undefined && (
                       <span className="text-[9px] text-gray-500">
                         {alert.type === 'opportunity' || alert.type === 'price_target_hit'
-                          ? `${alert.value >= 0 ? '+' : ''}${alert.value.toFixed(1)}% upside`
+                          ? t('smartAlerts.upside', { valor: `${alert.value >= 0 ? '+' : ''}${alert.value.toFixed(1)}` })
                           : `R$ ${alert.value.toFixed(2)}`}
                       </span>
                     )}
@@ -239,7 +241,7 @@ const SmartAlertsPanel: React.FC<SmartAlertsPanelProps> = ({ compact = false, ma
       {smartAlerts.length > maxItems && !compact && (
         <div className="mt-3 pt-3 border-t border-white/5 text-center">
           <p className="text-[10px] text-gray-500">
-            Mostrando {maxItems} de {smartAlerts.length} alertas
+            {t('smartAlerts.showing', { max: maxItems, total: smartAlerts.length })}
           </p>
         </div>
       )}

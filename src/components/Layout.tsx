@@ -8,6 +8,7 @@ import {
   Compass, HeartHandshake, Rocket, Building2, Trophy, Percent
 } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/clerk-react';
+import { useTranslation } from 'react-i18next';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import NotificationCenter from './NotificationCenter';
@@ -16,6 +17,7 @@ import LicenseExpiryPrompt from './LicenseExpiryPrompt';
 import { useStore } from '../store/useStore';
 import DataSynchronizer from './DataSynchronizer';
 import MarketTicker from './MarketTicker';
+import LanguageSwitcher from './LanguageSwitcher';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -33,6 +35,7 @@ const isDivider = (item: NavItem): item is Extract<NavItem, { type: 'divider' }>
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user } = useUser();
   const { settings } = useStore();
+  const { t } = useTranslation();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
@@ -41,49 +44,49 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const navItems: NavItem[] = [
     // FREE - Todos os usuários
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/', plan: 'free' },
-    { icon: TrendingUp, label: 'Mercado', path: '/market', plan: 'free' },
-    { icon: Building2, label: 'FIIs', path: '/fiis', plan: 'free' },
-    { icon: Trophy, label: 'Rankings', path: '/rankings', plan: 'free' },
-    { icon: Percent, label: 'Benchmarks', path: '/benchmarks', plan: 'free' },
-    { icon: Calculator, label: 'Simulador', path: '/calculator', plan: 'free' },
-    { icon: Settings, label: 'Config', path: '/settings', plan: 'free' },
+    { icon: LayoutDashboard, label: t('layout.nav.dashboard'), path: '/', plan: 'free' },
+    { icon: TrendingUp, label: t('layout.nav.market'), path: '/market', plan: 'free' },
+    { icon: Building2, label: t('layout.nav.fiis'), path: '/fiis', plan: 'free' },
+    { icon: Trophy, label: t('layout.nav.rankings'), path: '/rankings', plan: 'free' },
+    { icon: Percent, label: t('layout.nav.benchmarks'), path: '/benchmarks', plan: 'free' },
+    { icon: Calculator, label: t('layout.nav.simulator'), path: '/calculator', plan: 'free' },
+    { icon: Settings, label: t('layout.nav.settings'), path: '/settings', plan: 'free' },
     // Divider
     { type: 'divider' },
     // STARTER
-    { icon: History, label: 'Extrato', path: '/transactions', plan: 'starter' },
-    { icon: LineChart, label: 'Patrimônio', path: '/timeline', plan: 'starter' },
-    { icon: BarChart3, label: 'Preço Teto', path: '/ceiling-price', plan: 'starter' },
-    { icon: FileInput, label: 'Importar', path: '/import', plan: 'starter' },
-    { icon: Coins, label: 'Proventos', path: '/dividends', plan: 'starter' },
-    { icon: Bell, label: 'Alertas', path: '/alerts', plan: 'starter' },
-    { icon: Compass, label: 'Decisões', path: '/decisions', plan: 'starter' },
-    { icon: Scale, label: 'Rebalancear', path: '/rebalance', plan: 'starter' },
+    { icon: History, label: t('layout.nav.transactions'), path: '/transactions', plan: 'starter' },
+    { icon: LineChart, label: t('layout.nav.timeline'), path: '/timeline', plan: 'starter' },
+    { icon: BarChart3, label: t('layout.nav.ceilingPrice'), path: '/ceiling-price', plan: 'starter' },
+    { icon: FileInput, label: t('layout.nav.import'), path: '/import', plan: 'starter' },
+    { icon: Coins, label: t('layout.nav.dividends'), path: '/dividends', plan: 'starter' },
+    { icon: Bell, label: t('layout.nav.alerts'), path: '/alerts', plan: 'starter' },
+    { icon: Compass, label: t('layout.nav.decisions'), path: '/decisions', plan: 'starter' },
+    { icon: Scale, label: t('layout.nav.rebalance'), path: '/rebalance', plan: 'starter' },
     // Divider
     { type: 'divider' },
     // PRO
-    { icon: Receipt, label: 'Fiscal', path: '/tax', plan: 'pro' },
-    { icon: Sparkles, label: 'AI Advisor', path: '/advisor', plan: 'pro' },
-    { icon: MessageSquare, label: 'Chat IA', path: '/chat', plan: 'pro' },
-    { icon: Brain, label: 'Simuladores', path: '/simulators', plan: 'pro' },
-    { icon: Zap, label: 'Backtest', path: '/backtest', plan: 'pro' },
-    { icon: Rocket, label: 'Projeção', path: '/drip', plan: 'pro' },
-    { icon: Crown, label: 'Analytics', path: '/premium/analytics', plan: 'pro' },
+    { icon: Receipt, label: t('layout.nav.tax'), path: '/tax', plan: 'pro' },
+    { icon: Sparkles, label: t('layout.nav.aiAdvisor'), path: '/advisor', plan: 'pro' },
+    { icon: MessageSquare, label: t('layout.nav.chat'), path: '/chat', plan: 'pro' },
+    { icon: Brain, label: t('layout.nav.simulators'), path: '/simulators', plan: 'pro' },
+    { icon: Zap, label: t('layout.nav.backtest'), path: '/backtest', plan: 'pro' },
+    { icon: Rocket, label: t('layout.nav.drip'), path: '/drip', plan: 'pro' },
+    { icon: Crown, label: t('layout.nav.analytics'), path: '/premium/analytics', plan: 'pro' },
     // Divider
     { type: 'divider' },
     // MASTER
-    { icon: Heart, label: 'Vida', path: '/life-map', plan: 'master' },
-    { icon: HeartHandshake, label: 'Mapa Vida', path: '/life-map-dividends', plan: 'master' },
-    { icon: Target, label: 'Metas', path: '/goals', plan: 'master' },
-    { icon: Navigation, label: 'Câmbio', path: '/radar', plan: 'master' },
-    { icon: GitCompare, label: 'Comparador', path: '/comparator', plan: 'master' },
-    { icon: Users, label: 'Comunidade', path: '/community', plan: 'master' },
-    { icon: Eye, label: 'Insiders', path: '/insiders', plan: 'master' },
-    { icon: Link2, label: 'Open Finance', path: '/open-finance', plan: 'master' },
+    { icon: Heart, label: t('layout.nav.life'), path: '/life-map', plan: 'master' },
+    { icon: HeartHandshake, label: t('layout.nav.lifeMap'), path: '/life-map-dividends', plan: 'master' },
+    { icon: Target, label: t('layout.nav.goals'), path: '/goals', plan: 'master' },
+    { icon: Navigation, label: t('layout.nav.exchange'), path: '/radar', plan: 'master' },
+    { icon: GitCompare, label: t('layout.nav.comparator'), path: '/comparator', plan: 'master' },
+    { icon: Users, label: t('layout.nav.community'), path: '/community', plan: 'master' },
+    { icon: Eye, label: t('layout.nav.insiders'), path: '/insiders', plan: 'master' },
+    { icon: Link2, label: t('layout.nav.openFinance'), path: '/open-finance', plan: 'master' },
     // Divider
     { type: 'divider' },
     // ELITE
-    { icon: Globe2, label: 'Bitributação', path: '/dual-tax', plan: 'elite' },
+    { icon: Globe2, label: t('layout.nav.dualTax'), path: '/dual-tax', plan: 'elite' },
   ];
 
 const SidebarContent = () => (
@@ -97,9 +100,14 @@ const SidebarContent = () => (
              B
           </div>
           <div className="flex flex-col">
-             <h1 className="font-black text-white text-lg leading-none tracking-tighter uppercase">BrasilInvest</h1>
-             <span className="text-[8px] text-emerald-500 font-black uppercase tracking-[0.3em]">Intelligence Pro</span>
+             <h1 className="font-black text-white text-lg leading-none tracking-tighter uppercase">{t('layout.brand')}</h1>
+             <span className="text-[8px] text-emerald-500 font-black uppercase tracking-[0.3em]">{t('layout.tagline')}</span>
           </div>
+       </div>
+
+       {/* Language Switcher */}
+       <div className="px-4 pb-3 flex-shrink-0 relative z-10">
+          <LanguageSwitcher />
        </div>
 
 {/* Nav - Fixed height with internal scrolling */}
@@ -118,7 +126,7 @@ const SidebarContent = () => (
               const disabled = order.indexOf(currentPlan) < order.indexOf(itemPlan);
 
               // Determine badge color based on plan
-              const planLabel = item.plan.toUpperCase() || '';
+              const planLabel = item.plan ? t(`layout.planBadge.${item.plan}`) : '';
               const badgeColor = itemPlan === 'starter' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' 
                 : itemPlan === 'pro' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20'
                 : itemPlan === 'master' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
@@ -167,13 +175,13 @@ const SidebarContent = () => (
                    </div>
                    <div className="relative z-10">
                       <div className="flex items-center gap-2 text-white font-black text-xs uppercase tracking-[0.2em] mb-2">
-                         <Crown className="w-3.5 h-3.5 text-emerald-400" /> Unlock Intelligence
+                         <Crown className="w-3.5 h-3.5 text-emerald-400" /> {t('layout.cta.title')}
                       </div>
                       <p className="text-[9px] text-gray-500 font-bold uppercase tracking-widest mb-4 leading-relaxed">
-                         Access Tutor AI & Global Arbitrage Radar.
+                         {t('layout.cta.subtitle')}
                       </p>
                       <div className="bg-emerald-500 text-black rounded-xl py-2 px-4 text-[10px] font-black uppercase tracking-[0.25em] text-center group-hover:bg-white transition-all shadow-[0_4px_15px_rgba(16,185,129,0.3)]">
-                         Go Diamond
+                         {t('layout.cta.button')}
                       </div>
                    </div>
                 </div>
@@ -194,16 +202,16 @@ const SidebarContent = () => (
                     }}
                 />
                 <div className="flex flex-col">
-                    <p className="text-sm font-black text-white leading-none tracking-tight">{user?.firstName || 'Operator'}</p>
+                    <p className="text-sm font-black text-white leading-none tracking-tight">{user?.firstName || t('common.operator')}</p>
                     <div className="mt-1.5">
                        {(() => {
                          const p = settings.plan ?? 'free';
                          const config = {
-                           free: { label: 'Bronze', color: 'bg-gray-800 text-gray-400 border-gray-700' },
-                           starter: { label: 'Starter', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
-                           pro: { label: 'Ouro Pro', color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
-                           master: { label: 'Platina', color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' },
-                           elite: { label: 'Diamante', color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' }
+                           free: { label: t('layout.planFooter.free'), color: 'bg-gray-800 text-gray-400 border-gray-700' },
+                           starter: { label: t('layout.planFooter.starter'), color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+                           pro: { label: t('layout.planFooter.pro'), color: 'bg-amber-500/10 text-amber-500 border-amber-500/20' },
+                           master: { label: t('layout.planFooter.master'), color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' },
+                           elite: { label: t('layout.planFooter.elite'), color: 'bg-purple-500/10 text-purple-400 border-purple-500/20' }
                          };
                          const cur = config[p as keyof typeof config] || config.free;
                          return (

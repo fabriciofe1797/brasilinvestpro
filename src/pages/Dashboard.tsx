@@ -21,9 +21,12 @@ import AssetRankings from '../components/AssetRankings';
 import MarketSummary from '../components/MarketSummary';
 import { useDashboardWidgets } from '../hooks/useDashboardWidgets';
 import type { QuoteSource } from '../types';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 const Dashboard: React.FC = () => {
   const { user } = useUser();
+  const { t } = useTranslation();
   const { portfolio, assets, settings } = useStore();
   const metrics = usePortfolioMetrics();
   const { streak: contributionStreak } = useContributionStreak();
@@ -35,7 +38,7 @@ const Dashboard: React.FC = () => {
   const [selectedAssetForModal, setSelectedAssetForModal] = useState<string | undefined>(undefined);
 
   // Get user name - prioritize first name, fall back to full name or email
-  const userName = user?.firstName || user?.fullName || user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'Investidor';
+  const userName = user?.firstName || user?.fullName || user?.primaryEmailAddress?.emailAddress?.split('@')[0] || t('dashboard.investor');
 
   // Calculate Total Value
   const totalValueBRL = metrics.totalMarketValue;
@@ -46,7 +49,7 @@ const Dashboard: React.FC = () => {
   const secCurrency = mainCurrency === 'EUR' ? 'BRL' : 'EUR';
   const secTotalValue = mainCurrency === 'EUR' ? totalValueBRL : totalValueBRL / settings.exchangeRate;
   const exchangeRateLabel = settings.exchangeRateUpdatedAt
-    ? new Date(settings.exchangeRateUpdatedAt).toLocaleString('pt-BR', {
+    ? new Date(settings.exchangeRateUpdatedAt).toLocaleString(i18n.language, {
         day: '2-digit',
         month: '2-digit',
         hour: '2-digit',
@@ -89,9 +92,9 @@ const Dashboard: React.FC = () => {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
-               Olá, <span className="text-emerald-400">{userName}</span>
+               {t('dashboard.welcomeGreeting')} <span className="text-emerald-400">{userName}</span>
             </h1>
-            <p className="text-gray-500 text-sm font-medium">Sua jornada para a liberdade financeira em tempo real.</p>
+            <p className="text-gray-500 text-sm font-medium">{t('dashboard.subtitle')}</p>
           </div>
           <div className="flex items-center gap-4">
             <div className="h-10 w-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/10 transition-colors cursor-pointer">
@@ -101,7 +104,7 @@ const Dashboard: React.FC = () => {
               onClick={() => handleOpenAddModal()}
               className="h-10 px-4 rounded-xl bg-emerald-500 text-black font-black text-xs flex items-center justify-center gap-2 hover:bg-emerald-400 transition-colors cursor-pointer shadow-lg shadow-emerald-500/20"
             >
-               <Plus className="w-4 h-4" /> NOVO APORTE
+               <Plus className="w-4 h-4" /> {t('dashboard.newContribution')}
             </button>
           </div>
         </div>
@@ -123,7 +126,7 @@ const Dashboard: React.FC = () => {
              <div className="relative z-10 flex flex-col h-full justify-between">
                 <div>
                    <div className="flex items-center justify-between mb-8">
-                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">EUR/BRL Real-Time Exchange Rate</span>
+                      <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('dashboard.exchangeRateTitle')}</span>
                       <div className="flex items-center gap-1.5">
                          {isExchangeRatePolling && (
                             <RefreshCw className="w-3 h-3 text-emerald-400 animate-spin" />
@@ -194,10 +197,10 @@ const Dashboard: React.FC = () => {
                             })()}
                          </svg>
                          <div className="flex justify-between mt-2 text-[8px] font-black text-gray-600 uppercase tracking-tighter">
-                            <span>{new Date(exchangeRateHistory[Math.max(0, exchangeRateHistory.length - 48)].timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                            <span>{new Date(exchangeRateHistory[Math.max(0, exchangeRateHistory.length - 24)].timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                            <span>{new Date(exchangeRateHistory[Math.max(0, exchangeRateHistory.length - 12)].timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
-                            <span>{new Date(exchangeRateHistory[exchangeRateHistory.length - 1].timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>{new Date(exchangeRateHistory[Math.max(0, exchangeRateHistory.length - 48)].timestamp).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>{new Date(exchangeRateHistory[Math.max(0, exchangeRateHistory.length - 24)].timestamp).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>{new Date(exchangeRateHistory[Math.max(0, exchangeRateHistory.length - 12)].timestamp).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}</span>
+                            <span>{new Date(exchangeRateHistory[exchangeRateHistory.length - 1].timestamp).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}</span>
                          </div>
                       </>
                    ) : (
@@ -228,7 +231,7 @@ const Dashboard: React.FC = () => {
              </div>
              <div className="relative z-10 flex flex-col h-full justify-between">
                 <div>
-                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-8 block">Total Portfolio Equity</span>
+                  <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-8 block">{t('dashboard.totalEquity')}</span>
                   <h2 className="text-5xl font-black text-white tracking-tighter mb-2">
                     {formatCurrency(mainTotalValue, mainCurrency)}
                   </h2>
@@ -239,11 +242,11 @@ const Dashboard: React.FC = () => {
                 
                 <div className="mt-8 p-4 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
                    <div>
-                      <p className="text-[9px] font-black text-gray-500 uppercase">Renda Mensal</p>
+                      <p className="text-[9px] font-black text-gray-500 uppercase">{t('dashboard.monthlyIncome')}</p>
                       <p className="text-sm font-bold text-emerald-400">{formatCurrency(mainMonthlyIncome, mainCurrency)}</p>
                    </div>
                    <div className="text-right">
-                      <p className="text-[9px] font-black text-gray-500 uppercase">Proj. Anual</p>
+                      <p className="text-[9px] font-black text-gray-500 uppercase">{t('dashboard.annualProjection')}</p>
                       <p className="text-sm font-bold text-white">{formatCurrency(mainMonthlyIncome * 12, mainCurrency)}</p>
                    </div>
                 </div>
@@ -253,7 +256,7 @@ const Dashboard: React.FC = () => {
           {/* MAGIC NUMBER TRACKER (Neon Circular) */}
           <div className="lg:col-span-4 glass-card rounded-[2rem] p-8 border-white/5 hover:border-purple-500/20 transition-all group overflow-hidden relative">
              <div className="relative z-10 flex flex-col items-center justify-center h-full">
-                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-6 w-full">Magic Number Tracker</span>
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-6 w-full">{t('dashboard.magicNumberTracker')}</span>
                 
                 <div className="relative w-40 h-40 flex items-center justify-center">
                    {/* Background Circle */}
@@ -289,9 +292,9 @@ const Dashboard: React.FC = () => {
 
                 <div className="mt-8 text-center text-white">
                    <h3 className="text-xl font-black">
-                      {snowballProgress.toFixed(1)}% <span className="text-gray-600">Concluído</span>
+                      {snowballProgress.toFixed(1)}% <span className="text-gray-600">{t('dashboard.completed')}</span>
                    </h3>
-                   <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">Status: Arriving at Goal</p>
+                   <p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mt-1">{t('dashboard.statusArrivingGoal')}</p>
                 </div>
              </div>
           </div>
@@ -301,11 +304,11 @@ const Dashboard: React.FC = () => {
         <div className="glass-card rounded-[2rem] overflow-hidden border-white/5">
            <div className="p-8 border-b border-white/5 flex justify-between items-center bg-white/[0.01]">
               <div>
-                 <h3 className="text-lg font-black text-white uppercase tracking-tighter underline decoration-emerald-500 decoration-2 underline-offset-4">Top Portfolio Assets</h3>
-                 <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">Sua exposição atual e performance</p>
+                 <h3 className="text-lg font-black text-white uppercase tracking-tighter underline decoration-emerald-500 decoration-2 underline-offset-4">{t('dashboard.topAssetsTitle')}</h3>
+                 <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">{t('dashboard.topAssetsSubtitle')}</p>
               </div>
               <Link to="/market" className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                 Market Intelligence <ArrowRight className="w-3 h-3" />
+                 {t('dashboard.marketIntelligence')} <ArrowRight className="w-3 h-3" />
               </Link>
            </div>
            
@@ -313,13 +316,13 @@ const Dashboard: React.FC = () => {
               <table className="w-full text-left">
                  <thead>
                     <tr className="text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5 px-8">
-                       <th className="px-8 py-6">Asset</th>
-                       <th className="px-8 py-6">Status</th>
-                       <th className="px-8 py-6 text-right">Preço</th>
-                       <th className="px-8 py-6 text-right">P/L</th>
-                       <th className="px-8 py-6 text-right">Div. Yield</th>
-                       <th className="px-8 py-6 text-right">Peso</th>
-                       <th className="px-8 py-6 text-right">Confiança</th>
+                       <th className="px-8 py-6">{t('dashboard.colAsset')}</th>
+                       <th className="px-8 py-6">{t('dashboard.colStatus')}</th>
+                       <th className="px-8 py-6 text-right">{t('dashboard.colPrice')}</th>
+                       <th className="px-8 py-6 text-right">{t('dashboard.colProfitLoss')}</th>
+                       <th className="px-8 py-6 text-right">{t('dashboard.colDividendYield')}</th>
+                       <th className="px-8 py-6 text-right">{t('dashboard.colWeight')}</th>
+                       <th className="px-8 py-6 text-right">{t('dashboard.colConfidence')}</th>
                     </tr>
                  </thead>
                  <tbody className="divide-y divide-white/[0.02]">
@@ -332,7 +335,7 @@ const Dashboard: React.FC = () => {
                                 </div>
                                 <div>
                                    <p className="text-sm font-black text-white">{asset.ticker}</p>
-                                   <p className="text-[10px] text-gray-500 font-bold uppercase">{asset.name || 'Financial Asset'}</p>
+                                   <p className="text-[10px] text-gray-500 font-bold uppercase">{asset.name || t('dashboard.financialAsset')}</p>
                                 </div>
                              </div>
                           </td>
@@ -391,10 +394,10 @@ const Dashboard: React.FC = () => {
            <div className="glass-card rounded-[2rem] p-8 border-white/5">
               <div className="flex items-center justify-between mb-8">
                  <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-3">
-                    <CheckCircle className="w-4 h-4 text-emerald-400" /> Plan Missions
+                    <CheckCircle className="w-4 h-4 text-emerald-400" /> {t('dashboard.planMissions')}
                  </h3>
                  <span className="text-[10px] font-black text-emerald-400 px-3 py-1 bg-emerald-500/10 rounded-full border border-emerald-500/20">
-                    STREAK: {contributionStreak} MO.
+                    {t('dashboard.streak', { meses: contributionStreak })}
                  </span>
               </div>
               <div className="space-y-4">
@@ -436,7 +439,7 @@ const Dashboard: React.FC = () => {
               onClick={() => setShowWidgetConfig(!showWidgetConfig)}
               className="text-[10px] font-black text-gray-500 hover:text-emerald-400 transition-colors uppercase tracking-widest"
             >
-              {showWidgetConfig ? 'Fechar Configuraçao' : 'Personalizar Widgets'}
+              {showWidgetConfig ? t('dashboard.closeConfig') : t('dashboard.customizeWidgets')}
             </button>
           </div>
           {showWidgetConfig && (
@@ -452,7 +455,7 @@ const Dashboard: React.FC = () => {
                       : 'bg-white/5 text-gray-600 border-white/5 hover:text-white'
                   )}
                 >
-                  {w.label}
+                  {t(w.labelKey)}
                 </button>
               ))}
             </div>

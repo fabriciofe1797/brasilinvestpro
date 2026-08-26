@@ -1,18 +1,20 @@
 import React from 'react';
 import { useHealthScore } from '../hooks/useHealthScore';
 import { Activity, AlertTriangle, CheckCircle2, TrendingUp, PieChart } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 const HealthScoreWidget: React.FC = () => {
   const { score, diversification, yield: yieldScore, valuation, discipline, label, color, recommendations } = useHealthScore();
+  const { t } = useTranslation();
 
   const circumference = 2 * Math.PI * 54; // r=54
   const dashOffset = circumference - (circumference * score) / 100;
 
   const pillars = [
-    { name: 'Diversificacao', value: diversification, icon: PieChart, color: '#3b82f6' },
-    { name: 'Rendimento', value: yieldScore, icon: TrendingUp, color: '#10b981' },
-    { name: 'Valuation', value: valuation, icon: Activity, color: '#8b5cf6' },
-    { name: 'Disciplina', value: discipline, icon: CheckCircle2, color: '#f59e0b' },
+    { id: 'diversification', name: t('healthScore.diversification'), value: diversification, icon: PieChart, color: '#3b82f6' },
+    { id: 'yield', name: t('healthScore.yield'), value: yieldScore, icon: TrendingUp, color: '#10b981' },
+    { id: 'valuation', name: t('healthScore.valuation'), value: valuation, icon: Activity, color: '#8b5cf6' },
+    { id: 'discipline', name: t('healthScore.discipline'), value: discipline, icon: CheckCircle2, color: '#f59e0b' },
   ];
 
   return (
@@ -21,7 +23,7 @@ const HealthScoreWidget: React.FC = () => {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Activity className="w-5 h-5 text-emerald-500" />
-          <h3 className="text-lg font-bold text-white">Health Score</h3>
+          <h3 className="text-lg font-bold text-white">{t('healthScore.title')}</h3>
         </div>
         <div
           className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border"
@@ -63,7 +65,7 @@ const HealthScoreWidget: React.FC = () => {
           {pillars.map(p => {
             const Icon = p.icon;
             return (
-              <div key={p.name} className="flex items-center gap-3">
+              <div key={p.id} className="flex items-center gap-3">
                 <Icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: p.color }} />
                 <div className="flex-1">
                   <div className="flex justify-between items-center mb-1">
@@ -88,7 +90,7 @@ const HealthScoreWidget: React.FC = () => {
         <div className="mt-auto pt-4 border-t border-white/5 space-y-2">
           <div className="flex items-center gap-2 mb-2">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Recomendacoes</span>
+            <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">{t('healthScore.recommendations')}</span>
           </div>
           {recommendations.map((rec, i) => (
             <p key={i} className="text-[11px] text-gray-400 font-medium leading-relaxed">
@@ -102,7 +104,7 @@ const HealthScoreWidget: React.FC = () => {
         <div className="mt-auto pt-4 border-t border-white/5">
           <div className="flex items-center gap-2">
             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-            <span className="text-[11px] text-emerald-400 font-bold">Carteira em otimo estado! Continue assim.</span>
+            <span className="text-[11px] text-emerald-400 font-bold">{t('healthScore.greatState')}</span>
           </div>
         </div>
       )}
@@ -110,7 +112,7 @@ const HealthScoreWidget: React.FC = () => {
       {score === 0 && (
         <div className="mt-auto pt-4 border-t border-white/5">
           <p className="text-[11px] text-gray-600 font-bold text-center">
-            Adicione ativos a carteira para calcular seu Health Score.
+            {t('healthScore.empty')}
           </p>
         </div>
       )}

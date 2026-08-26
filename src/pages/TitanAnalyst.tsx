@@ -1,5 +1,6 @@
 import React from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useTitanAnalyst } from '../hooks/useTitanAnalyst';
 import { useStore } from '../store/useStore';
 import { formatCurrency } from '../lib/utils';
@@ -26,6 +27,7 @@ import {
 const TitanAnalyst: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { assets } = useStore();
+  const { t } = useTranslation();
   const analysis = useTitanAnalyst(id || '');
 
   if (!id) return <Navigate to="/market" replace />;
@@ -36,7 +38,7 @@ const TitanAnalyst: React.FC = () => {
   if (!analysis) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="text-gray-500">Carregando análise...</div>
+        <div className="text-gray-500">{t('titan.loading')}</div>
       </div>
     );
   }
@@ -45,12 +47,19 @@ const TitanAnalyst: React.FC = () => {
 
   // Radar chart data
   const radarData = [
-    { axis: 'Dividendos', value: pillars.dividendos },
-    { axis: 'Valuation', value: pillars.valuation },
-    { axis: 'Crescimento', value: pillars.crescimento },
-    { axis: 'Solidez', value: pillars.solidez },
-    { axis: 'Momentum', value: pillars.momentum },
+    { axis: t('titan.pillarDividendos'), value: pillars.dividendos },
+    { axis: t('titan.pillarValuation'), value: pillars.valuation },
+    { axis: t('titan.pillarCrescimento'), value: pillars.crescimento },
+    { axis: t('titan.pillarSolidez'), value: pillars.solidez },
+    { axis: t('titan.pillarMomentum'), value: pillars.momentum },
   ];
+
+  const verdictLabel =
+    verdict === 'COMPRAR'
+      ? t('titanGen.verdictBuy')
+      : verdict === 'MANTER'
+      ? t('titanGen.verdictHold')
+      : t('titanGen.verdictSell');
 
   const verdictColor =
     verdict === 'COMPRAR'
@@ -87,12 +96,12 @@ const TitanAnalyst: React.FC = () => {
         <div className="ml-auto flex items-center gap-6">
           <div className="text-right">
             <div className="text-2xl font-bold text-white">{formatCurrency(asset.price, asset.currency)}</div>
-            <div className="text-sm font-medium text-gray-400">Preço Atual</div>
+            <div className="text-sm font-medium text-gray-400">{t('titan.currentPrice')}</div>
           </div>
           <div
             className={`px-4 py-2 rounded-xl border text-sm font-black uppercase tracking-wider ${verdictColor}`}
           >
-            {verdict}
+            {verdictLabel}
           </div>
         </div>
       </div>
@@ -103,7 +112,7 @@ const TitanAnalyst: React.FC = () => {
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg flex flex-col items-center justify-center">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <Award className="w-5 h-5 text-emerald-500" />
-            Score Titan
+            {t('titan.scoreTitle')}
           </h3>
           <div className="relative w-40 h-40">
             <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
@@ -138,10 +147,10 @@ const TitanAnalyst: React.FC = () => {
           </div>
           <div className="mt-4 text-center">
             <div className={`text-sm font-black uppercase tracking-wider ${verdictColor.split(' ')[0]}`}>
-              {verdict}
+              {verdictLabel}
             </div>
             <p className="text-[11px] text-gray-500 mt-1">
-              {score >= 75 ? 'Oportunidade' : score >= 50 ? 'Manter Posição' : 'Reduzir'}
+              {score >= 75 ? t('titan.verdictOpp') : score >= 50 ? t('titan.verdictHold') : t('titan.verdictReduce')}
             </p>
           </div>
         </div>
@@ -150,7 +159,7 @@ const TitanAnalyst: React.FC = () => {
         <div className="lg:col-span-2 bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-blue-500" />
-            5 Pilares da Análise
+            {t('titan.pillarsTitle')}
           </h3>
           <ResponsiveContainer width="100%" height={280}>
             <RadarChart data={radarData}>
@@ -184,7 +193,7 @@ const TitanAnalyst: React.FC = () => {
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-            Pontos Fortes
+            {t('titan.strengths')}
           </h3>
           {strengths.length > 0 ? (
             <div className="space-y-3">
@@ -199,7 +208,7 @@ const TitanAnalyst: React.FC = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 italic">Nenhum ponto forte destacado.</p>
+            <p className="text-sm text-gray-500 italic">{t('titan.noStrengths')}</p>
           )}
         </div>
 
@@ -207,7 +216,7 @@ const TitanAnalyst: React.FC = () => {
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
           <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-500" />
-            Pontos Fracos
+            {t('titan.weaknesses')}
           </h3>
           {weaknesses.length > 0 ? (
             <div className="space-y-3">
@@ -222,7 +231,7 @@ const TitanAnalyst: React.FC = () => {
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 italic">Nenhum ponto fraco destacado.</p>
+            <p className="text-sm text-gray-500 italic">{t('titan.noWeaknesses')}</p>
           )}
         </div>
       </div>
@@ -231,7 +240,7 @@ const TitanAnalyst: React.FC = () => {
       <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
         <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
           <Target className="w-5 h-5 text-purple-500" />
-          Comparação com o Setor
+          {t('titan.sectorTitle')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* DY */}
@@ -244,7 +253,7 @@ const TitanAnalyst: React.FC = () => {
                 {sectorComparison.dy.toFixed(2)}%
               </span>
               <span className="text-xs text-gray-500 mb-1">
-                vs {sectorComparison.sectorDY.toFixed(2)}% (setor)
+                {t('titan.vsSector', { value: `${sectorComparison.sectorDY.toFixed(2)}%` })}
               </span>
             </div>
             <div
@@ -254,7 +263,7 @@ const TitanAnalyst: React.FC = () => {
                   : 'text-red-400'
               }`}
             >
-              {sectorComparison.dy > sectorComparison.sectorDY ? '↑ Acima' : '↓ Abaixo'}
+              {sectorComparison.dy > sectorComparison.sectorDY ? t('titan.above') : t('titan.below')}
             </div>
           </div>
 
@@ -269,7 +278,7 @@ const TitanAnalyst: React.FC = () => {
                   {sectorComparison.pl.toFixed(1)}
                 </span>
                 <span className="text-xs text-gray-500 mb-1">
-                  vs {sectorComparison.sectorPL.toFixed(1)} (setor)
+                  {t('titan.vsSector', { value: sectorComparison.sectorPL.toFixed(1) })}
                 </span>
               </div>
               <div
@@ -279,7 +288,7 @@ const TitanAnalyst: React.FC = () => {
                     : 'text-amber-400'
                 }`}
               >
-                {sectorComparison.pl < sectorComparison.sectorPL ? '↑ Abaixo (bom)' : '↓ Acima'}
+                {sectorComparison.pl < sectorComparison.sectorPL ? t('titan.belowGood') : t('titan.above')}
               </div>
             </div>
           )}
@@ -294,7 +303,7 @@ const TitanAnalyst: React.FC = () => {
                 {sectorComparison.pvp > 0 ? sectorComparison.pvp.toFixed(2) : 'N/A'}
               </span>
               <span className="text-xs text-gray-500 mb-1">
-                vs {sectorComparison.sectorPVP.toFixed(1)} (setor)
+                {t('titan.vsSector', { value: sectorComparison.sectorPVP.toFixed(1) })}
               </span>
             </div>
             {sectorComparison.pvp > 0 && (
@@ -305,7 +314,7 @@ const TitanAnalyst: React.FC = () => {
                     : 'text-amber-400'
                 }`}
               >
-                {sectorComparison.pvp <= sectorComparison.sectorPVP ? '↑ Abaixo (bom)' : '↓ Acima'}
+                {sectorComparison.pvp <= sectorComparison.sectorPVP ? t('titan.belowGood') : t('titan.above')}
               </div>
             )}
           </div>
@@ -316,7 +325,7 @@ const TitanAnalyst: React.FC = () => {
       <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
         <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <Zap className="w-5 h-5 text-emerald-500" />
-          Análise Titan
+          {t('titan.narrativeTitle')}
         </h3>
         <p className="text-sm text-gray-300 leading-relaxed">{narrative}</p>
       </div>
@@ -325,15 +334,15 @@ const TitanAnalyst: React.FC = () => {
       <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
         <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
           <Shield className="w-5 h-5 text-blue-500" />
-          Detalhamento dos 5 Pilares
+          {t('titan.pillarsDetail')}
         </h3>
         <div className="space-y-4">
           {[
-            { name: 'Dividendos', value: pillars.dividendos, icon: TrendingUp, color: '#10b981' },
-            { name: 'Valuation', value: pillars.valuation, icon: Target, color: '#3b82f6' },
-            { name: 'Crescimento', value: pillars.crescimento, icon: TrendingUp, color: '#8b5cf6' },
-            { name: 'Solidez', value: pillars.solidez, icon: Shield, color: '#f59e0b' },
-            { name: 'Momentum', value: pillars.momentum, icon: Zap, color: '#ef4444' },
+            { name: t('titan.pillarDividendos'), value: pillars.dividendos, icon: TrendingUp, color: '#10b981' },
+            { name: t('titan.pillarValuation'), value: pillars.valuation, icon: Target, color: '#3b82f6' },
+            { name: t('titan.pillarCrescimento'), value: pillars.crescimento, icon: TrendingUp, color: '#8b5cf6' },
+            { name: t('titan.pillarSolidez'), value: pillars.solidez, icon: Shield, color: '#f59e0b' },
+            { name: t('titan.pillarMomentum'), value: pillars.momentum, icon: Zap, color: '#ef4444' },
           ].map(pillar => {
             const Icon = pillar.icon;
             return (

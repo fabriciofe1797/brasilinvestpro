@@ -19,9 +19,11 @@ import {
 import { PieChart, Pie, ResponsiveContainer, Tooltip } from 'recharts';
 import { Link } from 'react-router-dom';
 import AddInvestmentModal from '../components/AddInvestmentModal';
+import { useTranslation } from 'react-i18next';
 
 const RebalancePage: React.FC = () => {
   const { portfolio, assets, alerts, addTransaction, markAlertAsRead } = useStore();
+  const { t } = useTranslation();
   const { getToken } = useAuth();
   const { user } = useUser();
   
@@ -103,7 +105,7 @@ const RebalancePage: React.FC = () => {
     if (!buys || buys.length === 0) return;
 
     const confirmed = window.confirm(
-      `Executar ${buys.length} ordens de compra desta classe com base no plano do Tutor?`
+      t('rebalance.confirmBuys', { count: buys.length })
     );
     if (!confirmed) return;
 
@@ -120,7 +122,7 @@ const RebalancePage: React.FC = () => {
         user?.primaryEmailAddress?.emailAddress || undefined
       );
       if (!profileExists) {
-        alert('Não foi possível validar seu perfil no banco de dados. Tente novamente.');
+        alert(t('rebalance.profileError'));
         return;
       }
     }
@@ -263,7 +265,7 @@ const RebalancePage: React.FC = () => {
               name: a.name,
               quantity: qty,
               total,
-              reason: `Distribuição equilibrada entre os ativos de ${assetClass}.`,
+              reason: t('rebalance.balancedReason', { assetClass }),
             };
           })
           .filter(Boolean) as {
@@ -397,18 +399,18 @@ const RebalancePage: React.FC = () => {
     });
 
     return map;
-  }, [plan, result, portfolio, assets, onlyContributions, contributionInput, sellAggressiveness]);
+  }, [plan, result, portfolio, assets, onlyContributions, contributionInput, sellAggressiveness, t]);
 
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] space-y-6 text-center">
         <Scale className="w-20 h-20 text-gray-700" />
-        <h2 className="text-2xl font-bold text-white">Faça login para rebalancear</h2>
+        <h2 className="text-2xl font-bold text-white">{t('rebalance.loginTitle')}</h2>
         <p className="text-gray-400 max-w-md">
-          Para rebalancear sua carteira usando a Bússola Autoinvest, você precisa estar autenticado e ter um plano oficial salvo.
+          {t('rebalance.loginDesc')}
         </p>
         <Link to="/advisor" className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full transition-all">
-          Criar plano com o Tutor
+          {t('rebalance.loginCta')}
         </Link>
       </div>
     );
@@ -426,14 +428,12 @@ const RebalancePage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] space-y-6 text-center">
         <Scale className="w-20 h-20 text-gray-700" />
-        <h2 className="text-2xl font-bold text-white">Plano de Investimentos Não Encontrado</h2>
+        <h2 className="text-2xl font-bold text-white">{t('rebalance.noPlanTitle')}</h2>
         <p className="text-gray-400 max-w-md">
-          Para rebalancear sua carteira, gere e salve um plano oficial com a Bússola Autoinvest na tela do Tutor.
-          Se você já fez simulações sem login, entre na sua conta, gere um novo plano e ele ficará disponível aqui
-          automaticamente.
+          {t('rebalance.noPlanDesc')}
         </p>
         <Link to="/advisor" className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 px-8 rounded-full transition-all">
-          Ir para o Tutor
+          {t('rebalance.noPlanCta')}
         </Link>
       </div>
     );
@@ -443,9 +443,9 @@ const RebalancePage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] space-y-6 text-center">
         <PieIcon className="w-20 h-20 text-gray-700" />
-        <h2 className="text-2xl font-bold text-white">Carteira Vazia</h2>
+        <h2 className="text-2xl font-bold text-white">{t('rebalance.emptyTitle')}</h2>
         <p className="text-gray-400 max-w-md">
-          Adicione seus ativos ou transações para que possamos comparar com seu plano ideal.
+          {t('rebalance.emptyDesc')}
         </p>
       </div>
     );
@@ -467,34 +467,32 @@ const RebalancePage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col space-y-2">
         <div className="flex items-center gap-2">
-           <h1 className="text-2xl font-bold tracking-tight text-white">Rebalanceamento Inteligente</h1>
-           <span className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">Pro</span>
+           <h1 className="text-2xl font-bold tracking-tight text-white">{t('rebalance.title')}</h1>
+           <span className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">{t('rebalance.badge')}</span>
            <div className="relative inline-block group">
              <Info className="w-3 h-3 text-emerald-400 cursor-default" />
              <div className="absolute left-1/2 -translate-x-1/2 mt-2 z-20 hidden group-hover:block">
                <div className="bg-black/80 text-white text-[10px] font-bold px-2 py-1 rounded-md border border-white/10 max-w-xs text-center">
-                 Rebalanceia a carteira para aproximar as classes da meta definida no Tutor,
-                 priorizando vendas em ativos com maior ganho e protegendo, sempre que
-                 possível, as cotas que já atingiram o Número Mágico.
+                 {t('rebalance.tooltip')}
                </div>
              </div>
            </div>
         </div>
         <p className="text-gray-400 text-sm">
-          Ajuste sua carteira para manter o risco controlado e seguir o plano do Tutor.
+          {t('rebalance.subtitle')}
         </p>
         {planSource === 'local' && (
           <div className="inline-flex items-center gap-2 text-[11px] bg-blue-500/10 text-blue-200 px-3 py-1.5 rounded-full border border-blue-500/40 mt-1">
             <AlertTriangle className="w-3 h-3" />
             <span>
-              Plano carregado deste dispositivo. Salve na nuvem pelo Tutor para torná-lo oficial.
+              {t('rebalance.planLocalNote')}
             </span>
           </div>
         )}
         {planSource === 'cloud' && (
           <div className="inline-flex items-center gap-2 text-[11px] bg-emerald-500/10 text-emerald-200 px-3 py-1.5 rounded-full border border-emerald-500/40 mt-1">
             <CheckCircle className="w-3 h-3" />
-            <span>Plano oficial carregado da nuvem para este rebalanceamento.</span>
+            <span>{t('rebalance.planCloudNote')}</span>
           </div>
         )}
         {driftAlert && (
@@ -512,7 +510,7 @@ const RebalancePage: React.FC = () => {
                 onClick={() => markAlertAsRead(driftAlert.id)}
                 className="text-[10px] font-semibold text-amber-200 hover:text-white"
               >
-                Marcar como lido
+                {t('rebalance.markRead')}
               </button>
             )}
           </div>
@@ -532,7 +530,7 @@ const RebalancePage: React.FC = () => {
                 onClick={handleNewContribution}
                 className="px-3 py-1 rounded-lg bg-emerald-400 text-black font-semibold text-[10px] hover:bg-emerald-300"
               >
-                Registrar novo aporte
+                {t('rebalance.registerContribution')}
               </button>
               {!contributionAlert.read && (
                 <button
@@ -540,7 +538,7 @@ const RebalancePage: React.FC = () => {
                   onClick={() => markAlertAsRead(contributionAlert.id)}
                   className="text-[10px] font-semibold text-emerald-200 hover:text-white"
                 >
-                  Marcar como lido
+                  {t('rebalance.markRead')}
                 </button>
               )}
             </div>
@@ -549,7 +547,7 @@ const RebalancePage: React.FC = () => {
         <div className="inline-flex items-center gap-2 text-[11px] bg-white/5 text-gray-200 px-3 py-1.5 rounded-full border border-white/10 mt-2">
           <ArrowRight className="w-3 h-3 text-emerald-400" />
           <span>
-            Clique em <span className="font-bold text-emerald-400">Executar</span> nas sugestões para lançar a ordem direto na carteira.
+            {t('rebalance.executeHintStart')} <span className="font-bold text-emerald-400">{t('rebalance.executeHintHighlight')}</span> {t('rebalance.executeHintEnd')}
           </span>
         </div>
       </div>
@@ -557,14 +555,14 @@ const RebalancePage: React.FC = () => {
       {/* Score Card */}
       <div className="bg-[#0B1C17] border border-white/10 p-6 rounded-2xl flex items-center justify-between">
          <div>
-            <h3 className="text-lg font-bold text-white mb-1">Aderência ao Plano</h3>
-            <p className="text-sm text-gray-400">O quão perto você está da alocação ideal.</p>
+            <h3 className="text-lg font-bold text-white mb-1">{t('rebalance.adherenceTitle')}</h3>
+            <p className="text-sm text-gray-400">{t('rebalance.adherenceSub')}</p>
          </div>
          <div className="flex items-center gap-4">
             <div className="text-right">
                <div className="text-3xl font-bold text-white">{result.score.toFixed(0)}%</div>
                <div className={`text-xs font-bold ${result.score > 80 ? 'text-emerald-400' : (result.score > 50 ? 'text-yellow-400' : 'text-red-400')}`}>
-                  {result.score > 80 ? 'Excelente' : (result.score > 50 ? 'Atenção' : 'Desbalanceado')}
+                  {result.score > 80 ? t('rebalance.scoreExcellent') : (result.score > 50 ? t('rebalance.scoreAttention') : t('rebalance.scoreUnbalanced'))}
                </div>
             </div>
             <div className="h-16 w-16 relative">
@@ -591,9 +589,9 @@ const RebalancePage: React.FC = () => {
 
       <div className="bg-[#0B1C17] border border-red-500/30 p-4 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-red-300 uppercase tracking-wider">Agressividade das vendas</span>
+          <span className="text-xs font-semibold text-red-300 uppercase tracking-wider">{t('rebalance.aggressivenessLabel')}</span>
           <span className="text-xs text-gray-300">
-            Controle quanto vender ao rebalancear. Conservador vende menos, agressivo vende o máximo sugerido.
+            {t('rebalance.aggressivenessDesc')}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -606,7 +604,7 @@ const RebalancePage: React.FC = () => {
                 : 'border-white/20 text-gray-200 hover:bg-white/5'
             }`}
           >
-            Conservador
+            {t('rebalance.conservative')}
           </button>
           <button
             type="button"
@@ -617,7 +615,7 @@ const RebalancePage: React.FC = () => {
                 : 'border-white/20 text-gray-200 hover:bg-white/5'
             }`}
           >
-            Balanceado
+            {t('rebalance.balanced')}
           </button>
           <button
             type="button"
@@ -628,16 +626,16 @@ const RebalancePage: React.FC = () => {
                 : 'border-white/20 text-gray-200 hover:bg-white/5'
             }`}
           >
-            Agressivo
+            {t('rebalance.aggressive')}
           </button>
         </div>
       </div>
 
       <div className="bg-[#0B1C17] border border-emerald-500/30 p-4 rounded-2xl flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wider">Modo só aporte</span>
+          <span className="text-xs font-semibold text-emerald-300 uppercase tracking-wider">{t('rebalance.contribOnlyLabel')}</span>
           <span className="text-xs text-gray-300">
-            Use apenas novos aportes para se aproximar do plano sem vender nada nesta rodada.
+            {t('rebalance.contribOnlyDesc')}
           </span>
         </div>
         <div className="flex flex-col items-start md:items-end gap-2">
@@ -648,10 +646,10 @@ const RebalancePage: React.FC = () => {
               checked={onlyContributions}
               onChange={e => setOnlyContributions(e.target.checked)}
             />
-            <span>Usar apenas novos aportes (sem vender agora)</span>
+            <span>{t('rebalance.contribOnlyCheckbox')}</span>
           </label>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-400">Aporte agora</span>
+            <span className="text-[11px] text-gray-400">{t('rebalance.contributeNow')}</span>
             <div className="flex items-center rounded-lg border border-white/10 bg-black/40 px-2 py-1">
               <span className="text-[11px] text-gray-400 mr-1">R$</span>
               <input
@@ -670,7 +668,7 @@ const RebalancePage: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
          {/* Action List */}
          <div className="lg:col-span-2 space-y-4">
-            <h3 className="text-lg font-bold text-white flex items-center gap-2"><Scale className="w-5 h-5 text-blue-500"/> Sugestões de Ajuste</h3>
+            <h3 className="text-lg font-bold text-white flex items-center gap-2"><Scale className="w-5 h-5 text-blue-500"/> {t('rebalance.suggestionsTitle')}</h3>
             
             {result.suggestions.map((sug, idx) => {
                const details = perClassAssetSuggestions[sug.assetClass];
@@ -699,11 +697,11 @@ const RebalancePage: React.FC = () => {
                   <div className="flex-1 w-full">
                      <div className="flex items-center gap-2 mb-1">
                         <h4 className="font-bold text-white">{sug.assetClass}</h4>
-                        {sug.status === 'CRITICAL' && <span className="text-[10px] bg-red-500 text-white px-2 rounded-full">Crítico</span>}
+                        {sug.status === 'CRITICAL' && <span className="text-[10px] bg-red-500 text-white px-2 rounded-full">{t('rebalance.critical')}</span>}
                      </div>
                      <div className="flex items-center gap-4 text-xs text-gray-400">
-                        <span>Atual: <strong className="text-white">{sug.currentPercentage.toFixed(1)}%</strong></span>
-                        <span>Meta: <strong className="text-white">{sug.targetPercentage.toFixed(1)}%</strong></span>
+                        <span>{t('rebalance.currentLabel')} <strong className="text-white">{sug.currentPercentage.toFixed(1)}%</strong></span>
+                        <span>{t('rebalance.targetLabel')} <strong className="text-white">{sug.targetPercentage.toFixed(1)}%</strong></span>
                      </div>
                      <div className="w-full bg-gray-800 h-1.5 rounded-full mt-2 overflow-hidden">
                         <div className="h-full bg-blue-500/50" style={{ width: `${sug.targetPercentage}%` }}></div>
@@ -713,14 +711,14 @@ const RebalancePage: React.FC = () => {
                       <div className="mt-3 space-y-1 text-xs text-gray-300">
                         <div className="flex items-center justify-between">
                           <div className="text-[10px] uppercase tracking-wider text-emerald-300/80 font-semibold">
-                            Sugestões de compra do Tutor
+                            {t('rebalance.tutorBuys')}
                           </div>
                           <button
                             type="button"
                             onClick={() => executeAllBuys(details.buys!)}
                             className="text-[10px] px-3 py-1 rounded-full border border-emerald-500/60 text-emerald-300 hover:bg-emerald-500/10"
                           >
-                            Executar todas
+                            {t('rebalance.executeAll')}
                           </button>
                         </div>
                         {details.buys.map(buy => (
@@ -735,26 +733,26 @@ const RebalancePage: React.FC = () => {
                                 onClick={() => openTrade(buy.ticker, 'BUY', buy.quantity)}
                                 className="text-[10px] px-2 py-1 rounded-lg border border-emerald-500/60 text-emerald-400 hover:bg-emerald-500/10"
                               >
-                                Executar
+                                {t('rebalance.execute')}
                               </button>
                             </div>
                           </div>
                         ))}
                         <div className="text-[10px] text-gray-400">
-                          Total das sugestões:{' '}
+                          {t('rebalance.totalLabel')}{' '}
                           <span className="font-mono text-white">
                             {formatCurrency(buyTotal, 'BRL')}
                           </span>
-                          {' '}de{' '}
+                          {' '}{t('rebalance.of')}{' '}
                           <span className="font-mono text-white">
                             {formatCurrency(Math.abs(sug.difference), 'BRL')}
-                          </span>{' '}planejados
+                          </span>{' '}{t('rebalance.planned')}
                         </div>
                       </div>
                     )}
                     {details?.sells && details.sells.length > 0 && (
                       <div className="mt-3 space-y-1 text-xs text-gray-300">
-                        <div className="text-[10px] uppercase tracking-wider text-red-300/80 font-semibold">Sugestões de venda por desempenho</div>
+                        <div className="text-[10px] uppercase tracking-wider text-red-300/80 font-semibold">{t('rebalance.sellsTitle')}</div>
                         {details.sells.map(sell => (
                           <div key={sell.ticker} className="flex items-center justify-between gap-3">
                             <span className="truncate mr-2">
@@ -769,20 +767,20 @@ const RebalancePage: React.FC = () => {
                                 onClick={() => openTrade(sell.ticker, 'SELL', sell.quantity)}
                                 className="text-[10px] px-2 py-1 rounded-lg border border-red-500/60 text-red-400 hover:bg-red-500/10"
                               >
-                                Executar
+                                {t('rebalance.execute')}
                               </button>
                             </div>
                           </div>
                         ))}
                         <div className="text-[10px] text-gray-400">
-                          Total das sugestões:{' '}
+                          {t('rebalance.totalLabel')}{' '}
                           <span className="font-mono text-white">
                             {formatCurrency(sellTotal, 'BRL')}
                           </span>
-                          {' '}de{' '}
+                          {' '}{t('rebalance.of')}{' '}
                           <span className="font-mono text-white">
                             {formatCurrency(Math.abs(sug.difference), 'BRL')}
-                          </span>{' '}planejados
+                          </span>{' '}{t('rebalance.planned')}
                         </div>
                       </div>
                     )}
@@ -792,14 +790,14 @@ const RebalancePage: React.FC = () => {
                     {panelAction === 'HOLD' ? (
                         <div className="flex items-center gap-2 text-emerald-500 bg-emerald-500/10 px-4 py-2 rounded-lg">
                            <CheckCircle className="w-5 h-5" />
-                           <span className="font-bold">Manter</span>
+                           <span className="font-bold">{t('rebalance.hold')}</span>
                         </div>
                      ) : (
                         <div className={`flex items-center gap-3 px-4 py-2 rounded-lg w-full justify-between ${
                            panelAction === 'BUY' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'
                         }`}>
                            <div className="flex flex-col">
-                              <span className="text-[10px] font-bold uppercase tracking-wider">{panelAction === 'BUY' ? 'Comprar' : 'Vender'}</span>
+                              <span className="text-[10px] font-bold uppercase tracking-wider">{panelAction === 'BUY' ? t('rebalance.buy') : t('rebalance.sell')}</span>
                               <span className="font-mono font-bold text-lg">{formatCurrency(panelAmount, 'BRL')}</span>
                            </div>
                            {panelAction === 'BUY' ? <ArrowLeft className="w-6 h-6 rotate-45" /> : <ArrowRight className="w-6 h-6 -rotate-45" />}
@@ -812,7 +810,7 @@ const RebalancePage: React.FC = () => {
 
          {/* Mini Chart */}
          <div className="bg-[#0B1C17] border border-white/10 p-6 rounded-2xl h-fit">
-            <h3 className="text-lg font-bold text-white mb-4">Atual vs Meta</h3>
+            <h3 className="text-lg font-bold text-white mb-4">{t('rebalance.chartTitle')}</h3>
             <div className="h-[250px] w-full">
                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -846,8 +844,8 @@ const RebalancePage: React.FC = () => {
                </ResponsiveContainer>
             </div>
             <div className="flex justify-center gap-4 text-xs mt-4">
-               <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-500 rounded-full"></div> Atual</div>
-               <div className="flex items-center gap-1"><div className="w-3 h-3 bg-emerald-500 rounded-full"></div> Meta</div>
+               <div className="flex items-center gap-1"><div className="w-3 h-3 bg-blue-500 rounded-full"></div> {t('rebalance.legendCurrent')}</div>
+               <div className="flex items-center gap-1"><div className="w-3 h-3 bg-emerald-500 rounded-full"></div> {t('rebalance.legendTarget')}</div>
             </div>
          </div>
       </div>

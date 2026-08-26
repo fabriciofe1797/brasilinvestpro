@@ -5,6 +5,7 @@ import { calculateClassicCeiling } from '../lib/formulas';
 import { useStore } from '../store/useStore';
 import { Info, TrendingUp, TrendingDown, Target } from 'lucide-react';
 import FreshnessBadge from './FreshnessBadge';
+import { useTranslation } from 'react-i18next';
 
 interface AssetCardProps {
   asset: Asset;
@@ -17,6 +18,7 @@ interface AssetCardProps {
 
 const AssetCard: React.FC<AssetCardProps> = ({ asset, onClick, quote, source, updatedAt }) => {
   const { portfolio, settings } = useStore();
+  const { t } = useTranslation();
   
   // Find user's position for this asset
   const userPosition = portfolio.find(p => p.assetId === asset.id);
@@ -119,7 +121,7 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, onClick, quote, source, up
         <div className="flex items-center justify-between px-4 py-2 mb-4 rounded-xl bg-white/[0.02] border border-white/5 relative z-10">
           <div className="flex items-center gap-1.5">
             <Target className="w-3 h-3 text-emerald-500" />
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Preço Teto</span>
+            <span className="text-[9px] font-black text-gray-500 uppercase tracking-widest">{t('assetCard.ceilingPrice')}</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold text-gray-400">{formatCurrency(classicCeiling!, asset.currency)}</span>
@@ -134,13 +136,13 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, onClick, quote, source, up
       {ownedQuantity > 0 && (
          <div className="grid grid-cols-2 gap-6 py-4 border-t border-white/5 relative z-10">
            <div>
-             <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest block mb-1">Total Input</span>
+             <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest block mb-1">{t('assetCard.totalInvested')}</span>
              <div className="text-white font-black text-sm tracking-tight">{formatCurrency(investedBRL, 'BRL')}</div>
              <div className="text-emerald-500 text-[10px] font-bold">~ {formatCurrency(investedEUR, 'EUR')}</div>
            </div>
            
            <div className="text-right">
-             <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest block mb-1">Mo. Yield Est.</span>
+             <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest block mb-1">{t('assetCard.estMonthlyIncome')}</span>
              <div className="text-emerald-400 font-black text-sm tracking-tight">+ {formatCurrency(monthlyIncomeBRL, 'BRL')}</div>
              <div className="text-emerald-700 text-[10px] font-bold">~ {formatCurrency(monthlyIncomeEUR, 'EUR')}</div>
            </div>
@@ -151,12 +153,12 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, onClick, quote, source, up
       <div className="pt-4 border-t border-white/5 relative z-10">
         <div className="flex justify-between items-center mb-3">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Snowball Index</span>
+            <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{t('assetCard.snowballIndex')}</span>
             <div className="relative inline-block group">
               <Info className="w-3 h-3 text-emerald-400/50 cursor-help" />
               <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-3 z-30 hidden group-hover:block transition-all">
                 <div className="glass-card text-white text-[10px] font-black uppercase tracking-tight px-3 py-2 rounded-xl border border-emerald-500/20 w-48 text-center shadow-2xl">
-                   Efficiency of dividends to auto-reinvest in 1 full share/month.
+                   {t('assetCard.snowballHint')}
                 </div>
               </div>
             </div>
@@ -177,11 +179,11 @@ const AssetCard: React.FC<AssetCardProps> = ({ asset, onClick, quote, source, up
 
         <div className="mt-3 flex justify-between items-center">
            <p className="text-[9px] font-black text-gray-600 uppercase tracking-widest">
-              {magic.remaining > 0 ? `${magic.remaining} Shares Left` : 'Goal Integrated'}
+              {magic.remaining > 0 ? t('assetCard.sharesRemaining', { qtd: magic.remaining }) : t('assetCard.goalIntegrated')}
            </p>
            {magic.remaining > 0 && magicNumber > 0 && (
               <span className="text-[9px] font-black text-white px-2 py-0.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 uppercase tracking-widest">
-                 ~ {formatCurrency(costToGoalEUR, 'EUR')} Needed
+                 ~ {formatCurrency(costToGoalEUR, 'EUR')} {t('assetCard.neededSuffix')}
               </span>
            )}
         </div>

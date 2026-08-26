@@ -60,7 +60,7 @@ const ChatAdvisorPage: React.FC = () => {
             <Bot className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-black text-white tracking-tight">Chat Advisor</h1>
+            <h1 className="text-2xl font-black text-white tracking-tight">Assessor por Chat</h1>
             <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">
               Assistente IA • Dados em tempo real
             </p>
@@ -84,7 +84,7 @@ const ChatAdvisorPage: React.FC = () => {
           {messages.length === 0 && (
             <div className="p-6 border-b border-white/5">
               <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest mb-3">
-                Sugestoes rapidas
+                Sugestões rápidas
               </p>
               <div className="flex flex-wrap gap-2">
                 {quickSuggestions.map((suggestion, i) => (
@@ -107,10 +107,10 @@ const ChatAdvisorPage: React.FC = () => {
                 <div className="w-16 h-16 rounded-3xl bg-gradient-to-br from-emerald-500/20 to-blue-500/20 flex items-center justify-center mb-4">
                   <Sparkles className="w-8 h-8 text-emerald-500" />
                 </div>
-                <h3 className="text-lg font-bold text-white mb-2">Ola! Sou seu Chat Advisor</h3>
+                <h3 className="text-lg font-bold text-white mb-2">Olá! Sou seu Assessor por Chat</h3>
                 <p className="text-sm text-gray-500 max-w-md">
-                  Pergunte sobre sua carteira, dividendos, P/L, analise de ativos, ou conceitos financeiros.
-                  Uso dados reais do seu portfolio para responder.
+                  Pergunte sobre sua carteira, dividendos, P/L, análise de ativos, ou conceitos financeiros.
+                  Uso dados reais do seu portfólio para responder.
                 </p>
               </div>
             )}
@@ -173,7 +173,7 @@ const ChatAdvisorPage: React.FC = () => {
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder="Pergunte sobre sua carteira, dividendos, analise de ativos..."
+                placeholder="Pergunte sobre sua carteira, dividendos, análise de ativos..."
                 className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50 transition-colors"
                 disabled={isTyping}
               />
@@ -207,7 +207,7 @@ const ChatAdvisorPage: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[10px] text-gray-500">Renda/Mes</span>
+                <span className="text-[10px] text-gray-500">Renda/Mês</span>
                 <span className="text-[10px] font-bold text-emerald-400">{formatCurrency(context.monthlyIncome, 'BRL')}</span>
               </div>
             </div>
@@ -216,7 +216,7 @@ const ChatAdvisorPage: React.FC = () => {
           <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-4">
             <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
               <Activity className="w-3.5 h-3.5" />
-              Saude
+              Saúde
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between">
@@ -226,7 +226,7 @@ const ChatAdvisorPage: React.FC = () => {
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[10px] text-gray-500">Streak</span>
+                <span className="text-[10px] text-gray-500">Sequência</span>
                 <span className="text-[10px] font-bold text-white">{context.streak} meses</span>
               </div>
               <div className="flex justify-between">

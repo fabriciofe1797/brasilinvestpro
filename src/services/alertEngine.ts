@@ -1,5 +1,6 @@
 import { Asset, PortfolioItem } from '../types';
 import { calculateClassicCeiling } from '../lib/formulas';
+import i18n from '../i18n';
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -121,19 +122,21 @@ export const generateSmartAlerts = (ctx: AlertContext): SmartAlert[] => {
 
   for (const div of upcomingDivs) {
     const daysUntil = Math.ceil((new Date(div.exDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const daysText = daysUntil === 0 ? i18n.t('alertEngine.today') : i18n.t('alertEngine.daysCount', { count: daysUntil });
+    const typeLabel = div.type === 'dividendo' ? i18n.t('alertEngine.typeDividendo') : div.type === 'jcp' ? i18n.t('alertEngine.typeJcp') : i18n.t('alertEngine.typeRendimento');
     alerts.push({
       id: `div_${div.ticker}_${div.exDate}`,
       type: 'dividend_upcoming',
       severity: daysUntil <= 2 ? 'critical' : 'info',
-      title: `Dividendo ${daysUntil <= 2 ? 'imminente' : 'proximo'}: ${div.ticker}`,
-      message: `Ex-dividend em ${daysUntil === 0 ? 'hoje' : `${daysUntil} dia${daysUntil > 1 ? 's' : ''}`}. Estimativa: R$ ${div.totalEstimated.toFixed(2)} (${div.type}).`,
+      title: i18n.t(daysUntil <= 2 ? 'alertEngine.divTitleImminent' : 'alertEngine.divTitleUpcoming', { ticker: div.ticker }),
+      message: i18n.t('alertEngine.divMessage', { days: daysText, value: div.totalEstimated.toFixed(2), type: typeLabel }),
       ticker: div.ticker,
       value: div.totalEstimated,
       timestamp: now.toISOString(),
       read: false,
       actionable: daysUntil <= 2
-        ? 'Compre ate hoje para ter direito ao dividendo.'
-        : `Avalie comprar antes da data ex para receber R$ ${div.totalEstimated.toFixed(2)}.`,
+        ? i18n.t('alertEngine.divActionableNow')
+        : i18n.t('alertEngine.divActionableLater', { value: div.totalEstimated.toFixed(2) }),
     });
   }
 
@@ -153,26 +156,26 @@ export const generateSmartAlerts = (ctx: AlertContext): SmartAlert[] => {
         id: `opp_${asset.ticker}`,
         type: 'opportunity',
         severity: upside >= 25 ? 'success' : 'info',
-        title: `Oportunidade: ${asset.ticker} abaixo do preco teto`,
-        message: `Preco atual R$ ${asset.price.toFixed(2)} vs teto R$ ${ceiling.toFixed(2)} (+${upside.toFixed(1)}%). Modelo Bazin.`,
+        title: i18n.t('alertEngine.oppTitle', { ticker: asset.ticker }),
+        message: i18n.t('alertEngine.oppMessage', { price: asset.price.toFixed(2), ceiling: ceiling.toFixed(2), upside: upside.toFixed(1) }),
         ticker: asset.ticker,
         value: upside,
         timestamp: now.toISOString(),
         read: false,
-        actionable: `Considere aportar em ${asset.ticker}. Desconto de ${upside.toFixed(0)}% vs preco teto.`,
+        actionable: i18n.t('alertEngine.oppActionable', { ticker: asset.ticker, upside: upside.toFixed(0) }),
       });
     } else if (upside <= -20) {
       alerts.push({
         id: `overval_${asset.ticker}`,
         type: 'price_target_hit',
         severity: 'warning',
-        title: `${asset.ticker} acima do preco teto`,
-        message: `Preco R$ ${asset.price.toFixed(2)} vs teto R$ ${ceiling.toFixed(2)} (${upside.toFixed(1)}%). Sobrevalorizado.`,
+        title: i18n.t('alertEngine.overvalTitle', { ticker: asset.ticker }),
+        message: i18n.t('alertEngine.overvalMessage', { price: asset.price.toFixed(2), ceiling: ceiling.toFixed(2), upside: upside.toFixed(1) }),
         ticker: asset.ticker,
         value: upside,
         timestamp: now.toISOString(),
         read: false,
-        actionable: `Avalie reduzir posicao em ${asset.ticker} ou nao aportar no momento.`,
+        actionable: i18n.t('alertEngine.overvalActionable', { ticker: asset.ticker }),
       });
     }
   }
@@ -188,21 +191,21 @@ export const generateSmartAlerts = (ctx: AlertContext): SmartAlert[] => {
         id: 'contribution_reminder',
         type: 'contribution_reminder',
         severity: isEndOfMonth ? 'critical' : 'warning',
-        title: isEndOfMonth ? 'Streak em risco!' : 'Aporte mensal pendente',
+        title: isEndOfMonth ? i18n.t('alertEngine.streakRiskTitle') : i18n.t('alertEngine.contributionPendingTitle'),
         message: isEndOfMonth
-          ? 'Faltam poucos dias para fechar o mes sem aporte. Seu streak sera zerado!'
-          : 'Voce ainda nao aportou este mes. Mantenha a disciplina!',
+          ? i18n.t('alertEngine.streakRiskMessage')
+          : i18n.t('alertEngine.contributionPendingMessage'),
         timestamp: now.toISOString(),
         read: false,
-        actionable: 'Faca um aporte antes do fim do mes para manter seu streak.',
+        actionable: i18n.t('alertEngine.contributionActionable'),
       });
     } else if (ctx.streak >= 3) {
       alerts.push({
         id: 'streak_positive',
         type: 'contribution_reminder',
         severity: 'success',
-        title: `Streak: ${ctx.streak} meses consecutivos!`,
-        message: `Parabens! Voce esta ha ${ctx.streak} meses aportando consistentemente.`,
+        title: i18n.t('alertEngine.streakPositiveTitle', { count: ctx.streak }),
+        message: i18n.t('alertEngine.streakPositiveMessage', { count: ctx.streak }),
         timestamp: now.toISOString(),
         read: false,
       });
@@ -217,11 +220,11 @@ export const generateSmartAlerts = (ctx: AlertContext): SmartAlert[] => {
         id: 'sector_concentration',
         type: 'sector_rotation',
         severity: topCategory.weight > 70 ? 'critical' : 'warning',
-        title: `Concentracao em ${topCategory.category}`,
-        message: `${topCategory.category} representa ${topCategory.weight.toFixed(1)}% da carteira. Diversificacao recomendada.`,
+        title: i18n.t('alertEngine.concentrationTitle', { category: topCategory.category }),
+        message: i18n.t('alertEngine.concentrationMessage', { category: topCategory.category, weight: topCategory.weight.toFixed(1) }),
         timestamp: now.toISOString(),
         read: false,
-        actionable: `Considere diversificar para outras categorias e reduzir o peso em ${topCategory.category}.`,
+        actionable: i18n.t('alertEngine.concentrationActionable', { category: topCategory.category }),
       });
     }
   }
@@ -233,8 +236,8 @@ export const generateSmartAlerts = (ctx: AlertContext): SmartAlert[] => {
         id: 'health_excellent',
         type: 'health_score_change',
         severity: 'success',
-        title: 'Carteira em estado excelente!',
-        message: `Health Score: ${ctx.healthScore}/100. Sua carteira esta bem diversificada, rendendo e com boa disciplina.`,
+        title: i18n.t('alertEngine.healthExcellentTitle'),
+        message: i18n.t('alertEngine.healthExcellentMessage', { score: ctx.healthScore }),
         timestamp: now.toISOString(),
         read: false,
       });
@@ -243,11 +246,11 @@ export const generateSmartAlerts = (ctx: AlertContext): SmartAlert[] => {
         id: 'health_critical',
         type: 'health_score_change',
         severity: 'critical',
-        title: 'Health Score critico',
-        message: `Health Score: ${ctx.healthScore}/100. Sua carteira precisa de atencao em diversificacao, rendimento ou disciplina.`,
+        title: i18n.t('alertEngine.healthCriticalTitle'),
+        message: i18n.t('alertEngine.healthCriticalMessage', { score: ctx.healthScore }),
         timestamp: now.toISOString(),
         read: false,
-        actionable: 'Revise a aba Health Score para ver recomendacoes especificas.',
+        actionable: i18n.t('alertEngine.healthCriticalActionable'),
       });
     }
   }
@@ -260,8 +263,8 @@ export const generateSmartAlerts = (ctx: AlertContext): SmartAlert[] => {
         id: 'income_goal',
         type: 'dividend_upcoming',
         severity: 'success',
-        title: 'Meta de renda mensal atingida!',
-        message: `Renda mensal projetada: R$ ${ctx.monthlyIncome.toFixed(2)} (meta: R$ ${targetMonthly.toFixed(2)}).`,
+        title: i18n.t('alertEngine.incomeGoalTitle'),
+        message: i18n.t('alertEngine.incomeGoalMessage', { income: ctx.monthlyIncome.toFixed(2), target: targetMonthly.toFixed(2) }),
         timestamp: now.toISOString(),
         read: false,
       });

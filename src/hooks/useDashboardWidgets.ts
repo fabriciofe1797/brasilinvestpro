@@ -9,19 +9,19 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 
 export interface WidgetConfig {
   id: string;
-  label: string;
+  labelKey: string;
   defaultEnabled: boolean;
 }
 
 export const AVAILABLE_WIDGETS: WidgetConfig[] = [
-  { id: 'resumo_carteira', label: 'Resumo da Carteira', defaultEnabled: true },
-  { id: 'numero_magico', label: 'Numero Magico', defaultEnabled: true },
-  { id: 'grafico_eurbrl', label: 'Grafico EUR/BRL', defaultEnabled: true },
-  { id: 'proventos', label: 'Proximos Dividendos', defaultEnabled: true },
-  { id: 'alertas', label: 'Alertas', defaultEnabled: true },
-  { id: 'market_overview', label: 'Market Overview', defaultEnabled: true },
-  { id: 'rankings', label: 'Rankings', defaultEnabled: true },
-  { id: 'fiis_destaque', label: 'FIIs em Destaque', defaultEnabled: false },
+  { id: 'resumo_carteira', labelKey: 'widgetsGen.resumo', defaultEnabled: true },
+  { id: 'numero_magico', labelKey: 'widgetsGen.numeroMagico', defaultEnabled: true },
+  { id: 'grafico_eurbrl', labelKey: 'widgetsGen.graficoEurBrl', defaultEnabled: true },
+  { id: 'proventos', labelKey: 'widgetsGen.proventos', defaultEnabled: true },
+  { id: 'alertas', labelKey: 'widgetsGen.alertas', defaultEnabled: true },
+  { id: 'market_overview', labelKey: 'widgetsGen.marketOverview', defaultEnabled: true },
+  { id: 'rankings', labelKey: 'widgetsGen.rankings', defaultEnabled: true },
+  { id: 'fiis_destaque', labelKey: 'widgetsGen.fiisDestaque', defaultEnabled: false },
 ];
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;

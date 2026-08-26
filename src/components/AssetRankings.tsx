@@ -17,6 +17,7 @@ import { useStore } from '../store/useStore';
 import { MOCK_ASSETS } from '../data/mockData';
 import { calculateRanking, calculateClassicCeiling } from '../lib/formulas';
 import type { Asset } from '../types';
+import { useTranslation } from 'react-i18next';
 
 interface AssetRankingsProps {
   compact?: boolean;
@@ -57,6 +58,7 @@ const RankingRow: React.FC<RankingRowProps> = ({ rank, ticker, name, value, isPo
 
 const AssetRankings: React.FC<AssetRankingsProps> = ({ compact = false, className }) => {
   const { portfolio } = useStore();
+  const { t } = useTranslation();
 
   // Combinar MOCK_ASSETS com assets do store
   const allAssets = useMemo(() => {
@@ -111,7 +113,7 @@ const AssetRankings: React.FC<AssetRankingsProps> = ({ compact = false, classNam
         <div className="flex items-center gap-3">
           <Trophy className="w-5 h-5 text-amber-400" />
           <h3 className="text-sm font-black text-white uppercase tracking-widest">
-            Rankings de Ativos
+            {t('assetRankings.title')}
           </h3>
         </div>
       </div>
@@ -121,7 +123,7 @@ const AssetRankings: React.FC<AssetRankingsProps> = ({ compact = false, classNam
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Maiores DY</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('assetRankings.topDY')}</span>
           </div>
           <div className="space-y-1">
             {rankings.topDY.slice(0, maxItems).map((a, i) => (
@@ -140,7 +142,7 @@ const AssetRankings: React.FC<AssetRankingsProps> = ({ compact = false, classNam
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-4 h-4 text-blue-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Melhor Score</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('assetRankings.bestScore')}</span>
           </div>
           <div className="space-y-1">
             {rankings.topScore.slice(0, maxItems).map((entry, i) => (
@@ -159,7 +161,7 @@ const AssetRankings: React.FC<AssetRankingsProps> = ({ compact = false, classNam
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <ArrowUpCircle className="w-4 h-4 text-purple-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Maior Upside</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('assetRankings.topUpside')}</span>
           </div>
           <div className="space-y-1">
             {rankings.withUpside.slice(0, maxItems).map((a, i) => (
@@ -179,7 +181,7 @@ const AssetRankings: React.FC<AssetRankingsProps> = ({ compact = false, classNam
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <ArrowDownCircle className="w-4 h-4 text-cyan-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Melhor P/VP</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('assetRankings.bestPVP')}</span>
           </div>
           <div className="space-y-1">
             {rankings.topPVP.slice(0, maxItems).map((a, i) => (

@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { usePortfolioMetrics } from './usePortfolioMetrics';
 import { useContributionStreak } from './useContributionStreak';
 import { calculateClassicCeiling } from '../lib/formulas';
+import i18n from '../i18n';
 
 export interface HealthScoreResult {
   score: number;             // 0-100
@@ -46,9 +47,9 @@ export const useHealthScore = (): HealthScoreResult => {
 
       diversification = Math.round(assetScore * 0.4 + categoryScore * 0.3 + concentrationScore * 0.3);
 
-      if (numAssets < 3) recommendations.push('Diversifique: tenha pelo menos 3 ativos distintos.');
-      if (topWeight > 50) recommendations.push(`Atencao: ${metrics.categoryBreakdown[0]?.category} representa ${topWeight.toFixed(0)}% da carteira.`);
-      if (numCategories < 3) recommendations.push('Considere adicionar mais categorias (FIIs, Acoes, Renda Fixa).');
+      if (numAssets < 3) recommendations.push(i18n.t('healthGen.recMinAssets'));
+      if (topWeight > 50) recommendations.push(i18n.t('healthGen.recConcentration', { category: metrics.categoryBreakdown[0]?.category, weight: topWeight.toFixed(0) }));
+      if (numCategories < 3) recommendations.push(i18n.t('healthGen.recMoreCategories'));
     }
 
     // ─── 2. Rendimento (0-100) ───────────────────────────────────────────
@@ -58,8 +59,8 @@ export const useHealthScore = (): HealthScoreResult => {
       // DY ideal: 6%+ = 100, 4% = 70, 2% = 40, 0% = 0
       yieldScore = Math.min(100, Math.round((weightedDY / 8) * 100));
 
-      if (weightedDY < 2) recommendations.push('DY medio abaixo de 2%. Foque em ativos mais dividendeiros.');
-      if (weightedDY >= 6) recommendations.push('Excelente rendimento! DY medio acima de 6%.');
+      if (weightedDY < 2) recommendations.push(i18n.t('healthGen.recLowDy'));
+      if (weightedDY >= 6) recommendations.push(i18n.t('healthGen.recHighDy'));
     }
 
     // ─── 3. Valuation (0-100) ────────────────────────────────────────────
@@ -83,8 +84,8 @@ export const useHealthScore = (): HealthScoreResult => {
 
       valuation = totalWeight > 0 ? Math.round((belowCeiling / totalWeight) * 100) : 50;
 
-      if (valuation < 50) recommendations.push('Mais da metade dos ativos estao acima do preco teto. Considere reduzir posicoes.');
-      if (valuation >= 80) recommendations.push('Otimo valuation! Maioria dos ativos abaixo do preco teto.');
+      if (valuation < 50) recommendations.push(i18n.t('healthGen.recAboveCeiling'));
+      if (valuation >= 80) recommendations.push(i18n.t('healthGen.recGoodValuation'));
     }
 
     // ─── 4. Disciplina (0-100) ───────────────────────────────────────────
@@ -99,8 +100,8 @@ export const useHealthScore = (): HealthScoreResult => {
       else discipline = 100;
       discipline = Math.round(discipline);
 
-      if (streak === 0) recommendations.push('Sem aportes recentes. Retome a consistencia!');
-      if (streak >= 6) recommendations.push(`Parabens! ${streak} meses consecutivos de aportes.`);
+      if (streak === 0) recommendations.push(i18n.t('healthGen.recNoContrib'));
+      if (streak >= 6) recommendations.push(i18n.t('healthGen.recStreak', { count: streak }));
     }
 
     // ─── Score Final ─────────────────────────────────────────────────────
@@ -111,11 +112,11 @@ export const useHealthScore = (): HealthScoreResult => {
 
     let label: string;
     let color: string;
-    if (score >= 80) { label = 'Excelente'; color = '#10b981'; }
-    else if (score >= 60) { label = 'Saudavel'; color = '#3b82f6'; }
-    else if (score >= 40) { label = 'Atencao'; color = '#f59e0b'; }
-    else if (score > 0) { label = 'Critico'; color = '#ef4444'; }
-    else { label = 'Sem Dados'; color = '#6b7280'; }
+    if (score >= 80) { label = i18n.t('healthGen.labelExcellent'); color = '#10b981'; }
+    else if (score >= 60) { label = i18n.t('healthGen.labelHealthy'); color = '#3b82f6'; }
+    else if (score >= 40) { label = i18n.t('healthGen.labelAttention'); color = '#f59e0b'; }
+    else if (score > 0) { label = i18n.t('healthGen.labelCritical'); color = '#ef4444'; }
+    else { label = i18n.t('healthGen.labelNoData'); color = '#6b7280'; }
 
     return {
       score,
@@ -127,5 +128,5 @@ export const useHealthScore = (): HealthScoreResult => {
       color,
       recommendations: recommendations.slice(0, 4),
     };
-  }, [portfolio, assets, transactions, metrics, streak]);
+  }, [portfolio, assets, transactions, metrics, streak, i18n.language]);
 };

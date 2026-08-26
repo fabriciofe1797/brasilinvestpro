@@ -12,34 +12,34 @@ import { Trophy, TrendingUp, TrendingDown, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { MOCK_ASSETS } from '../data/mockData';
 import { calculateRanking, calculateClassicCeiling } from '../lib/formulas';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 type TabFilter = 'geral' | 'acoes' | 'fiis' | 'cripto';
 type SortField = 'dy' | 'score' | 'upside' | 'pvp' | 'pl' | 'variacao' | 'price';
 
-const TABS: { key: TabFilter; label: string }[] = [
-  { key: 'geral', label: 'Geral' },
-  { key: 'acoes', label: 'Acoes' },
-  { key: 'fiis', label: 'FIIs' },
-  { key: 'cripto', label: 'Cripto' },
-];
+const TAB_KEYS: TabFilter[] = ['geral', 'acoes', 'fiis', 'cripto'];
 
-const SORT_OPTIONS: { key: SortField; label: string }[] = [
-  { key: 'score', label: 'Score' },
-  { key: 'dy', label: 'DY' },
-  { key: 'upside', label: 'Upside' },
-  { key: 'pvp', label: 'P/VP' },
-  { key: 'pl', label: 'P/L' },
-  { key: 'price', label: 'Preco' },
-];
+const SORT_KEYS: SortField[] = ['score', 'dy', 'upside', 'pvp', 'pl', 'price'];
 
 function formatBRL(n: number): string {
-  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 const RankingsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<TabFilter>('geral');
   const [sortBy, setSortBy] = useState<SortField>('score');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const tabs = useMemo(
+    () => (t('rankings.tabs', { returnObjects: true }) as string[]).map((label, i) => ({ key: TAB_KEYS[i], label })),
+    [t]
+  );
+  const sortOptions = useMemo(
+    () => (t('rankings.sortOptions', { returnObjects: true }) as string[]).map((label, i) => ({ key: SORT_KEYS[i], label })),
+    [t]
+  );
 
   // Filtrar por tab
   const filteredAssets = useMemo(() => {
@@ -124,23 +124,23 @@ const RankingsPage: React.FC = () => {
       {/* Header */}
       <div className="flex items-center gap-3">
         <Trophy className="w-6 h-6 text-amber-400" />
-        <h1 className="text-2xl font-black text-white tracking-tight">Rankings de Ativos</h1>
+        <h1 className="text-2xl font-black text-white tracking-tight">{t('rankings.title')}</h1>
       </div>
 
       {/* Tabs */}
       <div className="flex items-center gap-2">
-        {TABS.map(t => (
+        {tabs.map(tb => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tb.key}
+            onClick={() => setTab(tb.key)}
             className={cn(
               'px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all border',
-              tab === t.key
+              tab === tb.key
                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                 : 'bg-white/5 text-gray-500 border-white/5 hover:text-white'
             )}
           >
-            {t.label}
+            {tb.label}
           </button>
         ))}
       </div>
@@ -148,8 +148,8 @@ const RankingsPage: React.FC = () => {
       {/* Sort Options */}
       <div className="flex items-center gap-2">
         <Filter className="w-3 h-3 text-gray-500" />
-        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">Ordenar por:</span>
-        {SORT_OPTIONS.map(opt => (
+        <span className="text-[10px] font-black text-gray-500 uppercase tracking-wider">{t('rankings.sortLabel')}</span>
+        {sortOptions.map(opt => (
           <button
             key={opt.key}
             onClick={() => handleSort(opt.key)}
@@ -172,14 +172,14 @@ const RankingsPage: React.FC = () => {
             <thead>
               <tr className="text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5">
                 <th className="px-4 py-4">#</th>
-                <th className="px-4 py-4">Ativo</th>
-                <SortHeader field="price" label="Preco" />
+                <th className="px-4 py-4">{t('rankings.colAsset')}</th>
+                <SortHeader field="price" label={t('rankings.colPrice')} />
                 <SortHeader field="dy" label="DY" />
                 <SortHeader field="score" label="Score" />
                 <SortHeader field="upside" label="Upside" />
                 <SortHeader field="pvp" label="P/VP" />
                 <SortHeader field="pl" label="P/L" />
-                <SortHeader field="variacao" label="Var. Dia" />
+                <SortHeader field="variacao" label={t('rankings.colChange')} />
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.02]">
@@ -263,7 +263,7 @@ const RankingsPage: React.FC = () => {
         </div>
         {rankedAssets.length === 0 && (
           <div className="p-12 text-center">
-            <p className="text-gray-500 text-sm">Nenhum ativo encontrado nesta categoria.</p>
+            <p className="text-gray-500 text-sm">{t('rankings.empty')}</p>
           </div>
         )}
       </div>

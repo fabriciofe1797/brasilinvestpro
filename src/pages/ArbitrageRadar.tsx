@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { Navigation, ArrowRightLeft, TrendingUp, Info, AlertTriangle, CheckCircle2, Globe } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -14,6 +16,7 @@ const mockData = [
 
 const ArbitrageRadar: React.FC = () => {
   const [amount, setAmount] = useState<number>(1000);
+  const { t } = useTranslation();
   const currentRate = 5.54;
   const bankRate = 5.38;
   const spread = ((currentRate - bankRate) / currentRate) * 100;
@@ -33,18 +36,18 @@ const ArbitrageRadar: React.FC = () => {
                   <Globe className="w-6 h-6 text-black" />
                </div>
                <div>
-                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Arbitrage <span className="text-emerald-500">Radar</span></h2>
-                  <div className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.3em]">EUR/BRL Remittance Protocol</div>
+                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter">{t('arbitrage.titleStart')} <span className="text-emerald-500">{t('arbitrage.titleHighlight')}</span></h2>
+                  <div className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.3em]">{t('arbitrage.protocol')}</div>
                </div>
             </div>
             <p className="text-gray-400 font-bold text-sm uppercase tracking-widest leading-relaxed max-w-2xl">
-              Algorithmic detection of optimal remittance windows. Synchronized with real-time ECB and BCN liquidity pools.
+              {t('arbitrage.desc')}
             </p>
           </div>
           <div className="bg-black/40 border border-white/5 rounded-2xl px-6 py-4 flex items-center gap-4 backdrop-blur-md">
              <div className="flex flex-col text-right">
-                <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest">Real-time Parity</span>
-                <span className="text-emerald-500 font-black text-xl tracking-tighter">1 EUR = R$ {currentRate.toFixed(2)}</span>
+                <span className="text-[9px] text-gray-500 font-black uppercase tracking-widest">{t('arbitrage.parityLabel')}</span>
+                <span className="text-emerald-500 font-black text-xl tracking-tighter">{t('arbitrage.parityValue', { rate: currentRate.toFixed(2) })}</span>
              </div>
              <div className="w-1.5 h-10 rounded-full bg-emerald-500/20 relative overflow-hidden">
                 <div className="absolute top-0 w-full bg-emerald-500 animate-[bounce_2s_infinite]" style={{ height: '40%' }} />
@@ -59,9 +62,9 @@ const ArbitrageRadar: React.FC = () => {
            <div className="flex items-center justify-between">
               <div className="space-y-1">
                  <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                   <TrendingUp className="w-5 h-5 text-emerald-500"/> Liquidity Matrix
+                   <TrendingUp className="w-5 h-5 text-emerald-500"/> {t('arbitrage.liquidityTitle')}
                  </h3>
-                 <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">30-day volatility scan.</p>
+                 <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">{t('arbitrage.liquiditySub')}</p>
               </div>
               <div className="flex gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/5">
                  {['1W', '1M', '3M', '1Y'].map((p) => (
@@ -119,12 +122,12 @@ const ArbitrageRadar: React.FC = () => {
            <div className="glass-card rounded-[3rem] border-white/5 p-10 space-y-8 relative overflow-hidden group">
               <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 blur-[40px] rounded-full group-hover:bg-blue-500/10 transition-all" />
               <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                 <ArrowRightLeft className="w-5 h-5 text-blue-500" /> Alpha Calculator
+                 <ArrowRightLeft className="w-5 h-5 text-blue-500" /> {t('arbitrage.alphaTitle')}
               </h3>
               
               <div className="space-y-6">
                  <div className="space-y-2">
-                    <label className="text-[10px] text-gray-600 font-black uppercase tracking-widest ml-1">Capital Injection (EUR)</label>
+                    <label className="text-[10px] text-gray-600 font-black uppercase tracking-widest ml-1">{t('arbitrage.capitalLabel')}</label>
                     <div className="relative group">
                        <div className="absolute left-6 top-1/2 -translate-y-1/2 text-white font-black text-xl">€</div>
                        <input 
@@ -138,24 +141,24 @@ const ArbitrageRadar: React.FC = () => {
 
                  <div className="p-6 rounded-[2rem] bg-black/40 border border-white/5 space-y-4">
                     <div className="flex justify-between items-center">
-                       <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Neural Yield</span>
-                       <span className="text-emerald-500 font-black text-lg tracking-tighter">R$ {totalBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                       <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{t('arbitrage.neuralYield')}</span>
+                       <span className="text-emerald-500 font-black text-lg tracking-tighter">R$ {totalBRL.toLocaleString(i18n.language, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="flex justify-between items-center opacity-50">
-                       <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">Bank Standard</span>
-                       <span className="text-gray-400 font-black text-sm line-through tracking-tighter">R$ {bankBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                       <span className="text-[10px] text-gray-500 font-black uppercase tracking-widest">{t('arbitrage.bankStandard')}</span>
+                       <span className="text-gray-400 font-black text-sm line-through tracking-tighter">R$ {bankBRL.toLocaleString(i18n.language, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="pt-4 border-t border-white/5 flex justify-between items-center">
-                       <span className="text-[11px] text-white font-black uppercase tracking-widest">Delta Gain</span>
+                       <span className="text-[11px] text-white font-black uppercase tracking-widest">{t('arbitrage.deltaGain')}</span>
                        <div className="text-right">
-                          <div className="text-emerald-400 font-black text-2xl tracking-tighter">R$ {savings.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                          <div className="text-[8px] text-emerald-500 font-black uppercase tracking-widest">+ {spread.toFixed(2)}% Superiority</div>
+                          <div className="text-emerald-400 font-black text-2xl tracking-tighter">R$ {savings.toLocaleString(i18n.language, { minimumFractionDigits: 2 })}</div>
+                          <div className="text-[8px] text-emerald-500 font-black uppercase tracking-widest">{t('arbitrage.superiority', { value: spread.toFixed(2) })}</div>
                        </div>
                     </div>
                  </div>
 
                  <button className="w-full py-6 rounded-2xl bg-white text-black font-black uppercase text-xs tracking-[0.3em] hover:bg-emerald-500 transition-all shadow-2xl active:scale-95">
-                    Execute Remittance
+                    {t('arbitrage.execute')}
                  </button>
               </div>
            </div>
@@ -177,12 +180,12 @@ const ArbitrageRadar: React.FC = () => {
                  </div>
                  <div>
                     <h4 className="font-black text-white text-xs uppercase tracking-[0.2em]">
-                       {spread > 2 ? "Alpha Strike Detected" : "Holding Pattern"}
+                       {spread > 2 ? t('arbitrage.alphaDetected') : t('arbitrage.standby')}
                     </h4>
                     <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest mt-2 leading-relaxed">
                        {spread > 2 
-                          ? "Current rate is 2.8% above the 30-day structural mean. Optimal window." 
-                          : "Spread delta below threshold. Recommend algorithmic waiting for volatility."}
+                          ? t('arbitrage.signalDetected') 
+                          : t('arbitrage.signalStandby')}
                     </p>
                  </div>
               </div>
@@ -192,10 +195,10 @@ const ArbitrageRadar: React.FC = () => {
 
       {/* Comparison Matrix */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-         <StatCard icon={<Globe className="w-5 h-5 text-blue-400" />} label="Market Parity" value="R$ 5.54" sub="Spread 0.00%" />
-         <StatCard icon={<AlertTriangle className="w-5 h-5 text-yellow-500" />} label="Retail Average" value="R$ 5.71" sub="+3.10% Inflation" />
-         <StatCard icon={<ArrowRightLeft className="w-5 h-5 text-emerald-500" />} label="Institutional" value="R$ 5.52" sub="Fixed 0.40% Fee" />
-         <StatCard icon={<Navigation className="w-5 h-5 text-purple-500" />} label="Network Volume" value="€ 1.28M" sub="24h Active Flow" />
+         <StatCard icon={<Globe className="w-5 h-5 text-blue-400" />} label={t('arbitrage.statParity')} value="R$ 5.54" sub={t('arbitrage.statParitySub')} />
+         <StatCard icon={<AlertTriangle className="w-5 h-5 text-yellow-500" />} label={t('arbitrage.statRetail')} value="R$ 5.71" sub={t('arbitrage.statRetailSub')} />
+         <StatCard icon={<ArrowRightLeft className="w-5 h-5 text-emerald-500" />} label={t('arbitrage.statInst')} value="R$ 5.52" sub={t('arbitrage.statInstSub')} />
+         <StatCard icon={<Navigation className="w-5 h-5 text-purple-500" />} label={t('arbitrage.statVolume')} value="€ 1.28M" sub={t('arbitrage.statVolumeSub')} />
       </div>
     </div>
   );

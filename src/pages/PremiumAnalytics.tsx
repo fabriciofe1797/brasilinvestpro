@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@clerk/clerk-react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { getPortfolio, getPortfolioTimeseries, getQuotesDetailed } from '../services/database';
 import { formatCurrency, applyTickerAlias } from '../lib/utils';
 import { BarChart3, TrendingUp, TrendingDown, PieChart, Crown, Clock } from 'lucide-react';
@@ -10,6 +12,7 @@ import { fetchBatchQuotes } from '../services/api';
 const PremiumAnalytics: React.FC = () => {
   const { getToken } = useAuth();
   const { settings } = useStore();
+  const { t } = useTranslation();
   const [data, setData] = useState<Array<{ ticker: string; qty: number; avg_cost: number; last_price: number; unrealized_pnl: number }>>([]);
   const [tsData, setTsData] = useState<Array<{ date: string; invested: number; equity: number; unrealized_pnl: number }>>([]);
   const [loading, setLoading] = useState(false);
@@ -144,8 +147,8 @@ const PremiumAnalytics: React.FC = () => {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Insights Premium</h1>
-          <p className="text-gray-400 text-sm">Visão analítica do portfólio com P/L não realizado.</p>
+          <h1 className="text-2xl font-bold text-white">{t('premiumAnalytics.title')}</h1>
+          <p className="text-gray-400 text-sm">{t('premiumAnalytics.subtitle')}</p>
         </div>
         <div className="flex items-center gap-3">
           <button
@@ -158,13 +161,13 @@ const PremiumAnalytics: React.FC = () => {
             disabled={isRefreshing || data.length === 0}
             className="px-4 py-2 rounded-xl border border-emerald-500/60 text-xs font-bold text-emerald-400 hover:bg-emerald-500/10 disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            {isRefreshing ? 'Atualizando cotações...' : 'Atualizar cotações'}
+            {isRefreshing ? t('premiumAnalytics.refreshing') : t('premiumAnalytics.refresh')}
           </button>
           {lastQuotesUpdate && (
             <div className="flex items-center gap-1 text-[10px] text-gray-500">
               <Clock className="w-3 h-3" />
               <span>
-                Atualizado em {new Date(lastQuotesUpdate).toLocaleString('pt-BR')}
+                {t('premiumAnalytics.updatedAt', { date: new Date(lastQuotesUpdate).toLocaleString(i18n.language) })}
               </span>
             </div>
           )}
@@ -180,7 +183,7 @@ const PremiumAnalytics: React.FC = () => {
             <BarChart3 className="w-16 h-16 text-emerald-500" />
           </div>
           <div className="relative z-10">
-            <div className="text-xs text-gray-400 font-bold uppercase">Investido</div>
+            <div className="text-xs text-gray-400 font-bold uppercase">{t('premiumAnalytics.kpiInvested')}</div>
             <div className="text-2xl font-bold text-white">{formatCurrency(totals.invested, settings.baseCurrency)}</div>
           </div>
         </div>
@@ -189,7 +192,7 @@ const PremiumAnalytics: React.FC = () => {
             <PieChart className="w-16 h-16 text-blue-500" />
           </div>
           <div className="relative z-10">
-            <div className="text-xs text-gray-400 font-bold uppercase">Valor de Mercado</div>
+            <div className="text-xs text-gray-400 font-bold uppercase">{t('premiumAnalytics.kpiMarket')}</div>
             <div className="text-2xl font-bold text-white">{formatCurrency(totals.market, settings.baseCurrency)}</div>
           </div>
         </div>
@@ -198,7 +201,7 @@ const PremiumAnalytics: React.FC = () => {
             {totals.pnl >= 0 ? <TrendingUp className="w-16 h-16 text-emerald-500" /> : <TrendingDown className="w-16 h-16 text-red-500" />}
           </div>
           <div className="relative z-10">
-            <div className="text-xs text-gray-400 font-bold uppercase">P/L Não Realizado</div>
+            <div className="text-xs text-gray-400 font-bold uppercase">{t('premiumAnalytics.kpiPnl')}</div>
             <div className={`text-2xl font-bold ${totals.pnl >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
               {formatCurrency(totals.pnl, settings.baseCurrency)}
             </div>
@@ -213,10 +216,10 @@ const PremiumAnalytics: React.FC = () => {
       )}
 
       <div className="bg-[#0B1C17] border border-white/5 rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 bg-[#0F2922] border-b border-white/5 text-white font-bold">Evolução do P/L Não Realizado</div>
+        <div className="px-6 py-4 bg-[#0F2922] border-b border-white/5 text-white font-bold">{t('premiumAnalytics.chartTitle')}</div>
         <div className="p-4 h-64 md:h-80">
           {tsData.length === 0 ? (
-            <div className="h-full flex items-center justify-center text-gray-500 text-sm">Sem dados suficientes para histórico.</div>
+            <div className="h-full flex items-center justify-center text-gray-500 text-sm">{t('premiumAnalytics.noHistory')}</div>
           ) : (
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={tsData}>
@@ -234,13 +237,13 @@ const PremiumAnalytics: React.FC = () => {
                 <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={(v) => formatCurrency(v, settings.baseCurrency)} />
                 <Tooltip
                   formatter={(value: any) => formatCurrency(Number(value), settings.baseCurrency)}
-                  labelFormatter={(label) => new Date(label).toLocaleDateString('pt-BR')}
+                  labelFormatter={(label) => new Date(label).toLocaleDateString(i18n.language)}
                   contentStyle={{ backgroundColor: '#020617', borderRadius: 12, border: '1px solid rgba(148,163,184,0.4)' }}
                   labelStyle={{ color: '#e5e7eb' }}
                 />
                 <Legend />
-                <Area type="monotone" dataKey="equity" name="Valor de Mercado" stroke="#22c55e" fill="url(#equityColor)" strokeWidth={2} />
-                <Area type="monotone" dataKey="unrealized_pnl" name="P/L Não Realizado" stroke="#38bdf8" fill="url(#pnlColor)" strokeWidth={2} />
+                <Area type="monotone" dataKey="equity" name={t('premiumAnalytics.kpiMarket')} stroke="#22c55e" fill="url(#equityColor)" strokeWidth={2} />
+                <Area type="monotone" dataKey="unrealized_pnl" name={t('premiumAnalytics.kpiPnl')} stroke="#38bdf8" fill="url(#pnlColor)" strokeWidth={2} />
               </AreaChart>
             </ResponsiveContainer>
           )}
@@ -249,7 +252,7 @@ const PremiumAnalytics: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 bg-[#0F2922] border-b border-white/5 text-white font-bold">Top Ganhadores</div>
+          <div className="px-6 py-4 bg-[#0F2922] border-b border-white/5 text-white font-bold">{t('premiumAnalytics.topWinners')}</div>
           <div className="p-4 space-y-2">
             {topWinners.map(w => (
               <div key={w.ticker} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
@@ -265,11 +268,11 @@ const PremiumAnalytics: React.FC = () => {
                 </div>
               </div>
             ))}
-            {topWinners.length === 0 && <div className="text-gray-500 text-sm">Sem dados.</div>}
+            {topWinners.length === 0 && <div className="text-gray-500 text-sm">{t('premiumAnalytics.noData')}</div>}
           </div>
         </div>
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl overflow-hidden">
-          <div className="px-6 py-4 bg-[#0F2922] border-b border-white/5 text-white font-bold">Top Perdas</div>
+          <div className="px-6 py-4 bg-[#0F2922] border-b border-white/5 text-white font-bold">{t('premiumAnalytics.topLosers')}</div>
           <div className="p-4 space-y-2">
             {topLosers.map(w => (
               <div key={w.ticker} className="flex items-center justify-between bg-white/5 rounded-xl px-4 py-3">
@@ -285,13 +288,13 @@ const PremiumAnalytics: React.FC = () => {
                 </div>
               </div>
             ))}
-            {topLosers.length === 0 && <div className="text-gray-500 text-sm">Sem dados.</div>}
+            {topLosers.length === 0 && <div className="text-gray-500 text-sm">{t('premiumAnalytics.noData')}</div>}
           </div>
         </div>
       </div>
 
       <div className="bg-[#0B1C17] border border-white/5 rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 bg-[#0F2922] border-b border-white/5 text-white font-bold">Concentração</div>
+        <div className="px-6 py-4 bg-[#0F2922] border-b border-white/5 text-white font-bold">{t('premiumAnalytics.concentration')}</div>
         <div className="p-6 space-y-3">
           {concentration.map(c => (
             <div key={c.ticker}>
@@ -304,22 +307,22 @@ const PremiumAnalytics: React.FC = () => {
               </div>
             </div>
           ))}
-          {concentration.length === 0 && <div className="text-gray-500 text-sm">Sem dados.</div>}
+          {concentration.length === 0 && <div className="text-gray-500 text-sm">{t('premiumAnalytics.noData')}</div>}
         </div>
       </div>
 
       <div className="bg-[#0B1C17] border border-white/5 rounded-2xl overflow-hidden">
-        <div className="px-6 py-4 bg-[#0F2922] border-b border-white/5 text-white font-bold">Tabela Detalhada</div>
+        <div className="px-6 py-4 bg-[#0F2922] border-b border-white/5 text-white font-bold">{t('premiumAnalytics.tableTitle')}</div>
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead className="bg-[#0F2922] border-b border-white/5">
               <tr>
-                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">Ticker</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Qtd</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">PM</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Preço</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">Fonte</th>
-                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">P/L Não Realizado</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider">{t('premiumAnalytics.colTicker')}</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">{t('premiumAnalytics.colQty')}</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">{t('premiumAnalytics.colAvg')}</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">{t('premiumAnalytics.colPrice')}</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">{t('premiumAnalytics.colSource')}</th>
+                <th className="py-4 px-6 text-xs font-bold text-gray-400 uppercase tracking-wider text-right">{t('premiumAnalytics.colPnl')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/5">
@@ -339,7 +342,7 @@ const PremiumAnalytics: React.FC = () => {
               ))}
               {data.length === 0 && !loading && (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-gray-500">Sem dados</td>
+                  <td colSpan={6} className="py-8 text-center text-gray-500">{t('premiumAnalytics.tableEmpty')}</td>
                 </tr>
               )}
             </tbody>

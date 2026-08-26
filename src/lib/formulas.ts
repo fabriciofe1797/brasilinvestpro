@@ -173,16 +173,16 @@ export const calculateAllCeilingPrices = (asset: Asset): CeilingPriceData => {
   
   if (avgUpside >= 15) {
     verdict = 'buy';
-    verdictLabel = 'Abaixo do Preço Teto — Oportunidade';
+    verdictLabel = 'ceilingVerdict.buy';
   } else if (avgUpside >= -5) {
     verdict = 'hold';
-    verdictLabel = 'No Limiar — Manter Posição';
+    verdictLabel = 'ceilingVerdict.hold';
   } else if (avgUpside >= -20) {
     verdict = 'neutral';
-    verdictLabel = 'Acima do Preço Teto — Atenção';
+    verdictLabel = 'ceilingVerdict.neutral';
   } else {
     verdict = 'sell';
-    verdictLabel = 'Sobrevalorizado — Reduzir';
+    verdictLabel = 'ceilingVerdict.sell';
   }
   
   return {

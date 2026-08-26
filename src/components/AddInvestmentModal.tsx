@@ -9,6 +9,7 @@ import { cn } from '../lib/utils';
 import { Asset } from '../types';
 import { getPlanLimits } from '../services/billing';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface AddInvestmentModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface AddInvestmentModalProps {
 const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose, preSelectedAssetId, prefillType, prefillQuantity }) => {
   const { getToken } = useAuth();
   const { user } = useUser();
+  const { t } = useTranslation();
   const { assets, addTransaction, registerAsset, settings, portfolio, triggerUpgradeModal } = useStore();
   const navigate = useNavigate();
   const [selectedAssetId, setSelectedAssetId] = useState<string>(preSelectedAssetId || '');
@@ -171,11 +173,11 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
         setSearch('');
         setSearchResults([]);
       } else {
-        alert('Não foi possível obter detalhes deste ativo. Tente novamente.');
+        alert(t('addInvestment.alertNoDetails'));
       }
     } catch (error) {
       console.error('Error selecting asset:', error);
-      alert('Erro ao adicionar ativo.');
+      alert(t('addInvestment.alertError'));
     } finally {
       setLoadingAssetDetails(false);
     }
@@ -193,7 +195,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
            // Ensure profile exists before saving
            const profileExists = await ensureUserProfile(token, user?.primaryEmailAddress?.emailAddress);
            if (!profileExists) {
-             throw new Error('Falha ao verificar ou criar perfil do usuário no banco de dados. Tente novamente.');
+             throw new Error(t('addInvestment.errProfile'));
            }
         }
 
@@ -237,7 +239,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
         setType('BUY');
       } catch (error: any) {
         console.error('Failed to save transaction:', error);
-        const rawMessage = error.message || 'Erro desconhecido.';
+        const rawMessage = error.message || t('addInvestment.errUnknown');
 
         const isLicenseError =
           rawMessage.includes('license_expired') ||
@@ -255,18 +257,18 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
           let isPlanLimit = false;
           
           if (rawMessage.includes('No JWT template exists')) {
-            errorMessage = `Configuração pendente no Clerk.\n\nO template 'supabase' não foi encontrado. Se você acabou de criá-lo, faça Logout e Login novamente para atualizar.`;
+            errorMessage = t('addInvestment.errClerk');
           } else if (rawMessage.includes('license_expired')) {
-            errorMessage = 'Sua licença expirou ou o período de carência terminou. Atualize seu plano para continuar registrando novas operações.';
+            errorMessage = t('addInvestment.errLicenseExpired');
             isPlanLimit = true;
           } else if (rawMessage.includes('license_inactive')) {
-            errorMessage = 'Sua licença está inativa. Verifique seu pagamento ou escolha um novo plano para continuar.';
+            errorMessage = t('addInvestment.errLicenseInactive');
             isPlanLimit = true;
           } else if (rawMessage.includes('limit_exceeded')) {
-            errorMessage = 'Você atingiu o limite de transações do seu plano atual. Considere fazer upgrade para um plano com capacidade maior.';
+            errorMessage = t('addInvestment.errLimitExceeded');
             isPlanLimit = true;
           } else if (rawMessage.includes('insufficient_inventory')) {
-            errorMessage = 'No histórico salvo na nuvem você não tem quantidade suficiente registrada desse ativo para vender esse lote. A venda foi registrada apenas localmente.';
+            errorMessage = t('addInvestment.errInsufficient');
           }
 
           if (isPlanLimit) {
@@ -288,7 +290,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
         
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-white/5 bg-white/5">
-          <h2 className="text-xl font-black text-white tracking-tight">Nova Movimentação</h2>
+          <h2 className="text-xl font-black text-white tracking-tight">{t('addInvestment.title')}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-white transition-colors">
             <X className="w-5 h-5" />
           </button>
@@ -300,7 +302,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
               <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-300 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-amber-200">Limite do plano atingido</div>
+                  <div className="font-semibold text-amber-200">{t('addInvestment.planLimitTitle')}</div>
                   <div className="mt-1 text-[11px] text-amber-100/90">
                     {planLimitMessage}
                   </div>
@@ -314,7 +316,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                 }}
                 className="ml-4 px-3 py-1.5 rounded-full bg-emerald-400 text-black text-[11px] font-semibold hover:bg-emerald-300 whitespace-nowrap"
               >
-                Ver planos Premium
+                {t('addInvestment.viewPlans')}
               </button>
             </div>
           </div>
@@ -335,7 +337,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                   : "text-gray-400 hover:text-white"
               )}
             >
-              Compra
+              {t('addInvestment.buy')}
             </button>
             <button
               type="button"
@@ -347,19 +349,19 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                   : "text-gray-400 hover:text-white"
               )}
             >
-              Venda
+              {t('addInvestment.sell')}
             </button>
           </div>
 
           {/* Asset Selection */}
           <div className="space-y-2">
-            <label className="text-sm text-gray-400 font-medium">Ativo</label>
+            <label className="text-sm text-gray-400 font-medium">{t('addInvestment.assetLabel')}</label>
             {!selectedAsset ? (
               <div className="relative group">
                 <Search className="absolute left-3 top-3 w-4 h-4 text-gray-500 group-focus-within:text-emerald-500 transition-colors" />
                 <input
                   type="text"
-                  placeholder="Buscar ativo (ex: HGLG11, BTC)..."
+                  placeholder={t('addInvestment.searchPlaceholder')}
                   className="w-full bg-black/40 border border-white/10 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/20 transition-all"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -370,7 +372,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                   <div className="absolute z-10 w-full mt-2 bg-[#0F2922] border border-emerald-500/20 rounded-xl shadow-xl max-h-60 overflow-y-auto">
                     {loadingAssetDetails && (
                        <div className="p-4 text-center text-emerald-500 flex items-center justify-center gap-2">
-                         <Loader2 className="w-4 h-4 animate-spin" /> Carregando detalhes...
+                         <Loader2 className="w-4 h-4 animate-spin" /> {t('addInvestment.loadingDetails')}
                        </div>
                     )}
 
@@ -379,7 +381,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                         {/* API Results */}
                         {searchResults.length > 0 && (
                           <div className="p-2">
-                             <div className="text-[10px] text-gray-500 uppercase font-bold px-2 mb-1">Resultados da Busca</div>
+                             <div className="text-[10px] text-gray-500 uppercase font-bold px-2 mb-1">{t('addInvestment.searchResultsTitle')}</div>
                              {searchResults.map(result => (
                                 <button
                                   key={result.id || result.ticker}
@@ -409,8 +411,8 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                                   )}>
                                     {result.type === 'fii' ? 'FII' : result.type === 'fiagro' ? 'FIAGRO' :
                                      result.type === 'fiinfra' ? 'FI-Infra' : result.type === 'fidc' ? 'FIDC' :
-                                     result.type === 'fip' ? 'FIP' : result.type === 'crypto' ? 'Cripto' :
-                                     result.type === 'stock' ? 'Ação' : result.type}
+                                     result.type === 'fip' ? 'FIP' : result.type === 'crypto' ? t('addInvestment.typeCrypto') :
+                                     result.type === 'stock' ? t('addInvestment.typeStock') : result.type}
                                   </span>
                                 </button>
                              ))}
@@ -420,7 +422,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                         {/* Local Matches (if any, and not in API results) */}
                         {localMatches.length > 0 && searchResults.length === 0 && !isSearching && (
                            <div className="p-2">
-                              <div className="text-[10px] text-gray-500 uppercase font-bold px-2 mb-1">Meus Ativos</div>
+                              <div className="text-[10px] text-gray-500 uppercase font-bold px-2 mb-1">{t('addInvestment.myAssets')}</div>
                               {localMatches.map(asset => (
                                 <button
                                   key={asset.id}
@@ -443,13 +445,13 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                         {/* No Results */}
                         {searchResults.length === 0 && localMatches.length === 0 && !isSearching && search.length >= 3 && (
                           <div className="p-4 text-center text-gray-500 text-sm">
-                            Nenhum ativo encontrado.
+                            {t('addInvestment.noAssetsFound')}
                           </div>
                         )}
                         
                          {isSearching && (
                           <div className="p-4 text-center text-gray-500 text-sm flex items-center justify-center gap-2">
-                            <Loader2 className="w-3 h-3 animate-spin" /> Buscando...
+                            <Loader2 className="w-3 h-3 animate-spin" /> {t('addInvestment.searching')}
                           </div>
                         )}
                       </>
@@ -473,7 +475,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                   onClick={() => setSelectedAssetId('')}
                   className="text-xs text-emerald-400 hover:text-emerald-300 font-medium px-2 py-1 rounded-md hover:bg-emerald-500/10 transition-colors"
                 >
-                  Alterar
+                  {t('addInvestment.change')}
                 </button>
               </div>
             )}
@@ -481,7 +483,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
 
           {/* Date Input */}
           <div className="space-y-2">
-            <label className="text-sm text-gray-400 font-medium">Data</label>
+            <label className="text-sm text-gray-400 font-medium">{t('addInvestment.dateLabel')}</label>
             <div className="relative group">
               <Calendar className="absolute left-3 top-3 w-4 h-4 text-gray-500 group-focus-within:text-emerald-500 transition-colors" />
               <input
@@ -497,7 +499,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
           {/* Quantity & Price Inputs */}
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <label className="text-sm text-gray-400 font-medium">Quantidade</label>
+              <label className="text-sm text-gray-400 font-medium">{t('addInvestment.quantityLabel')}</label>
               <input
                 type="number"
                 min="0"
@@ -515,7 +517,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm text-gray-400 font-medium">Preço Unit. (R$)</label>
+              <label className="text-sm text-gray-400 font-medium">{t('addInvestment.priceLabel')}</label>
               <input
                 type="number"
                 min="0"
@@ -541,7 +543,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                  ? "bg-emerald-500/5 border-emerald-500/20" 
                  : "bg-red-500/5 border-red-500/20"
             )}>
-              <span className="text-sm text-gray-400">Total da {type === 'BUY' ? 'Compra' : 'Venda'}</span>
+              <span className="text-sm text-gray-400">{type === 'BUY' ? t('addInvestment.totalBuy') : t('addInvestment.totalSell')}</span>
               <span className={cn(
                 "text-lg font-bold",
                 type === 'BUY' ? "text-emerald-400" : "text-red-400"
@@ -563,7 +565,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
             )}
           >
             {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <Check className="w-5 h-5" />}
-            Confirmar {type === 'BUY' ? 'Investimento' : 'Venda'}
+            {type === 'BUY' ? t('addInvestment.confirmBuy') : t('addInvestment.confirmSell')}
           </button>
 
         </form>

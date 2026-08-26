@@ -4,9 +4,11 @@ import { getPlanLimits } from '../services/billing';
 import { Shield, Medal, Star, Gem } from 'lucide-react';
 import { useAuth } from '@clerk/clerk-react';
 import { fetchLicense } from '../services/license';
+import { useTranslation } from 'react-i18next';
 
 const PlanLimitsCard: React.FC = () => {
   const { settings, portfolio, transactions } = useStore();
+  const { t } = useTranslation();
   const plan = settings.plan ?? 'free';
   const limits = getPlanLimits(plan);
   const { getToken, isSignedIn } = useAuth();
@@ -23,22 +25,23 @@ const PlanLimitsCard: React.FC = () => {
     return d.getMonth() === month && d.getFullYear() === year;
   }).length;
 
-  const assetsLabel = limits.assets === null ? 'ilimitado' : `${assetsUsed}/${limits.assets}`;
-  const txLabel = monthlyLimit === null ? 'ilimitadas' : `${txUsedMonth}/${monthlyLimit} /mês`;
+  const assetsLabel = limits.assets === null ? t('planLimits.unlimitedAssets') : `${assetsUsed}/${limits.assets}`;
+  const txLabel = monthlyLimit === null ? t('planLimits.unlimitedTx') : `${txUsedMonth}/${monthlyLimit} ${t('planLimits.perMonth')}`;
   const remainingTx = monthlyLimit === null ? null : Math.max(0, monthlyLimit - txUsedMonth);
   const thresholdTx = plan === 'free' ? 5 : 10;
 
   const nearing = (remaining: number | null, max: number | null) => max !== null && remaining !== null && remaining <= thresholdTx;
 
   const badge = useMemo(() => {
-    if (plan === 'free') return { label: 'Bronze', icon: <Shield className="w-4 h-4" />, cls: 'bg-gray-700 text-white' };
-    if (plan === 'starter') return { label: 'Prata', icon: <Medal className="w-4 h-4" />, cls: 'bg-emerald-600 text-black' };
-    if (plan === 'pro') return { label: 'Ouro', icon: <Star className="w-4 h-4 text-yellow-300" />, cls: 'bg-yellow-500 text-black' };
-    if (plan === 'master') return { label: 'Platina', icon: <Gem className="w-4 h-4 text-cyan-300" />, cls: 'bg-cyan-600 text-black' };
-    return { label: 'Diamante', icon: <Gem className="w-4 h-4" />, cls: 'bg-purple-600 text-white' };
-  }, [plan]);
+    if (plan === 'free') return { label: t('planLimits.badges.free'), icon: <Shield className="w-4 h-4" />, cls: 'bg-gray-700 text-white' };
+    if (plan === 'starter') return { label: t('planLimits.badges.starter'), icon: <Medal className="w-4 h-4" />, cls: 'bg-emerald-600 text-black' };
+    if (plan === 'pro') return { label: t('planLimits.badges.pro'), icon: <Star className="w-4 h-4 text-yellow-300" />, cls: 'bg-yellow-500 text-black' };
+    if (plan === 'master') return { label: t('planLimits.badges.master'), icon: <Gem className="w-4 h-4 text-cyan-300" />, cls: 'bg-cyan-600 text-black' };
+    return { label: t('planLimits.badges.elite'), icon: <Gem className="w-4 h-4" />, cls: 'bg-purple-600 text-white' };
+  }, [plan, t]);
 
-  const nextTier = plan === 'free' ? 'Prata' : plan === 'starter' ? 'Ouro' : plan === 'pro' ? 'Platina' : plan === 'master' ? 'Diamante' : null;
+  const nextTierCode = plan === 'free' ? 'starter' : plan === 'starter' ? 'pro' : plan === 'pro' ? 'master' : plan === 'master' ? 'elite' : null;
+  const nextTier = nextTierCode ? t(`planLimits.badges.${nextTierCode}`) : null;
   const nextProgress = useMemo(() => {
     const assetsPct = limits.assets !== null ? (assetsUsed / limits.assets) : 0;
     const txPct = monthlyLimit !== null ? (txUsedMonth / monthlyLimit) : 0;
@@ -74,11 +77,11 @@ const PlanLimitsCard: React.FC = () => {
       <div className="p-6 border-b border-white/5">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-bold text-white">Limites do Plano</h3>
-            <p className="text-xs text-gray-500 mt-1">Acompanhe seu consumo e faça upgrade quando precisar.</p>
+            <h3 className="text-lg font-bold text-white">{t('planLimits.title')}</h3>
+            <p className="text-xs text-gray-500 mt-1">{t('planLimits.subtitle')}</p>
             {plan !== 'free' && daysLeft !== null && daysLeft <= 7 && daysLeft > 0 && (
               <div className="mt-2 inline-flex items-center gap-2 text-[11px] px-2 py-1 rounded bg-amber-500/10 border border-amber-500/20 text-amber-400">
-                Licença expira em {daysLeft === 1 ? '1 dia' : `${daysLeft} dias`} {autoRenew ? '(renovação automática ativa)' : ''}
+                {t('planLimits.licenseExpires', { dias: daysLeft === 1 ? t('licenseExpiry.oneDay') : t('licenseExpiry.days', { count: daysLeft }) })} {autoRenew ? t('planLimits.autoRenewActive') : ''}
               </div>
             )}
           </div>
@@ -91,7 +94,7 @@ const PlanLimitsCard: React.FC = () => {
         {nextTier && (
           <>
             <div className="flex items-center justify-between">
-              <div className="text-sm text-gray-400">Rumo ao {nextTier}</div>
+              <div className="text-sm text-gray-400">{t('planLimits.towardNext', { plano: nextTier })}</div>
               <div className="text-xs text-emerald-400 font-bold">{nextProgress}%</div>
             </div>
             <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
@@ -104,25 +107,25 @@ const PlanLimitsCard: React.FC = () => {
         )}
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-gray-400">Ativos no Portfólio</div>
+            <div className="text-sm text-gray-400">{t('planLimits.assetsInPortfolio')}</div>
             <div className="text-white font-bold">{assetsLabel}</div>
           </div>
           {limits.assets !== null && (
             <div className={`text-xs px-2 py-1 rounded ${nearing(assetsUsed, limits.assets) ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-400'}`}>
-              {nearing(assetsUsed, limits.assets) ? 'Quase no limite' : 'Dentro do limite'}
+              {nearing(assetsUsed, limits.assets) ? t('planLimits.nearLimit') : t('planLimits.withinLimit')}
             </div>
           )}
         </div>
         {monthlyLimit !== null && remainingTx !== null && remainingTx > 0 && remainingTx <= thresholdTx && (
           <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs flex items-center justify-between">
-            <span>Faltam {remainingTx} transações neste mês</span>
-            <a href="/premium" className="text-emerald-400 hover:text-emerald-300 font-bold">Ver planos</a>
+            <span>{t('planLimits.txRemaining', { quantidade: remainingTx })}</span>
+            <a href="/premium" className="text-emerald-400 hover:text-emerald-300 font-bold">{t('planLimits.viewPlans')}</a>
           </div>
         )}
         {monthlyLimit !== null && remainingTx === 0 && (
           <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-300 text-xs flex items-center justify-between">
-            <span>Você atingiu o limite deste mês</span>
-            <a href="/premium" className="text-emerald-400 hover:text-emerald-300 font-bold">Ver planos</a>
+            <span>{t('planLimits.monthLimitReached')}</span>
+            <a href="/premium" className="text-emerald-400 hover:text-emerald-300 font-bold">{t('planLimits.viewPlans')}</a>
           </div>
         )}
         {limits.assets !== null && (
@@ -135,12 +138,12 @@ const PlanLimitsCard: React.FC = () => {
         )}
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm text-gray-400">Transações</div>
+            <div className="text-sm text-gray-400">{t('planLimits.transactions')}</div>
             <div className="text-white font-bold">{txLabel}</div>
           </div>
           {monthlyLimit !== null && (
             <div className={`text-xs px-2 py-1 rounded ${nearing(remainingTx, monthlyLimit) ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-400'}`}>
-              {nearing(remainingTx, monthlyLimit) ? 'Quase no limite' : 'Dentro do limite'}
+              {nearing(remainingTx, monthlyLimit) ? t('planLimits.nearLimit') : t('planLimits.withinLimit')}
             </div>
           )}
         </div>
@@ -153,11 +156,11 @@ const PlanLimitsCard: React.FC = () => {
           </div>
         )}
         <a href="/premium" className="inline-block mt-2 text-emerald-400 text-xs font-bold hover:text-emerald-300">
-          Ver planos e benefícios
+          {t('planLimits.viewPlansBenefits')}
         </a>
       </div>
       <div className="px-6 py-3 border-t border-white/5 text-[11px] text-gray-500">
-        Plano atual: <span className="text-white font-bold">{plan.toUpperCase()}</span>
+        {t('planLimits.currentPlan')} <span className="text-white font-bold">{plan.toUpperCase()}</span>
       </div>
     </div>
   );

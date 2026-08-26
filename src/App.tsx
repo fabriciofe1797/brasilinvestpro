@@ -1,12 +1,14 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { SignedIn, SignedOut, RedirectToSignIn, SignIn, SignUp } from '@clerk/clerk-react';
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import MarketHub from './pages/MarketHub';
 import LandingPage from './pages/LandingPage';
 import DataSynchronizer from './components/DataSynchronizer';
 import RequirePlan from './components/RequirePlan';
+import i18n from './i18n';
+import { useStore } from './store/useStore';
 
 // Lazy-loaded pages for code splitting (reduce initial bundle)
 const Calculator = React.lazy(() => import('./pages/Calculator'));
@@ -64,6 +66,14 @@ const AuthBackground = ({ children }: { children: React.ReactNode }) => (
 );
 
 function App() {
+  const { settings } = useStore();
+
+  // Mantém o i18next sincronizado com o idioma persistido nas configurações
+  useEffect(() => {
+    const lang = settings.language ?? 'pt-BR';
+    if (i18n.language !== lang) i18n.changeLanguage(lang);
+  }, [settings.language]);
+
   return (
     <BrowserRouter>
       <Suspense fallback={<PageLoader />}>

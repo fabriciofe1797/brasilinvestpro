@@ -4,8 +4,9 @@ import { useStore } from '../store/useStore';
 import { usePortfolioMetrics } from './usePortfolioMetrics';
 import { useContributionStreak } from './useContributionStreak';
 import { useHealthScore } from './useHealthScore';
-import { ChatMessage, ChatContext, processMessage, quickSuggestions } from '../services/chatAdvisor';
+import { ChatMessage, ChatContext, processMessage, getQuickSuggestions } from '../services/chatAdvisor';
 import { getUserData, setUserData } from '../services/userData';
+import i18n from '../i18n';
 
 const DATA_KEY = 'chat_messages';
 const MAX_MESSAGES = 50;
@@ -94,6 +95,8 @@ export const useChatAdvisor = (): UseChatAdvisorResult => {
     })),
   }), [portfolio, assets, metrics, streak, healthScore]);
 
+  const quickSuggestions = useMemo(() => getQuickSuggestions(), [i18n.language]);
+
   const sendMessage = useCallback((text: string) => {
     if (!text.trim()) return;
 
@@ -116,7 +119,7 @@ export const useChatAdvisor = (): UseChatAdvisorResult => {
         role: 'assistant',
         content: response,
         timestamp: new Date().toISOString(),
-        context: `${portfolio.length} ativos, ${formatBRL(metrics.totalMarketValue)} total`,
+        context: i18n.t('ai.chat.contextSummary', { count: portfolio.length, value: formatBRL(metrics.totalMarketValue) }),
       };
       setMessages(prev => [...prev, assistantMsg]);
       setIsTyping(false);
@@ -143,5 +146,5 @@ export const useChatAdvisor = (): UseChatAdvisorResult => {
   };
 };
 
-const formatBRL = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const formatBRL = (v: number) => `R$ ${v.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 

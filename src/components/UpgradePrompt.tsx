@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
 import { Crown } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 function getVariant() {
   try {
@@ -37,6 +38,7 @@ function getOrCreateCoupon(target: 'pro' | 'elite', kind: 'monthly' | 'annual') 
 
 const UpgradePrompt: React.FC = () => {
   const { showUpgradeModal, upgradeContext, dismissUpgradeModal, settings, triggerUpgradeModal } = useStore();
+  const { t } = useTranslation();
   const [now, setNow] = useState(Date.now());
   
   useEffect(() => {
@@ -77,9 +79,9 @@ const UpgradePrompt: React.FC = () => {
     } catch {}
   };
 
-  const heading = "Ação Bloqueada - Créditos Insuficientes";
-  const messageA = "Para aumentar seus aportes, adicionar ativos e melhorar a gestão da sua conta, é necessário fazer upgrade do seu plano.";
-  const messageB = "Você atingiu o limite do seu plano. Faça upgrade para liberar novas compras, ativos e relatórios avançados.";
+  const heading = t('upgradePrompt.heading');
+  const messageA = t('upgradePrompt.messageA');
+  const messageB = t('upgradePrompt.messageB');
   const message = variant === 'A' ? messageA : messageB;
 
   return (
@@ -97,26 +99,26 @@ const UpgradePrompt: React.FC = () => {
           <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-3">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-emerald-400 text-xs font-bold uppercase">Desconto Mensal</div>
+                <div className="text-emerald-400 text-xs font-bold uppercase">{t('upgradePrompt.monthlyDiscount')}</div>
                 <div className="text-white font-bold text-lg">10% OFF</div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-gray-400">Cupom</div>
+                <div className="text-xs text-gray-400">{t('upgradePrompt.coupon')}</div>
                 <div className="font-mono text-sm text-white">{monthlyCoupon.code}</div>
-                <div className="text-[10px] text-gray-500">Expira em {formatLeft(monthlyLeft)}</div>
+                <div className="text-[10px] text-gray-500">{t('upgradePrompt.expiresIn', { tempo: formatLeft(monthlyLeft) })}</div>
               </div>
             </div>
           </div>
           <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-blue-400 text-xs font-bold uppercase">Desconto Anual</div>
+                <div className="text-blue-400 text-xs font-bold uppercase">{t('upgradePrompt.annualDiscount')}</div>
                 <div className="text-white font-bold text-lg">20% OFF</div>
               </div>
               <div className="text-right">
-                <div className="text-xs text-gray-400">Cupom</div>
+                <div className="text-xs text-gray-400">{t('upgradePrompt.coupon')}</div>
                 <div className="font-mono text-sm text-white">{annualCoupon.code}</div>
-                <div className="text-[10px] text-gray-500">Expira em {formatLeft(annualLeft)}</div>
+                <div className="text-[10px] text-gray-500">{t('upgradePrompt.expiresIn', { tempo: formatLeft(annualLeft) })}</div>
               </div>
             </div>
           </div>
@@ -128,7 +130,7 @@ const UpgradePrompt: React.FC = () => {
             onClick={onPrimaryClick}
             className="text-center bg-emerald-500 hover:bg-emerald-400 text-black font-bold py-3 rounded-xl shadow-lg shadow-emerald-500/20 transition-colors flex items-center justify-center gap-2 animate-[fadeInOut_1.5s_ease-in-out_infinite]"
           >
-            <Crown className="w-4 h-4" /> Fazer Upgrade Agora
+            <Crown className="w-4 h-4" /> {t('upgradePrompt.upgradeNow')}
           </Link>
           <Link
             to="/premium"
@@ -141,11 +143,11 @@ const UpgradePrompt: React.FC = () => {
               } catch {}
             }}
           >
-            Já tenho um plano
+            {t('upgradePrompt.alreadyHavePlan')}
           </Link>
         </div>
 
-        <button onClick={dismissUpgradeModal} className="absolute top-3 right-3 text-gray-400 hover:text-white text-sm">Fechar</button>
+        <button onClick={dismissUpgradeModal} className="absolute top-3 right-3 text-gray-400 hover:text-white text-sm">{t('common.close')}</button>
         <style>
           {`@keyframes fadeInOut {
             0% { opacity: 1; transform: scale(1); }

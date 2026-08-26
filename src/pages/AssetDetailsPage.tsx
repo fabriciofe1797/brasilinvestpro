@@ -13,22 +13,24 @@ import { fetchAssetHistory, fetchAssetDividends, PricePoint, DividendEvent } fro
 import FreshnessBadge from '../components/FreshnessBadge';
 import TermHint from '../components/TermHint';
 import type { QuoteSource } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const formatDateBR = (iso: string): string => {
   const [y, m, d] = iso.split('T')[0].split('-');
   return d && m && y ? `${d}/${m}/${y}` : iso;
 };
 
-const DIVIDEND_TYPE_LABELS: Record<string, string> = {
-  dividend: 'Dividendo',
-  'interest-on-capital': 'JCP',
-  'income-fund': 'Rendimento',
-  subscription: 'Subscrição',
-  'stock-dividend': 'Bonificação',
+const DIVIDEND_TYPE_KEYS: Record<string, string> = {
+  dividend: 'dividend',
+  'interest-on-capital': 'interestOnCapital',
+  'income-fund': 'incomeFund',
+  subscription: 'subscription',
+  'stock-dividend': 'stockDividend',
 };
 
 const AssetDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const { t } = useTranslation();
   const { assets, portfolio } = useStore();
   const { getToken } = useAuth();
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
@@ -40,6 +42,11 @@ const AssetDetailsPage: React.FC = () => {
 
   const asset = assets.find(a => a.id === id);
   const position = portfolio.find(p => p.assetId === id);
+
+  const dividendTypes = React.useMemo(
+    () => t('assetDetails.dividendTypes', { returnObjects: true }) as Record<string, string>,
+    [t]
+  );
 
   React.useEffect(() => {
     if (!asset) return;
@@ -138,24 +145,24 @@ const AssetDetailsPage: React.FC = () => {
   // Checklist Logic
   const checklist = [
     { 
-      label: 'Paga Dividendos Recorrentes?', 
+      label: t('assetDetails.check1Label'), 
       passed: asset.dividendYield > 5, 
-      detail: `DY Atual: ${formatPercent(asset.dividendYield)}` 
+      detail: t('assetDetails.check1Detail', { value: formatPercent(asset.dividendYield) }) 
     },
     { 
-      label: 'Preço Justo (Bazin)', 
+      label: t('assetDetails.check2Label'), 
       passed: upsideBazin > 0, 
-      detail: `Margem: ${upsideBazin.toFixed(1)}%` 
+      detail: t('assetDetails.check2Detail', { value: upsideBazin.toFixed(1) }) 
     },
     { 
-      label: 'Preço Justo (Graham)', 
+      label: t('assetDetails.check3Label'), 
       passed: grahamPrice ? upsideGraham > 0 : false, 
-      detail: grahamPrice ? `Margem: ${upsideGraham.toFixed(1)}%` : 'N/A' 
+      detail: grahamPrice ? t('assetDetails.check2Detail', { value: upsideGraham.toFixed(1) }) : 'N/A' 
     },
     { 
-      label: 'P/VP Atrativo', 
+      label: t('assetDetails.check4Label'), 
       passed: asset.pvp ? asset.pvp <= 1.05 : true, 
-      detail: asset.pvp ? `P/VP: ${asset.pvp}` : 'N/A' 
+      detail: asset.pvp ? t('assetDetails.check4Detail', { value: asset.pvp }) : 'N/A' 
     }
   ];
 
@@ -180,7 +187,7 @@ const AssetDetailsPage: React.FC = () => {
         </div>
         <div className="ml-auto text-right">
           <div className="text-2xl font-bold text-white">{formatCurrency(asset.price, asset.currency)}</div>
-          <div className="text-sm font-medium text-emerald-400">Cotação Atual</div>
+          <div className="text-sm font-medium text-emerald-400">{t('assetDetails.currentQuote')}</div>
           <div className="mt-1">
             <FreshnessBadge source={quoteSource} lastUpdatedAt={quoteUpdatedAt} />
           </div>
@@ -213,19 +220,19 @@ const AssetDetailsPage: React.FC = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <History className="w-5 h-5 text-blue-500" />
-                Histórico de Preço (12 meses)
+                {t('assetDetails.historyTitle')}
               </h3>
               {history.length > 1 && (
                 <span className={cn(
                   "text-xs font-black px-2 py-1 rounded-lg",
                   chartData[chartData.length - 1].variacao >= 0 ? "text-emerald-400 bg-emerald-500/10" : "text-red-400 bg-red-500/10"
                 )}>
-                  {chartData[chartData.length - 1].variacao >= 0 ? '+' : ''}{chartData[chartData.length - 1].variacao}% no período
+                  {t('assetDetails.inPeriod', { value: `${chartData[chartData.length - 1].variacao >= 0 ? '+' : ''}${chartData[chartData.length - 1].variacao}` })}
                 </span>
               )}
             </div>
             {loadingHistory ? (
-              <div className="h-48 flex items-center justify-center text-gray-500 text-sm">Carregando histórico...</div>
+              <div className="h-48 flex items-center justify-center text-gray-500 text-sm">{t('assetDetails.loadingHistory')}</div>
             ) : chartData.length > 1 ? (
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
@@ -240,7 +247,7 @@ const AssetDetailsPage: React.FC = () => {
                     <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={24} />
                     <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} width={64} />
                     <RechartsTooltip
-                      formatter={(value, name) => [formatCurrency(Number(value), asset.currency), name === 'preco' ? 'Preço' : name]}
+                      formatter={(value, name) => [formatCurrency(Number(value), asset.currency), name === 'preco' ? t('assetDetails.chartTooltipPrice') : name]}
                       contentStyle={{ background: '#030816', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }}
                       labelStyle={{ color: '#fff', fontWeight: 700 }}
                     />
@@ -250,7 +257,7 @@ const AssetDetailsPage: React.FC = () => {
               </div>
             ) : (
               <div className="h-24 flex items-center justify-center text-gray-500 text-sm bg-white/5 rounded-xl border border-dashed border-white/10">
-                Histórico indisponível para este ativo.
+                {t('assetDetails.historyUnavailable')}
               </div>
             )}
           </div>
@@ -260,25 +267,25 @@ const AssetDetailsPage: React.FC = () => {
             <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
               <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
                 <Banknote className="w-5 h-5 text-emerald-500" />
-                Dividendos Reais (últimos 12 meses)
+                {t('assetDetails.dividendsTitle')}
               </h3>
 
               {loadingHistory ? (
-                <div className="py-6 text-center text-gray-500 text-sm">Carregando proventos...</div>
+                <div className="py-6 text-center text-gray-500 text-sm">{t('assetDetails.loadingDividends')}</div>
               ) : dividendStats.recent.length > 0 ? (
                 <>
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
                     <div className="bg-white/5 rounded-xl p-3">
-                      <span className="text-xs text-gray-400 block mb-1">Por cota (12M)</span>
+                      <span className="text-xs text-gray-400 block mb-1">{t('assetDetails.perShare12m')}</span>
                       <span className="text-xl font-bold text-emerald-400">{formatCurrency(dividendStats.totalPerShare, 'BRL')}</span>
                     </div>
                     <div className="bg-white/5 rounded-xl p-3">
-                      <span className="text-xs text-gray-400 block mb-1">Eventos (12M)</span>
+                      <span className="text-xs text-gray-400 block mb-1">{t('assetDetails.events12m')}</span>
                       <span className="text-xl font-bold text-white">{dividendStats.recent.length}</span>
                     </div>
                     {position && (
                       <div className="bg-white/5 rounded-xl p-3">
-                        <span className="text-xs text-gray-400 block mb-1">Você recebeu (est.)</span>
+                        <span className="text-xs text-gray-400 block mb-1">{t('assetDetails.youReceived')}</span>
                         <span className="text-xl font-bold text-emerald-400">{formatCurrency(dividendStats.receivedLast12m, 'BRL')}</span>
                       </div>
                     )}
@@ -289,13 +296,13 @@ const AssetDetailsPage: React.FC = () => {
                       <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
                         <div className="flex items-center gap-3">
                           <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                            {DIVIDEND_TYPE_LABELS[d.type] || d.type}
+                            {dividendTypes[DIVIDEND_TYPE_KEYS[d.type]] || d.type}
                           </span>
                           <span className="text-sm text-gray-400">{formatDateBR(d.date)}</span>
                         </div>
                         <div className="text-right">
                           <span className="text-sm font-bold text-white">{formatCurrency(d.valuePerShare, 'BRL')}</span>
-                          <span className="text-[10px] text-gray-500">/cota</span>
+                          <span className="text-[10px] text-gray-500">{t('assetDetails.perShareUnit')}</span>
                         </div>
                       </div>
                     ))}
@@ -303,7 +310,7 @@ const AssetDetailsPage: React.FC = () => {
                 </>
               ) : (
                 <div className="py-6 text-center text-gray-500 text-sm bg-white/5 rounded-xl border border-dashed border-white/10">
-                  Histórico de proventos indisponível para este ativo.
+                  {t('assetDetails.dividendsUnavailable')}
                 </div>
               )}
             </div>
@@ -314,35 +321,35 @@ const AssetDetailsPage: React.FC = () => {
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-emerald-500" />
-                Minha Posição
+                {t('assetDetails.myPosition')}
               </h3>
               <button 
                 onClick={() => setIsAddModalOpen(true)}
                 className="text-xs font-bold text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-lg border border-emerald-500/20"
               >
-                + Novo Aporte
+                {t('assetDetails.newContribution')}
               </button>
             </div>
 
             {position ? (
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white/5 rounded-xl p-3">
-                  <span className="text-xs text-gray-400 block mb-1">Quantidade</span>
+                  <span className="text-xs text-gray-400 block mb-1">{t('assetDetails.quantity')}</span>
                   <span className="text-xl font-bold text-white">{position.quantity}</span>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3">
-                  <span className="text-xs text-gray-400 block mb-1">Preço Médio</span>
+                  <span className="text-xs text-gray-400 block mb-1">{t('assetDetails.avgPrice')}</span>
                   <span className="text-xl font-bold text-white">{formatCurrency(position.averagePrice, 'BRL')}</span>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3">
-                  <span className="text-xs text-gray-400 block mb-1"><TermHint term="yoc">Yield on Cost</TermHint></span>
+                  <span className="text-xs text-gray-400 block mb-1"><TermHint term="yoc">{t('assetDetails.yocTerm')}</TermHint></span>
                   <div className="flex items-end gap-1">
                     <span className="text-xl font-bold text-emerald-400">{yieldOnCost.toFixed(2)}%</span>
-                    <span className="text-[10px] text-gray-500 mb-1">vs {formatPercent(asset.dividendYield)} (Atual)</span>
+                    <span className="text-[10px] text-gray-500 mb-1">{t('assetDetails.vsCurrent', { value: formatPercent(asset.dividendYield) })}</span>
                   </div>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3">
-                  <span className="text-xs text-gray-400 block mb-1">Total Investido</span>
+                  <span className="text-xs text-gray-400 block mb-1">{t('assetDetails.totalInvested')}</span>
                   <span className="text-xl font-bold text-white">
                     {formatCurrency(position.quantity * position.averagePrice, 'BRL')}
                   </span>
@@ -350,7 +357,7 @@ const AssetDetailsPage: React.FC = () => {
               </div>
             ) : (
               <div className="text-center py-6 text-gray-500 text-sm bg-white/5 rounded-xl border border-dashed border-white/10">
-                Você ainda não possui este ativo em carteira.
+                {t('assetDetails.noPosition')}
               </div>
             )}
           </div>
@@ -359,7 +366,7 @@ const AssetDetailsPage: React.FC = () => {
           <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <Info className="w-5 h-5 text-blue-500" />
-              Valuation (Preço Justo)
+              {t('assetDetails.valuationTitle')}
             </h3>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -368,17 +375,17 @@ const AssetDetailsPage: React.FC = () => {
                  <div className="absolute top-0 right-0 p-3 opacity-10">
                    <span className="text-4xl font-serif font-bold text-white">G</span>
                  </div>
-                 <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2"><TermHint term="graham">Método de Graham</TermHint></h4>
+                 <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2"><TermHint term="graham">{t('assetDetails.grahamMethod')}</TermHint></h4>
                  
                  {grahamPrice ? (
                    <>
                      <div className="text-3xl font-bold text-white mb-1">{formatCurrency(grahamPrice, 'BRL')}</div>
                      <div className={cn("text-sm font-bold flex items-center gap-1", upsideGraham > 0 ? "text-emerald-400" : "text-red-400")}>
-                        {upsideGraham > 0 ? "Margem de Segurança:" : "Sobrevalorizado:"} {Math.abs(upsideGraham).toFixed(1)}%
+                        {upsideGraham > 0 ? t('assetDetails.marginOfSafety') : t('assetDetails.overvalued')} {Math.abs(upsideGraham).toFixed(1)}%
                      </div>
                    </>
                  ) : (
-                   <span className="text-gray-500 text-sm">Não aplicável (FII ou Prejuízo)</span>
+                   <span className="text-gray-500 text-sm">{t('assetDetails.grahamNA')}</span>
                  )}
               </div>
 
@@ -387,18 +394,18 @@ const AssetDetailsPage: React.FC = () => {
                  <div className="absolute top-0 right-0 p-3 opacity-10">
                    <span className="text-4xl font-serif font-bold text-white">B</span>
                  </div>
-                 <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2"><TermHint term="bazin">Método de Bazin (6%)</TermHint></h4>
+                 <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2"><TermHint term="bazin">{t('assetDetails.bazinMethod')}</TermHint></h4>
                  
                  <div className="text-3xl font-bold text-white mb-1">{formatCurrency(bazinPrice, 'BRL')}</div>
                  <div className={cn("text-sm font-bold flex items-center gap-1", upsideBazin > 0 ? "text-emerald-400" : "text-red-400")}>
-                    {upsideBazin > 0 ? "Margem de Segurança:" : "Sobrevalorizado:"} {Math.abs(upsideBazin).toFixed(1)}%
+                    {upsideBazin > 0 ? t('assetDetails.marginOfSafety') : t('assetDetails.overvalued')} {Math.abs(upsideBazin).toFixed(1)}%
                  </div>
               </div>
             </div>
             
             <p className="text-xs text-gray-500 mt-4 leading-relaxed">
-              * Graham: Ideal para ações de valor. Considera Lucro e Valor Patrimonial. <br/>
-              * Bazin: Ideal para dividendos. Considera o teto de preço para garantir 6% de retorno em proventos.
+              {t('assetDetails.grahamNote')} <br/>
+              {t('assetDetails.bazinNote')}
             </p>
           </div>
 
@@ -407,7 +414,7 @@ const AssetDetailsPage: React.FC = () => {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 <Target className="w-5 h-5 text-emerald-500" />
-                Preço Teto (3 Métodos)
+                {t('assetDetails.ceilingTitle')}
               </h3>
               <span className={cn(
                 "text-[10px] font-black uppercase px-3 py-1 rounded-lg border",
@@ -416,7 +423,7 @@ const AssetDetailsPage: React.FC = () => {
                   : ceilingData.verdict === 'sell' ? "text-red-400 bg-red-500/10 border-red-500/20"
                   : "text-gray-400 bg-white/5 border-white/10"
               )}>
-                {ceilingData.verdictLabel}
+                {t(ceilingData.verdictLabel)}
               </span>
             </div>
 
@@ -426,12 +433,12 @@ const AssetDetailsPage: React.FC = () => {
                 <div className="absolute top-0 right-0 p-2 opacity-10">
                   <Shield className="w-8 h-8 text-emerald-500" />
                 </div>
-                <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2">Clássico (Bazin)</h4>
+                <h4 className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-2">{t('assetDetails.ceilingClassicShort')}</h4>
                 {ceilingData.classicCeiling ? (
                   <>
                     <div className="text-2xl font-black text-white mb-1">{formatCurrency(ceilingData.classicCeiling, 'BRL')}</div>
                     <div className={cn("text-xs font-bold flex items-center gap-1", ceilingData.upsideClassic > 0 ? "text-emerald-400" : "text-red-400")}>
-                      {ceilingData.upsideClassic > 0 ? '↑' : '↓'} {Math.abs(ceilingData.upsideClassic).toFixed(1)}% do preço atual
+                      {ceilingData.upsideClassic > 0 ? '↑' : '↓'} {t('assetDetails.vsCurrentPrice', { value: Math.abs(ceilingData.upsideClassic).toFixed(1) })}
                     </div>
                   </>
                 ) : (
@@ -444,12 +451,12 @@ const AssetDetailsPage: React.FC = () => {
                 <div className="absolute top-0 right-0 p-2 opacity-10">
                   <TrendingUp className="w-8 h-8 text-blue-500" />
                 </div>
-                <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">Projetivo</h4>
+                <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-2">{t('assetDetails.ceilingProjectiveShort')}</h4>
                 {ceilingData.projectiveCeiling ? (
                   <>
                     <div className="text-2xl font-black text-white mb-1">{formatCurrency(ceilingData.projectiveCeiling, 'BRL')}</div>
                     <div className={cn("text-xs font-bold flex items-center gap-1", ceilingData.upsideProjective > 0 ? "text-emerald-400" : "text-red-400")}>
-                      {ceilingData.upsideProjective > 0 ? '↑' : '↓'} {Math.abs(ceilingData.upsideProjective).toFixed(1)}% do preço atual
+                      {ceilingData.upsideProjective > 0 ? '↑' : '↓'} {t('assetDetails.vsCurrentPrice', { value: Math.abs(ceilingData.upsideProjective).toFixed(1) })}
                     </div>
                   </>
                 ) : (
@@ -462,12 +469,12 @@ const AssetDetailsPage: React.FC = () => {
                 <div className="absolute top-0 right-0 p-2 opacity-10">
                   <Award className="w-8 h-8 text-purple-500" />
                 </div>
-                <h4 className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2">Consenso</h4>
+                <h4 className="text-[10px] font-black text-purple-400 uppercase tracking-widest mb-2">{t('assetDetails.ceilingConsensusShort')}</h4>
                 {ceilingData.consensusCeiling ? (
                   <>
                     <div className="text-2xl font-black text-white mb-1">{formatCurrency(ceilingData.consensusCeiling, 'BRL')}</div>
                     <div className={cn("text-xs font-bold flex items-center gap-1", ceilingData.upsideConsensus > 0 ? "text-emerald-400" : "text-red-400")}>
-                      {ceilingData.upsideConsensus > 0 ? '↑' : '↓'} {Math.abs(ceilingData.upsideConsensus).toFixed(1)}% do preço atual
+                      {ceilingData.upsideConsensus > 0 ? '↑' : '↓'} {t('assetDetails.vsCurrentPrice', { value: Math.abs(ceilingData.upsideConsensus).toFixed(1) })}
                     </div>
                   </>
                 ) : (
@@ -477,7 +484,7 @@ const AssetDetailsPage: React.FC = () => {
             </div>
 
             <p className="text-xs text-gray-500 mt-4 leading-relaxed">
-              * Clássico: DJA ÷ 6% (Bazin). Projetivo: ajusta por tendência de dividendos. Consenso: média ponderada (Bazin 40% + Graham 30% + P/VP justo 30%).
+              {t('assetDetails.ceilingNote')}
             </p>
           </div>
 
@@ -485,16 +492,16 @@ const AssetDetailsPage: React.FC = () => {
           <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <Info className="w-5 h-5 text-blue-500" />
-              Dados do Ativo
+              {t('assetDetails.assetDataTitle')}
             </h3>
             
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">Setor</span>
+                <span className="text-xs text-gray-400 block mb-1">{t('assetDetails.sector')}</span>
                 <span className="text-sm font-bold text-white">{asset.subCategory}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">Último Fechamento</span>
+                <span className="text-xs text-gray-400 block mb-1">{t('assetDetails.lastClose')}</span>
                 <span className="text-sm font-bold text-white">{formatCurrency(asset.lastClose, asset.currency)}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
@@ -506,11 +513,11 @@ const AssetDetailsPage: React.FC = () => {
                 <span className="text-sm font-bold text-white">{asset.pl?.toFixed(1) || 'N/A'}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1"><TermHint term="dividend">Último Dividendo</TermHint></span>
+                <span className="text-xs text-gray-400 block mb-1"><TermHint term="dividend">{t('assetDetails.lastDividend')}</TermHint></span>
                 <span className="text-sm font-bold text-white">{formatCurrency(asset.lastDividend, asset.currency)}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1"><TermHint term="magicNumber">Magic Number</TermHint></span>
+                <span className="text-xs text-gray-400 block mb-1"><TermHint term="magicNumber">{t('assetDetails.magicNumber')}</TermHint></span>
                 <span className="text-sm font-bold text-emerald-400">{asset.magicNumber}</span>
               </div>
             </div>
@@ -522,7 +529,7 @@ const AssetDetailsPage: React.FC = () => {
            <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg h-full">
             <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
               <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-              Checklist Fundamentalista
+              {t('assetDetails.checklistTitle')}
             </h3>
 
             <div className="space-y-4">
@@ -543,11 +550,11 @@ const AssetDetailsPage: React.FC = () => {
             </div>
 
             <div className="mt-6 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
-               <h4 className="text-sm font-bold text-blue-400 mb-1">Veredito do GPS</h4>
+               <h4 className="text-sm font-bold text-blue-400 mb-1">{t('assetDetails.gpsVerdict')}</h4>
                <p className="text-xs text-gray-300 leading-relaxed">
                  {checklist.filter(i => i.passed).length >= 3 
-                   ? "Este ativo atende à maioria dos critérios de qualidade e preço. Considere para aporte se estiver dentro da sua alocação ideal."
-                   : "Atenção: Este ativo falha em critérios importantes de segurança ou preço. Avalie com cautela."}
+                   ? t('assetDetails.gpsPass')
+                   : t('assetDetails.gpsFail')}
                </p>
             </div>
            </div>

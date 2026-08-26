@@ -12,6 +12,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Building2, TrendingUp, TrendingDown, Filter, Star, BarChart3, Sprout, Loader2 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import type { Asset } from '../types';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -41,7 +43,7 @@ type SegmentFilter = 'Todos' | 'FII Tijolo' | 'FII Papel' | 'FII Agro';
 const SEGMENTS: SegmentFilter[] = ['Todos', 'FII Tijolo', 'FII Papel', 'FII Agro'];
 
 function formatBRL(n: number): string {
-  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatMillions(n: number): string {
@@ -50,6 +52,7 @@ function formatMillions(n: number): string {
 }
 
 const FIIsPage: React.FC = () => {
+  const { t } = useTranslation();
   const [segment, setSegment] = useState<SegmentFilter>('Todos');
   const [sortBy, setSortBy] = useState<'dy' | 'pvp' | 'pl' | 'liquidez' | 'variacao'>('dy');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');
@@ -136,6 +139,8 @@ const FIIsPage: React.FC = () => {
 
   const fiagros = fiagroAssets;
 
+  const segmentLabels = useMemo(() => t('fiis.segments', { returnObjects: true }) as string[], [t]);
+
   // Rankings
   const topDY = [...fiiAssets].filter(a => a.dividendYield > 0).sort((a, b) => b.dividendYield - a.dividendYield).slice(0, 5);
   const topPL = [...fiiAssets].filter(a => a.patrimonioLiquido).sort((a, b) => (b.patrimonioLiquido ?? 0) - (a.patrimonioLiquido ?? 0)).slice(0, 5);
@@ -171,24 +176,24 @@ const FIIsPage: React.FC = () => {
       <div>
         <div className="flex items-center gap-3 mb-2">
           <Building2 className="w-6 h-6 text-emerald-400" />
-          <h1 className="text-2xl font-black text-white tracking-tight">Fundos Imobiliarios</h1>
+          <h1 className="text-2xl font-black text-white tracking-tight">{t('fiis.title')}</h1>
         </div>
-        <p className="text-sm text-gray-500">Analise completa de FIIs, Fiagros e rankings do mercado.</p>
+        <p className="text-sm text-gray-500">{t('fiis.subtitle')}</p>
       </div>
 
       {/* FIIs Mais Buscados — Tabela Principal */}
       <div className="glass-card rounded-[2rem] overflow-hidden border-white/5">
         <div className="p-6 border-b border-white/5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h2 className="text-sm font-black text-white uppercase tracking-tight">Todos os FIIs</h2>
+            <h2 className="text-sm font-black text-white uppercase tracking-tight">{t('fiis.allFiis')}</h2>
             <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">
-              {isLoading ? 'Carregando...' : `${filteredAssets.length} ativos encontrados`}
+              {isLoading ? t('fiis.loading') : t('fiis.assetsFound', { count: filteredAssets.length })}
             </p>
           </div>
           {/* Segment Filter */}
           <div className="flex items-center gap-2">
             <Filter className="w-3 h-3 text-gray-500" />
-            {SEGMENTS.map(s => (
+            {SEGMENTS.map((s, i) => (
               <button
                 key={s}
                 onClick={() => setSegment(s)}
@@ -199,7 +204,7 @@ const FIIsPage: React.FC = () => {
                     : 'bg-white/5 text-gray-500 border-white/5 hover:text-white'
                 )}
               >
-                {s === 'Todos' ? 'Todos' : s.replace('FII ', '')}
+                {segmentLabels[i] ?? s}
               </button>
             ))}
           </div>
@@ -209,13 +214,13 @@ const FIIsPage: React.FC = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5">
-                <th className="px-4 py-4">Ativo</th>
-                <th className="px-4 py-4 text-right">Preco</th>
+                <th className="px-4 py-4">{t('fiis.colAsset')}</th>
+                <th className="px-4 py-4 text-right">{t('fiis.colPrice')}</th>
                 <SortHeader field="dy" label="DY" />
                 <SortHeader field="pvp" label="P/VP" />
-                <SortHeader field="pl" label="Patrimonio" />
-                <SortHeader field="liquidez" label="Liquidez" />
-                <SortHeader field="variacao" label="Var. 12M" />
+                <SortHeader field="pl" label={t('fiis.colPatrimony')} />
+                <SortHeader field="liquidez" label={t('fiis.colLiquidity')} />
+                <SortHeader field="variacao" label={t('fiis.colChange12m')} />
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.02]">
@@ -224,14 +229,14 @@ const FIIsPage: React.FC = () => {
                   <td colSpan={7} className="px-4 py-12 text-center">
                     <div className="flex items-center justify-center gap-3">
                       <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
-                      <span className="text-sm text-gray-500 font-bold">Carregando dados da BrAPI...</span>
+                      <span className="text-sm text-gray-500 font-bold">{t('fiis.loadingBrapi')}</span>
                     </div>
                   </td>
                 </tr>
               ) : filteredAssets.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-4 py-12 text-center text-gray-500">
-                    Nenhum ativo encontrado.
+                    {t('fiis.noAssets')}
                   </td>
                 </tr>
               ) : filteredAssets.map(asset => (
@@ -288,16 +293,16 @@ const FIIsPage: React.FC = () => {
       <div className="glass-card rounded-[2rem] p-6 border-white/5">
         <div className="flex items-center gap-2 mb-6">
           <Sprout className="w-5 h-5 text-green-400" />
-          <h2 className="text-sm font-black text-white uppercase tracking-tight">Fiagros em Destaque</h2>
+          <h2 className="text-sm font-black text-white uppercase tracking-tight">{t('fiis.fiagrosTitle')}</h2>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {isLoading ? (
             <div className="col-span-full flex items-center justify-center py-8">
               <Loader2 className="w-5 h-5 text-emerald-500 animate-spin" />
-              <span className="ml-3 text-sm text-gray-500 font-bold">Carregando Fiagros...</span>
+              <span className="ml-3 text-sm text-gray-500 font-bold">{t('fiis.loadingFiagros')}</span>
             </div>
           ) : fiagros.length === 0 ? (
-            <div className="col-span-full text-center py-8 text-gray-500">Nenhum Fiagro encontrado.</div>
+            <div className="col-span-full text-center py-8 text-gray-500">{t('fiis.noFiagros')}</div>
           ) : fiagros.map(f => (
             <div key={f.ticker} className="p-4 rounded-xl bg-white/[0.02] border border-white/5 hover:border-green-500/20 transition-all">
               <p className="text-xs font-black text-white">{f.ticker}</p>
@@ -312,7 +317,7 @@ const FIIsPage: React.FC = () => {
                   <span className="text-[10px] font-black text-white">{f.pvp?.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[9px] text-gray-500">Preco</span>
+                  <span className="text-[9px] text-gray-500">{t('fiis.colPrice')}</span>
                   <span className="text-[10px] font-black text-white">R$ {formatBRL(f.price)}</span>
                 </div>
               </div>
@@ -327,7 +332,7 @@ const FIIsPage: React.FC = () => {
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <Star className="w-4 h-4 text-amber-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Maiores DY</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('fiis.topDY')}</span>
           </div>
           {topDY.map((a, i) => (
             <div key={a.ticker} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
@@ -344,7 +349,7 @@ const FIIsPage: React.FC = () => {
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <Building2 className="w-4 h-4 text-blue-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Maior Patrimonio</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('fiis.topPatrimony')}</span>
           </div>
           {topPL.map((a, i) => (
             <div key={a.ticker} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
@@ -361,7 +366,7 @@ const FIIsPage: React.FC = () => {
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 className="w-4 h-4 text-purple-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Maior Liquidez</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('fiis.topLiquidity')}</span>
           </div>
           {topLiquidez.map((a, i) => (
             <div key={a.ticker} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">
@@ -378,7 +383,7 @@ const FIIsPage: React.FC = () => {
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp className="w-4 h-4 text-cyan-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Melhor P/VP</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('fiis.topPVP')}</span>
           </div>
           {topPVP.map((a, i) => (
             <div key={a.ticker} className="flex items-center justify-between py-2 border-b border-white/5 last:border-0">

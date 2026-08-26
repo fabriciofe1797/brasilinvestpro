@@ -6,6 +6,7 @@
  */
 
 import type { LifeExpense, LifeCoverageItem, LifeMapSummary, PortfolioItem, Asset } from '../types';
+import i18n from '../i18n';
 
 const EXPENSE_CATEGORY_ICONS: Record<LifeExpense['category'], string> = {
   moradia: '🏠',
@@ -17,14 +18,14 @@ const EXPENSE_CATEGORY_ICONS: Record<LifeExpense['category'], string> = {
   outros: '📦',
 };
 
-const EXPENSE_CATEGORY_LABELS: Record<LifeExpense['category'], string> = {
-  moradia: 'Moradia',
-  transporte: 'Transporte',
-  alimentacao: 'Alimentação',
-  educacao: 'Educação',
-  lazer: 'Lazer',
-  saude: 'Saúde',
-  outros: 'Outros',
+const EXPENSE_CATEGORY_LABEL_KEYS: Record<LifeExpense['category'], string> = {
+  moradia: 'lifeMapGen.catMoradia',
+  transporte: 'lifeMapGen.catTransporte',
+  alimentacao: 'lifeMapGen.catAlimentacao',
+  educacao: 'lifeMapGen.catEducacao',
+  lazer: 'lifeMapGen.catLazer',
+  saude: 'lifeMapGen.catSaude',
+  outros: 'lifeMapGen.catOutros',
 };
 
 export function getExpenseIcon(category: LifeExpense['category']): string {
@@ -32,7 +33,8 @@ export function getExpenseIcon(category: LifeExpense['category']): string {
 }
 
 export function getExpenseLabel(category: LifeExpense['category']): string {
-  return EXPENSE_CATEGORY_LABELS[category] || 'Outros';
+  const key = EXPENSE_CATEGORY_LABEL_KEYS[category];
+  return key ? i18n.t(key) : i18n.t('lifeMapGen.catOutros');
 }
 
 /**
@@ -88,16 +90,16 @@ function calculateExpenseCoverage(
   // Generate suggestion
   let suggestion: string;
   if (coveragePct >= 100) {
-    suggestion = `${expense.name} já está totalmente coberta por dividendos!`;
+    suggestion = i18n.t('lifeMapGen.sugFull', { name: expense.name });
   } else if (coveragePct >= 75) {
-    suggestion = `Quase lá! Faltam ${formatCompact(expenseBRL - totalCoveredBRL)} para cobrir ${expense.name}.`;
+    suggestion = i18n.t('lifeMapGen.sugAlmost', { value: formatCompact(expenseBRL - totalCoveredBRL), name: expense.name });
   } else if (coveragePct >= 50) {
-    suggestion = `Metade de ${expense.name} já coberta. Continue aportando para atingir a cobertura total.`;
+    suggestion = i18n.t('lifeMapGen.sugHalf', { name: expense.name });
   } else if (coveragePct >= 25) {
-    suggestion = `${expense.name} parcialmente coberta. Priorize ativos de alta renda para acelerar.`;
+    suggestion = i18n.t('lifeMapGen.sugPartial', { name: expense.name });
   } else {
     const capitalNeeded = expenseBRL / (0.08 / 12); // Assuming 8% DY
-    suggestion = `Para cobrir ${expense.name} com dividendos, necessitaria ~${formatCompact(capitalNeeded)} investidos.`;
+    suggestion = i18n.t('lifeMapGen.sugNone', { name: expense.name, value: formatCompact(capitalNeeded) });
   }
 
   return {
@@ -180,7 +182,7 @@ export function calculateLifeMap(
   if (sortedByCoverage.length > 0) {
     const next = sortedByCoverage[0];
     if (next.coveragePct < 100) {
-      nextMilestone = `Cubra ${next.expense.name} (atualmente ${next.coveragePct}%)`;
+      nextMilestone = i18n.t('lifeMapGen.milestone', { name: next.expense.name, pct: next.coveragePct });
     }
   }
 
@@ -205,12 +207,12 @@ export function calculateLifeMap(
  */
 export function getPurchasingPower(valueBRL: number): { item: string; quantity: number; emoji: string }[] {
   const prices = [
-    { item: 'cafés em Lisboa', price: 2.5, emoji: '☕' },
-    { item: 'almoços', price: 15, emoji: '🍽️' },
-    { item: 'passes mensais', price: 40, emoji: '🚌' },
-    { item: 'noites de cinema', price: 12, emoji: '🎬' },
-    { item: 'mensalidades de ginásio', price: 30, emoji: '💪' },
-    { item: 'livros', price: 20, emoji: '📖' },
+    { item: i18n.t('lifeMapGen.ppCafes'), price: 2.5, emoji: '☕' },
+    { item: i18n.t('lifeMapGen.ppAlmocos'), price: 15, emoji: '🍽️' },
+    { item: i18n.t('lifeMapGen.ppPasses'), price: 40, emoji: '🚌' },
+    { item: i18n.t('lifeMapGen.ppCinema'), price: 12, emoji: '🎬' },
+    { item: i18n.t('lifeMapGen.ppGinasio'), price: 30, emoji: '💪' },
+    { item: i18n.t('lifeMapGen.ppLivros'), price: 20, emoji: '📖' },
   ];
 
   return prices.map(p => ({

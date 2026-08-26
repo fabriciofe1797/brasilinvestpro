@@ -3,9 +3,11 @@ import { TrendingUp, DollarSign, Calendar, ArrowRight, Sparkles } from 'lucide-r
 import { useStore } from '../store/useStore';
 import { formatCurrency } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const FinancialIndependenceSimulator: React.FC = () => {
   const { portfolio, assets } = useStore();
+  const { t } = useTranslation();
   const [monthlyExpenseTarget, setMonthlyExpenseTarget] = useState<number>(5000);
 
   const monthlyIncomeBRL = useMemo(() => {
@@ -43,17 +45,17 @@ const FinancialIndependenceSimulator: React.FC = () => {
       <div className="flex items-center justify-between mb-8">
         <h3 className="text-xl font-black text-white uppercase tracking-widest flex items-center gap-3">
           <Sparkles className="w-6 h-6 text-purple-400" />
-          Simulador de Independência
+          {t('fiSimulator.title')}
         </h3>
         <Link to="/advisor" className="text-sm font-bold text-purple-400 hover:text-purple-300">
-          Falar com AI →
+          {t('fiSimulator.talkToAI')}
         </Link>
       </div>
 
       {/* Input */}
       <div className="mb-8">
         <label className="text-sm text-gray-500 font-bold uppercase tracking-wider mb-2 block">
-          Despesa Mensal Alvo (BRL)
+          {t('fiSimulator.targetExpense')}
         </label>
         <div className="flex gap-4">
           {[3000, 5000, 10000, 15000].map(amount => (
@@ -77,18 +79,18 @@ const FinancialIndependenceSimulator: React.FC = () => {
         <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
           <div className="flex items-center gap-2 text-gray-500 mb-2">
             <DollarSign className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase">Renda Atual</span>
+            <span className="text-xs font-bold uppercase">{t('fiSimulator.currentIncome')}</span>
           </div>
           <div className="text-2xl font-black text-white">
             {formatCurrency(monthlyIncomeBRL, 'BRL')}
           </div>
-          <div className="text-xs text-gray-500 mt-1">por mês</div>
+          <div className="text-xs text-gray-500 mt-1">{t('fiSimulator.perMonth')}</div>
         </div>
 
         <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
           <div className="flex items-center gap-2 text-gray-500 mb-2">
             <TrendingUp className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase">Cobertura</span>
+            <span className="text-xs font-bold uppercase">{t('fiSimulator.coverage')}</span>
           </div>
           <div className={`text-2xl font-black ${
             coveragePct >= 100 ? 'text-emerald-400' : 
@@ -96,19 +98,19 @@ const FinancialIndependenceSimulator: React.FC = () => {
           }`}>
             {coveragePct.toFixed(0)}%
           </div>
-          <div className="text-xs text-gray-500 mt-1">da meta</div>
+          <div className="text-xs text-gray-500 mt-1">{t('fiSimulator.ofGoal')}</div>
         </div>
 
         <div className="bg-white/5 rounded-2xl p-6 border border-white/5">
           <div className="flex items-center gap-2 text-gray-500 mb-2">
             <Calendar className="w-4 h-4" />
-            <span className="text-xs font-bold uppercase">Anos Restantes</span>
+            <span className="text-xs font-bold uppercase">{t('fiSimulator.yearsRemaining')}</span>
           </div>
           <div className="text-2xl font-black text-purple-400">
             {typeof projectedIncome === 'number' ? projectedIncome : projectedIncome}
           </div>
           <div className="text-xs text-gray-500 mt-1">
-            {typeof projectedIncome === 'number' ? 'anos' : 'insuficiente'}
+            {typeof projectedIncome === 'number' ? t('fiSimulator.years') : t('fiSimulator.insufficient')}
           </div>
         </div>
       </div>
@@ -116,7 +118,7 @@ const FinancialIndependenceSimulator: React.FC = () => {
       {/* Progress */}
       <div className="mb-6">
         <div className="flex justify-between text-sm mb-2">
-          <span className="text-gray-500">Progresso</span>
+          <span className="text-gray-500">{t('fiSimulator.progress')}</span>
           <span className="font-bold text-white">{coveragePct.toFixed(1)}%</span>
         </div>
         <div className="h-3 bg-white/10 rounded-full overflow-hidden">
@@ -134,14 +136,14 @@ const FinancialIndependenceSimulator: React.FC = () => {
       {coveragePct < 100 && (
         <div className="text-center">
           <p className="text-gray-500 text-sm mb-4">
-            Precisa de mais {formatCurrency(monthlyExpenseTarget - monthlyIncomeBRL, 'BRL')} por mês para atingir a independência.
+            {t('fiSimulator.needsMore', { valor: formatCurrency(monthlyExpenseTarget - monthlyIncomeBRL, 'BRL') })}
           </p>
           <Link 
             to="/advisor"
             className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-purple-500 hover:bg-purple-400 text-white font-bold rounded-xl transition-all"
           >
             <Sparkles className="w-4 h-4" />
-            Ver Plano de Ação com AI
+            {t('fiSimulator.actionPlan')}
             <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
@@ -150,7 +152,7 @@ const FinancialIndependenceSimulator: React.FC = () => {
       {coveragePct >= 100 && (
         <div className="text-center p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/20">
           <p className="text-emerald-400 font-bold">
-            🎉 Parabéns! Já tens renda passiva para cobrir esta despesa!
+            {t('fiSimulator.congrats')}
           </p>
         </div>
       )}

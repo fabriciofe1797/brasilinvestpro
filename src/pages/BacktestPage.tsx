@@ -23,9 +23,12 @@ import {
   Legend,
   ResponsiveContainer,
 } from 'recharts';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 const BacktestPage: React.FC = () => {
   const { result, isLoading, history, runBacktest, clearHistory, removeFromHistory } = useBacktest();
+  const { t } = useTranslation();
   const [input, setInput] = useState<BacktestInput>({
     ticker: '',
     startDate: '',
@@ -38,14 +41,14 @@ const BacktestPage: React.FC = () => {
     setError(null);
 
     if (!input.ticker || !input.startDate || input.investedAmount <= 0) {
-      setError('Preencha todos os campos corretamente.');
+      setError(t('backtest.errFill'));
       return;
     }
 
     try {
       runBacktest(input);
     } catch (err) {
-      setError((err as Error).message || 'Erro ao executar backtest');
+      setError((err as Error).message || t('backtest.errGeneric'));
     }
   };
 
@@ -57,10 +60,10 @@ const BacktestPage: React.FC = () => {
         const cdiValue = input.investedAmount + result.cdiProfit * progress;
         const ibovValue = input.investedAmount + result.ibovProfit * progress;
         return {
-          name: `Dia ${Math.round(progress * result.daysElapsed)}`,
-          'Minha Estrategia': Math.round(myValue),
-          CDI: Math.round(cdiValue),
-          Ibovespa: Math.round(ibovValue),
+          name: t('backtest.dayLabel', { day: Math.round(progress * result.daysElapsed) }),
+          strategy: Math.round(myValue),
+          cdi: Math.round(cdiValue),
+          ibov: Math.round(ibovValue),
         };
       })
     : [];
@@ -71,13 +74,13 @@ const BacktestPage: React.FC = () => {
       <div className="flex items-center gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-white">Backtesting</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-white">{t('backtest.title')}</h1>
             <span className="bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider">
-              PRO
+              {t('backtest.badge')}
             </span>
           </div>
           <p className="text-gray-400 text-sm">
-            Simule "E se tivesse comprado X reais em TICKER em DATA?" e compare com CDI e Ibovespa.
+            {t('backtest.subtitle')}
           </p>
         </div>
       </div>
@@ -86,25 +89,25 @@ const BacktestPage: React.FC = () => {
       <div className="bg-[#0B1C17] border border-white/10 rounded-2xl p-6 shadow-lg">
         <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <Target className="w-5 h-5 text-emerald-500" />
-          Configurar Backtest
+          {t('backtest.formTitle')}
         </h2>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-              Ticker
+              {t('backtest.tickerLabel')}
             </label>
             <input
               type="text"
               value={input.ticker}
               onChange={e => setInput({ ...input, ticker: e.target.value.toUpperCase() })}
-              placeholder="Ex: PETR4"
+              placeholder={t('backtest.tickerPlaceholder')}
               className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500/50"
               required
             />
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-              Data Inicial
+              {t('backtest.startDateLabel')}
             </label>
             <input
               type="date"
@@ -116,7 +119,7 @@ const BacktestPage: React.FC = () => {
           </div>
           <div>
             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
-              Valor Investido (R$)
+              {t('backtest.investedLabel')}
             </label>
             <input
               type="number"
@@ -137,12 +140,12 @@ const BacktestPage: React.FC = () => {
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Calculando...
+                  {t('backtest.calculating')}
                 </>
               ) : (
                 <>
                   <Zap className="w-4 h-4" />
-                  Executar Backtest
+                  {t('backtest.run')}
                 </>
               )}
             </button>
@@ -165,11 +168,11 @@ const BacktestPage: React.FC = () => {
             <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
               <div className="flex items-center gap-2 mb-4">
                 <BarChart3 className="w-5 h-5 text-emerald-500" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Minha Estrategia</h3>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('backtest.myStrategy')}</h3>
               </div>
               <div className="space-y-3">
                 <div>
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">Valor Atual</div>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('backtest.currentValue')}</div>
                   <div className="text-2xl font-black text-white">{formatCurrency(result.currentValue, 'BRL')}</div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -185,13 +188,13 @@ const BacktestPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="pt-3 border-t border-white/5">
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">Dividendos Recebidos</div>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('backtest.dividendsReceived')}</div>
                   <div className="text-lg font-bold text-emerald-400">
                     {formatCurrency(result.dividendsReceived, 'BRL')}
                   </div>
                 </div>
                 <div>
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">Retorno Total</div>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('backtest.totalReturn')}</div>
                   <div className="text-lg font-bold text-white">
                     {formatCurrency(result.totalReturn, 'BRL')}
                     <span className="text-xs text-gray-400 ml-2">({result.totalReturnPct.toFixed(2)}%)</span>
@@ -204,11 +207,11 @@ const BacktestPage: React.FC = () => {
             <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
               <div className="flex items-center gap-2 mb-4">
                 <DollarSign className="w-5 h-5 text-blue-500" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">CDI (Selic)</h3>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('backtest.cdiTitle')}</h3>
               </div>
               <div className="space-y-3">
                 <div>
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">Valor Corrigido</div>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('backtest.correctedValue')}</div>
                   <div className="text-2xl font-black text-white">{formatCurrency(result.cdiValue, 'BRL')}</div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -218,7 +221,7 @@ const BacktestPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="pt-3 border-t border-white/5">
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">Taxa Anual</div>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('backtest.cdiRate')}</div>
                   <div className="text-lg font-bold text-blue-400">{(result.cdiRate * 100).toFixed(2)}%</div>
                 </div>
                 <div>
@@ -229,7 +232,7 @@ const BacktestPage: React.FC = () => {
                       <AlertCircle className="w-4 h-4 text-red-400" />
                     )}
                     <span className={`text-xs font-bold ${result.beatCDI ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {result.beatCDI ? 'Bateu o CDI' : 'Perdeu para o CDI'}
+                      {result.beatCDI ? t('backtest.beatCDI') : t('backtest.lostCDI')}
                     </span>
                   </div>
                 </div>
@@ -240,11 +243,11 @@ const BacktestPage: React.FC = () => {
             <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
               <div className="flex items-center gap-2 mb-4">
                 <TrendingUp className="w-5 h-5 text-purple-500" />
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider">Ibovespa</h3>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">{t('backtest.ibovTitle')}</h3>
               </div>
               <div className="space-y-3">
                 <div>
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">Valor Corrigido</div>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('backtest.correctedValue')}</div>
                   <div className="text-2xl font-black text-white">{formatCurrency(result.ibovValue, 'BRL')}</div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -254,7 +257,7 @@ const BacktestPage: React.FC = () => {
                   </span>
                 </div>
                 <div className="pt-3 border-t border-white/5">
-                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">Taxa Anual (proxy)</div>
+                  <div className="text-[10px] text-gray-500 uppercase tracking-wider">{t('backtest.ibovRate')}</div>
                   <div className="text-lg font-bold text-purple-400">{(result.ibovRate * 100).toFixed(2)}%</div>
                 </div>
                 <div>
@@ -265,7 +268,7 @@ const BacktestPage: React.FC = () => {
                       <AlertCircle className="w-4 h-4 text-red-400" />
                     )}
                     <span className={`text-xs font-bold ${result.beatIBOV ? 'text-emerald-400' : 'text-red-400'}`}>
-                      {result.beatIBOV ? 'Bateu o IBOV' : 'Perdeu para o IBOV'}
+                      {result.beatIBOV ? t('backtest.beatIBOV') : t('backtest.lostIBOV')}
                     </span>
                   </div>
                 </div>
@@ -277,7 +280,7 @@ const BacktestPage: React.FC = () => {
           <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-emerald-500" />
-              Evolucao Comparativa
+              {t('backtest.chartTitle')}
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chartData}>
@@ -304,13 +307,14 @@ const BacktestPage: React.FC = () => {
                 <Legend />
                 <Line
                   type="monotone"
-                  dataKey="Minha Estrategia"
+                  dataKey="strategy"
+                  name={t('backtest.myStrategy')}
                   stroke="#10b981"
                   strokeWidth={2}
                   dot={false}
                 />
-                <Line type="monotone" dataKey="CDI" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="Ibovespa" stroke="#a855f7" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="cdi" name="CDI" stroke="#3b82f6" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="ibov" name="Ibovespa" stroke="#a855f7" strokeWidth={2} dot={false} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -319,37 +323,37 @@ const BacktestPage: React.FC = () => {
           <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Clock className="w-5 h-5 text-blue-500" />
-              Detalhes do Backtest
+              {t('backtest.detailsTitle')}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">Ticker</span>
+                <span className="text-xs text-gray-400 block mb-1">{t('backtest.tickerLabel')}</span>
                 <span className="text-lg font-bold text-white">{result.ticker}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">Cotras Compradas</span>
+                <span className="text-xs text-gray-400 block mb-1">{t('backtest.sharesBought')}</span>
                 <span className="text-lg font-bold text-white">{result.sharesBought}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">Preco Medio Pago</span>
+                <span className="text-xs text-gray-400 block mb-1">{t('backtest.avgPricePaid')}</span>
                 <span className="text-lg font-bold text-white">
                   {formatCurrency(result.avgPricePaid, 'BRL')}
                 </span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">Dias Decorridos</span>
+                <span className="text-xs text-gray-400 block mb-1">{t('backtest.daysElapsed')}</span>
                 <span className="text-lg font-bold text-white">{result.daysElapsed}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">Data Inicial</span>
+                <span className="text-xs text-gray-400 block mb-1">{t('backtest.startDateLabel')}</span>
                 <span className="text-sm font-bold text-white">
-                  {new Date(result.startDate).toLocaleDateString('pt-BR')}
+                  {new Date(result.startDate).toLocaleDateString(i18n.language)}
                 </span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">Data Final</span>
+                <span className="text-xs text-gray-400 block mb-1">{t('backtest.endDate')}</span>
                 <span className="text-sm font-bold text-white">
-                  {new Date(result.endDate).toLocaleDateString('pt-BR')}
+                  {new Date(result.endDate).toLocaleDateString(i18n.language)}
                 </span>
               </div>
             </div>
@@ -363,14 +367,14 @@ const BacktestPage: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-bold text-white flex items-center gap-2">
               <Clock className="w-5 h-5 text-emerald-500" />
-              Historico de Backtests
+              {t('backtest.historyTitle')}
             </h3>
             <button
               onClick={clearHistory}
               className="text-xs text-gray-400 hover:text-red-400 flex items-center gap-1"
             >
               <Trash2 className="w-3 h-3" />
-              Limpar
+              {t('backtest.clear')}
             </button>
           </div>
           <div className="space-y-2">
@@ -382,7 +386,7 @@ const BacktestPage: React.FC = () => {
                 <div className="flex items-center gap-4">
                   <span className="text-sm font-bold text-white">{h.result.ticker}</span>
                   <span className="text-xs text-gray-400">
-                    {new Date(h.input.startDate).toLocaleDateString('pt-BR')}
+                    {new Date(h.input.startDate).toLocaleDateString(i18n.language)}
                   </span>
                   <span className="text-xs text-gray-400">
                     {formatCurrency(h.input.investedAmount, 'BRL')}

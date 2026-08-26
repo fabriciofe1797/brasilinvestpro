@@ -1,5 +1,7 @@
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
+import i18n from '../i18n';
+
 export type TaxCountry = 'BR' | 'PT';
 export type ResidenceStatus = 'resident' | 'non-resident';
 
@@ -122,16 +124,16 @@ export const calculateBrazilTax = (
       taxRate = BR_CRYPTO_RATE;
       if (data.sales <= BR_CRYPTO_EXEMPTION) {
         exempt = true;
-        exemptionReason = `Vendas ≤ R$${BR_CRYPTO_EXEMPTION.toLocaleString()}/mês`;
-        exemptions.push(`Cripto: isenção vendas ≤ R$35k (${data.sales.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`);
+        exemptionReason = i18n.t('taxGen.exemptSalesMonth', { value: BR_CRYPTO_EXEMPTION.toLocaleString(i18n.language) });
+        exemptions.push(i18n.t('taxGen.brCryptoExemption', { value: data.sales.toLocaleString(i18n.language, { style: 'currency', currency: 'BRL' }) }));
       }
     } else {
       // Ações
       taxRate = BR_STOCK_RATE;
       if (data.sales <= BR_STOCK_EXEMPTION) {
         exempt = true;
-        exemptionReason = `Vendas ≤ R$${BR_STOCK_EXEMPTION.toLocaleString()}/mês`;
-        exemptions.push(`Ações: isenção vendas ≤ R$20k (${data.sales.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })})`);
+        exemptionReason = i18n.t('taxGen.exemptSalesMonth', { value: BR_STOCK_EXEMPTION.toLocaleString(i18n.language) });
+        exemptions.push(i18n.t('taxGen.brStockExemption', { value: data.sales.toLocaleString(i18n.language, { style: 'currency', currency: 'BRL' }) }));
       }
     }
 
@@ -170,9 +172,9 @@ export const calculateBrazilTax = (
       taxRate: 0,
       taxDue: 0,
       exempt: true,
-      exemptionReason: 'Dividendos isentos para PF no Brasil',
+      exemptionReason: i18n.t('taxGen.brDividendReason'),
     });
-    exemptions.push('Dividendos: isentos para pessoa física no Brasil');
+    exemptions.push(i18n.t('taxGen.brDividendExemption'));
   }
 
   return { taxByCategory, totalTax, exemptions, lossUsed };
@@ -201,8 +203,8 @@ export const calculatePortugalTax = (
     if (category === 'Cripto') {
       if (data.holdingDays && data.holdingDays > PT_CRYPTO_HOLD_EXEMPTION) {
         exempt = true;
-        exemptionReason = 'Cripto detido >365 dias: isento em Portugal';
-        exemptions.push('Cripto: isenção por detenção >365 dias');
+        exemptionReason = i18n.t('taxGen.ptCryptoHoldReason');
+        exemptions.push(i18n.t('taxGen.ptCryptoHoldExemption'));
       } else {
         taxRate = PT_FLAT_RATE;
       }
@@ -212,8 +214,8 @@ export const calculatePortugalTax = (
     if (config.nhrRegime && config.nhrType === 'old') {
       if (category === 'Dividendos') {
         exempt = true;
-        exemptionReason = 'NHR antigo: dividendos isentos';
-        exemptions.push('Dividendos: isentos regime NHR antigo');
+        exemptionReason = i18n.t('taxGen.ptNhrDivReason');
+        exemptions.push(i18n.t('taxGen.ptNhrDivExemption'));
       }
     }
 
@@ -447,7 +449,7 @@ const getOptimizationSuggestions = (
         const excess = data.sales - BR_STOCK_EXEMPTION;
         const savings = excess * BR_STOCK_RATE;
         suggestions.push({
-          suggestion: `Vender até R$20k/mês em ações para isenção no Brasil. Excedente atual: R$${excess.toLocaleString()}`,
+          suggestion: i18n.t('taxGen.optStockExemption', { value: excess.toLocaleString(i18n.language) }),
           savings,
         });
       }
@@ -458,7 +460,7 @@ const getOptimizationSuggestions = (
       const daysLeft = PT_CRYPTO_HOLD_EXEMPTION - data.holdingDays;
       const savings = data.profit * PT_FLAT_RATE;
       suggestions.push({
-        suggestion: `Manter cripto por mais ${daysLeft} dias para isenção em Portugal (>365 dias)`,
+        suggestion: i18n.t('taxGen.optCryptoHold', { days: daysLeft }),
         savings,
       });
     }
@@ -475,30 +477,30 @@ export const generateDeclarationGuide = (config: DualTaxConfig): DeclarationItem
   // Brasil - DIRPF
   guide.push({
     country: 'BR',
-    form: 'DIRPF (Declaração de Imposto de Renda Pessoa Física)',
-    deadline: '30 de abril',
+    form: i18n.t('taxGen.brForm'),
+    deadline: i18n.t('taxGen.brDeadline'),
     items: [
-      { description: 'Rendimentos de trabalho (se aplicável)', required: true, details: 'Informar rendimentos recebidos no BR' },
-      { description: 'Rendimentos de capital no Brasil', required: true, details: 'Dividendos, JCP, rendimentos de FIIs' },
-      { description: 'Ganhos de capital em operações na B3', required: true, details: 'Informar vendas mensais e DARFs pagos' },
-      { description: 'Bens e direitos (posições)', required: true, details: 'Informar posições em 31/12' },
-      { description: 'Rendimentos recebidos do exterior', required: config.ptResidence.status === 'resident', details: 'Informar rendimentos de Portugal' },
-      { description: 'Crédito fiscal do tratado BR-PT', required: config.ptResidence.status === 'resident', details: 'Abater imposto pago em Portugal' },
+      { description: i18n.t('taxGen.brItem1Desc'), required: true, details: i18n.t('taxGen.brItem1Details') },
+      { description: i18n.t('taxGen.brItem2Desc'), required: true, details: i18n.t('taxGen.brItem2Details') },
+      { description: i18n.t('taxGen.brItem3Desc'), required: true, details: i18n.t('taxGen.brItem3Details') },
+      { description: i18n.t('taxGen.brItem4Desc'), required: true, details: i18n.t('taxGen.brItem4Details') },
+      { description: i18n.t('taxGen.brItem5Desc'), required: config.ptResidence.status === 'resident', details: i18n.t('taxGen.brItem5Details') },
+      { description: i18n.t('taxGen.brItem6Desc'), required: config.ptResidence.status === 'resident', details: i18n.t('taxGen.brItem6Details') },
     ],
   });
 
   // Portugal - IRS
   guide.push({
     country: 'PT',
-    form: 'IRS (Imposto sobre o Rendimento de Pessoas Singulares) - Modelo 3',
-    deadline: '30 de junho',
+    form: i18n.t('taxGen.ptForm'),
+    deadline: i18n.t('taxGen.ptDeadline'),
     items: [
-      { description: 'Rendimentos de capitais (Anexo J)', required: true, details: 'Dividendos e juros de ativos brasileiros' },
-      { description: 'Ganhos de capital (Anexo J)', required: true, details: 'Mais-valias de vendas de ativos BR' },
-      { description: 'Crédito de imposto pago no Brasil', required: true, details: 'Abater IR pago no BR (tratatado BR-PT)' },
-      { description: 'Declaração de bens no exterior', required: true, details: 'Modelo 1 - bens em Portugal' },
-      { description: 'Regime NHR (se aplicável)', required: config.nhrRegime, details: 'Anexar declaração de NHR' },
-      { description: 'Rendimentos isentos NHR', required: config.nhrRegime && config.nhrType === 'old', details: 'Dividendos e juros isentos no regime antigo' },
+      { description: i18n.t('taxGen.ptItem1Desc'), required: true, details: i18n.t('taxGen.ptItem1Details') },
+      { description: i18n.t('taxGen.ptItem2Desc'), required: true, details: i18n.t('taxGen.ptItem2Details') },
+      { description: i18n.t('taxGen.ptItem3Desc'), required: true, details: i18n.t('taxGen.ptItem3Details') },
+      { description: i18n.t('taxGen.ptItem4Desc'), required: true, details: i18n.t('taxGen.ptItem4Details') },
+      { description: i18n.t('taxGen.ptItem5Desc'), required: config.nhrRegime, details: i18n.t('taxGen.ptItem5Details') },
+      { description: i18n.t('taxGen.ptItem6Desc'), required: config.nhrRegime && config.nhrType === 'old', details: i18n.t('taxGen.ptItem6Details') },
     ],
   });
 

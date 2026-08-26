@@ -17,6 +17,7 @@ import { cn } from '../lib/utils';
 import { MOCK_ASSETS } from '../data/mockData';
 import { calculateClassicCeiling } from '../lib/formulas';
 import { useMarketOverview } from '../hooks/useMarketOverview';
+import { useTranslation } from 'react-i18next';
 
 interface MarketSummaryProps {
   compact?: boolean;
@@ -52,6 +53,7 @@ const SummaryRow: React.FC<SummaryRowProps> = ({ rank, ticker, value, isPositive
 
 const MarketSummary: React.FC<MarketSummaryProps> = ({ compact = false, className }) => {
   const { data: marketData } = useMarketOverview();
+  const { t } = useTranslation();
   const maxItems = compact ? 3 : 3;
 
   const summary = useMemo(() => {
@@ -107,7 +109,7 @@ const MarketSummary: React.FC<MarketSummaryProps> = ({ compact = false, classNam
       <div className="flex items-center gap-3">
         <Flame className="w-5 h-5 text-orange-400" />
         <h3 className="text-sm font-black text-white uppercase tracking-widest">
-          Resumo do Mercado
+          {t('marketSummary.title')}
         </h3>
       </div>
 
@@ -116,7 +118,7 @@ const MarketSummary: React.FC<MarketSummaryProps> = ({ compact = false, classNam
         <div className="glass-card rounded-xl p-4 border-white/5">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="w-3 h-3 text-emerald-400" />
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">Maiores DY</span>
+            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">{t('marketSummary.topDY')}</span>
           </div>
           {summary.topDY.map((a, i) => (
             <SummaryRow key={a.ticker} rank={i + 1} ticker={a.ticker} value={`${a.dividendYield.toFixed(1)}%`} isPositive />
@@ -127,7 +129,7 @@ const MarketSummary: React.FC<MarketSummaryProps> = ({ compact = false, classNam
         <div className="glass-card rounded-xl p-4 border-white/5">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="w-3 h-3 text-green-400" />
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">Maiores Altas</span>
+            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">{t('marketSummary.topGainers')}</span>
           </div>
           {summary.withChange.map((item, i) => (
             <SummaryRow key={item.ticker} rank={i + 1} ticker={item.ticker} value={`+${item.change.toFixed(1)}%`} isPositive />
@@ -138,7 +140,7 @@ const MarketSummary: React.FC<MarketSummaryProps> = ({ compact = false, classNam
         <div className="glass-card rounded-xl p-4 border-white/5">
           <div className="flex items-center gap-2 mb-3">
             <Target className="w-3 h-3 text-purple-400" />
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">Melhor Upside</span>
+            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">{t('marketSummary.bestUpside')}</span>
           </div>
           {summary.withUpside.map((a, i) => (
             <SummaryRow key={a.ticker} rank={i + 1} ticker={a.ticker} value={`+${a.upside.toFixed(1)}%`} isPositive />
@@ -149,7 +151,7 @@ const MarketSummary: React.FC<MarketSummaryProps> = ({ compact = false, classNam
         <div className="glass-card rounded-xl p-4 border-white/5">
           <div className="flex items-center gap-2 mb-3">
             <Building2 className="w-3 h-3 text-cyan-400" />
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">Melhor P/VP</span>
+            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">{t('marketSummary.bestPVP')}</span>
           </div>
           {summary.topPVP.map((a, i) => (
             <SummaryRow key={a.ticker} rank={i + 1} ticker={a.ticker} value={`${a.pvp?.toFixed(2)}`} isPositive={false} />
@@ -160,7 +162,7 @@ const MarketSummary: React.FC<MarketSummaryProps> = ({ compact = false, classNam
         <div className="glass-card rounded-xl p-4 border-white/5">
           <div className="flex items-center gap-2 mb-3">
             <Bitcoin className="w-3 h-3 text-orange-400" />
-            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">Cripto 24h</span>
+            <span className="text-[9px] font-black text-gray-500 uppercase tracking-wider">{t('marketSummary.crypto24h')}</span>
           </div>
           {summary.cryptoItems.map((item, i) => (
             <SummaryRow

@@ -6,8 +6,7 @@
  */
 
 import type { DRIPConfig, DRIPResult, DRIPProjection } from '../types';
-
-const MONTH_NAMES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+import i18n from '../i18n';
 
 // Income milestones to track
 const INCOME_MILESTONES = [500, 1000, 2000, 3000, 5000, 7500, 10000, 15000, 20000, 30000, 50000];
@@ -43,7 +42,7 @@ export function calculateDRIP(config: DRIPConfig): DRIPResult {
     currentDate.setMonth(currentDate.getMonth() + m);
     const monthIdx = currentDate.getMonth();
     const year = currentDate.getFullYear();
-    const label = `${MONTH_NAMES[monthIdx]}/${year}`;
+    const label = `${(i18n.t('dividends.monthsShort', { returnObjects: true }) as string[])[monthIdx]}/${year}`;
 
     // 1. Price appreciation
     const priceGrowth = portfolioValue * monthlyGrowth;
@@ -79,8 +78,8 @@ export function calculateDRIP(config: DRIPConfig): DRIPResult {
         reachedMilestones.add(milestone);
         const milestoneEntry = {
           month: m,
-          label: `R$${milestone.toLocaleString('pt-BR')}/mês`,
-          description: `Renda mensal de dividendos atingiu R$${milestone.toLocaleString('pt-BR')} no mês ${m}`,
+          label: i18n.t('dripGen.milestoneLabel', { value: milestone.toLocaleString(i18n.language) }),
+          description: i18n.t('dripGen.milestoneDesc', { value: milestone.toLocaleString(i18n.language), month: m }),
         };
         milestones.push(milestoneEntry);
       }
@@ -202,17 +201,17 @@ export function suggestNextContribution(
 
   let suggestion: string;
   if (gap <= 0) {
-    suggestion = 'Parabéns! Sua carteira já gera renda suficiente para sua meta.';
+    suggestion = i18n.t('dripGen.sugDone');
   } else if (monthsAtCurrentPace && monthsAtCurrentPace <= 6) {
-    suggestion = `Mantenha o ritmo! Faltam apenas ${monthsAtCurrentPace} meses para atingir sua meta.`;
+    suggestion = i18n.t('dripGen.sugKeep', { months: monthsAtCurrentPace });
   } else if (monthsAtCurrentPace && monthsAtCurrentPace <= 24) {
-    suggestion = `Continue aportando R$${monthlyContribution.toLocaleString('pt-BR')}/mês. Meta em ${monthsAtCurrentPace} meses.`;
+    suggestion = i18n.t('dripGen.sugContinue', { value: monthlyContribution.toLocaleString(i18n.language), months: monthsAtCurrentPace });
   } else {
     const increasedContribution = monthlyContribution * 1.5;
     const monthsWithIncrease = gap > 0 ? Math.ceil(gap / increasedContribution) : null;
     suggestion = monthsWithIncrease
-      ? `Aumente o aporte para R$${increasedContribution.toLocaleString('pt-BR', { maximumFractionDigits: 0 })}/mês e alcance a meta em ${monthsWithIncrease} meses.`
-      : 'Considere aumentar o aporte mensal para acelerar sua independência.';
+      ? i18n.t('dripGen.sugIncrease', { value: increasedContribution.toLocaleString(i18n.language, { maximumFractionDigits: 0 }), months: monthsWithIncrease })
+      : i18n.t('dripGen.sugConsider');
   }
 
   return {

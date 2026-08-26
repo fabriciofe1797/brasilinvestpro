@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
 import { GitCompare, TrendingUp, CheckCircle2, Info, ArrowRight, Star } from 'lucide-react';
 import { cn, formatCurrency } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 const mockAssets = [
-  { id: 'BTLG11', name: 'BTG Pactual Logística', type: 'FII Logístico', price: 102.45, dy: 8.4, pvp: 0.98, liquidity: 'High' },
-  { id: 'HGLG11', name: 'CSHG Logística', type: 'FII Logístico', price: 165.20, dy: 7.9, pvp: 1.05, liquidity: 'Very High' },
-  { id: 'TRXF11', name: 'TRX Real Estate', type: 'FII Híbrido', price: 110.12, dy: 10.2, pvp: 1.01, liquidity: 'Medium' },
-  { id: 'VISC11', name: 'Vinci Shopping Centers', type: 'FII Shopping', price: 120.30, dy: 8.1, pvp: 0.94, liquidity: 'High' },
+  { id: 'BTLG11', name: 'BTG Pactual Logística', type: 'FII Logístico', price: 102.45, dy: 8.4, pvp: 0.98, liquidity: 'alta' },
+  { id: 'HGLG11', name: 'CSHG Logística', type: 'FII Logístico', price: 165.20, dy: 7.9, pvp: 1.05, liquidity: 'muitoAlta' },
+  { id: 'TRXF11', name: 'TRX Real Estate', type: 'FII Híbrido', price: 110.12, dy: 10.2, pvp: 1.01, liquidity: 'media' },
+  { id: 'VISC11', name: 'Vinci Shopping Centers', type: 'FII Shopping', price: 120.30, dy: 8.1, pvp: 0.94, liquidity: 'alta' },
 ];
 
 const AssetComparator: React.FC = () => {
+  const { t } = useTranslation();
   const [assetA, setAssetA] = useState(mockAssets[0]);
   const [assetB, setAssetB] = useState(mockAssets[1]);
+  const liquidityLabels = t('comparator.liquidity', { returnObjects: true }) as Record<string, string>;
+  const tips = t('comparator.tips', { returnObjects: true }) as { t: string; d: string }[];
 
   return (
     <div className="space-y-10 animate-in fade-in duration-1000 pb-32">
@@ -25,12 +29,12 @@ const AssetComparator: React.FC = () => {
                   <GitCompare className="w-6 h-6 text-black" />
                </div>
                <div>
-                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Asset <span className="text-emerald-500">Comparator</span></h2>
-                  <div className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.3em]">Cross-Asset Delta Analysis</div>
+                  <h2 className="text-3xl font-black text-white uppercase tracking-tighter">{t('comparator.titleStart')} <span className="text-emerald-500">{t('comparator.titleHighlight')}</span></h2>
+                  <div className="text-[10px] text-emerald-500 font-black uppercase tracking-[0.3em]">{t('comparator.badge')}</div>
                </div>
             </div>
             <p className="text-gray-400 font-bold text-sm uppercase tracking-widest leading-relaxed max-w-2xl">
-              Simultaneous metric synchronization between two high-liquidity nodes. Algorithmic superiority calculation enabled.
+              {t('comparator.subtitle')}
             </p>
           </div>
         </div>
@@ -41,7 +45,7 @@ const AssetComparator: React.FC = () => {
         <div className="glass-card rounded-[3rem] border-white/5 p-10 space-y-10">
            <div className="flex items-center justify-between gap-6">
               <div className="flex-1 space-y-3">
-                 <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] ml-1">Node Alpha</label>
+                 <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] ml-1">{t('comparator.assetAlpha')}</label>
                  <select 
                     value={assetA.id} 
                     onChange={(e) => setAssetA(mockAssets.find(a => a.id === e.target.value) || mockAssets[0])}
@@ -52,7 +56,7 @@ const AssetComparator: React.FC = () => {
               </div>
               <div className="mt-8 text-emerald-500 font-black italic text-xl drop-shadow-[0_0_10px_rgba(16,185,129,0.3)]">VS</div>
               <div className="flex-1 space-y-3">
-                 <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] ml-1">Node Beta</label>
+                 <label className="text-[10px] font-black text-gray-600 uppercase tracking-[0.4em] ml-1">{t('comparator.assetBeta')}</label>
                  <select 
                     value={assetB.id} 
                     onChange={(e) => setAssetB(mockAssets.find(a => a.id === e.target.value) || mockAssets[1])}
@@ -64,11 +68,11 @@ const AssetComparator: React.FC = () => {
            </div>
 
            <div className="space-y-4">
-              <ComparisonRow label="Inventory Value" valA={formatCurrency(assetA.price, 'BRL')} valB={formatCurrency(assetB.price, 'BRL')} />
-              <ComparisonRow label="Dividend Yield (12M)" valA={`${assetA.dy.toFixed(2)}%`} valB={`${assetB.dy.toFixed(2)}%`} highlightA={assetA.dy > assetB.dy} highlightB={assetB.dy > assetA.dy} />
-              <ComparisonRow label="Price/Equity Ratio (P/VP)" valA={assetA.pvp.toFixed(2)} valB={assetB.pvp.toFixed(2)} highlightA={assetA.pvp < 1} highlightB={assetB.pvp < 1} />
-              <ComparisonRow label="Liquidity Node" valA={assetA.liquidity} valB={assetB.liquidity} />
-              <ComparisonRow label="Asset Taxonomy" valA={assetA.type} valB={assetB.type} />
+              <ComparisonRow label={t('comparator.rowPrice')} valA={formatCurrency(assetA.price, 'BRL')} valB={formatCurrency(assetB.price, 'BRL')} />
+              <ComparisonRow label={t('comparator.rowDY')} valA={`${assetA.dy.toFixed(2)}%`} valB={`${assetB.dy.toFixed(2)}%`} highlightA={assetA.dy > assetB.dy} highlightB={assetB.dy > assetA.dy} />
+              <ComparisonRow label={t('comparator.rowPVP')} valA={assetA.pvp.toFixed(2)} valB={assetB.pvp.toFixed(2)} highlightA={assetA.pvp < 1} highlightB={assetB.pvp < 1} />
+              <ComparisonRow label={t('comparator.rowLiquidity')} valA={liquidityLabels[assetA.liquidity] ?? assetA.liquidity} valB={liquidityLabels[assetB.liquidity] ?? assetB.liquidity} />
+              <ComparisonRow label={t('comparator.rowCategory')} valA={assetA.type} valB={assetB.type} />
            </div>
         </div>
 
@@ -82,23 +86,23 @@ const AssetComparator: React.FC = () => {
               <div className="relative z-10 space-y-8">
                  <div className="space-y-2">
                     <h3 className="font-black text-white uppercase text-sm tracking-[0.3em] flex items-center gap-3">
-                       <CheckCircle2 className="text-emerald-500 w-5 h-5" /> Neural Verdict
+                       <CheckCircle2 className="text-emerald-500 w-5 h-5" /> {t('comparator.neuralVerdict')}
                     </h3>
-                    <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">Calculated superior allocation node.</p>
+                    <p className="text-[10px] text-gray-600 font-black uppercase tracking-widest">{t('comparator.neuralSub')}</p>
                  </div>
 
                  <div className="space-y-6">
                     <p className="text-sm font-bold text-gray-400 uppercase tracking-widest leading-loose">
-                       Analyzing current macro volatility, <span className="text-white bg-emerald-500/20 px-3 py-1 rounded-lg border border-emerald-500/30">{assetA.dy > assetB.dy ? assetA.id : assetB.id}</span> provides a superior risk-adjusted yield of <span className="text-emerald-500">{Math.max(assetA.dy, assetB.dy)}%</span>.
+                       {t('comparator.neuralStart')} <span className="text-white bg-emerald-500/20 px-3 py-1 rounded-lg border border-emerald-500/30">{assetA.dy > assetB.dy ? assetA.id : assetB.id}</span> {t('comparator.neuralMid')} <span className="text-emerald-500">{Math.max(assetA.dy, assetB.dy)}%</span>{t('comparator.neuralEnd')}
                     </p>
                     <div className="p-6 rounded-[2rem] bg-black/40 border border-white/5 relative overflow-hidden">
                        <div className="absolute top-0 right-0 w-24 h-24 bg-blue-500/5 blur-2xl" />
                        <p className="text-[11px] text-gray-500 font-bold uppercase tracking-widest leading-loose italic">
-                          "Protocol Detection: The {assetA.pvp < 1 ? assetA.id : assetB.id} node is currently trading <span className="text-blue-400">Below Parity (P/VP &lt; 1.0)</span>, suggesting a strategic entry window for long-term equity accumulation."
+                          {t('comparator.protocolStart')} {assetA.pvp < 1 ? assetA.id : assetB.id} {t('comparator.protocolMid')} <span className="text-blue-400">{t('comparator.protocolBadge')}</span>{t('comparator.protocolEnd')}
                        </p>
                     </div>
                     <button className="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.4em] text-white hover:text-emerald-500 transition-all group/btn">
-                       Access Deep Thesis Protocol <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-2 transition-transform" />
+                       {t('comparator.accessThesis')} <ArrowRight className="w-4 h-4 group-hover/btn:translate-x-2 transition-transform" />
                     </button>
                  </div>
               </div>
@@ -107,14 +111,10 @@ const AssetComparator: React.FC = () => {
            {/* Deployment Strategy Guide */}
            <div className="glass-card rounded-[3rem] border-white/5 p-10 space-y-8">
               <h3 className="text-sm font-black text-white uppercase tracking-[0.3em] flex items-center gap-3">
-                 <Info className="w-5 h-5 text-blue-500" /> Strategy Parameters
+                 <Info className="w-5 h-5 text-blue-500" /> {t('comparator.paramsTitle')}
               </h3>
               <div className="grid grid-cols-1 gap-6">
-                 {[
-                    { t: "Parity Correction", d: "P/VP values below 1.0 indicate the node is trading below its tangible asset value." },
-                    { t: "Liquidity Depth", d: "Measures the operational capacity to exit positions without inducing price slippage." },
-                    { t: "Sector Resilience", d: "Logistics nodes typically exhibit higher survival coefficients during recessionary cycles." }
-                 ].map((tip, i) => (
+                 {tips.map((tip, i) => (
                     <div key={i} className="flex gap-4 group">
                        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center shrink-0 group-hover:bg-emerald-500/10 transition-all">
                           <TrendingUp className="w-4 h-4 text-gray-600 group-hover:text-emerald-500" />

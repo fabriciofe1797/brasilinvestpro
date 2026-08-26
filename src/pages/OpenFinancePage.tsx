@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 import { useOpenFinance } from '../hooks/useOpenFinance';
 import { getSupportedBrokers } from '../services/openFinance';
 import { formatCurrency } from '../lib/utils';
@@ -34,6 +36,7 @@ const OpenFinancePage: React.FC = () => {
     totalPositions,
     totalValue,
   } = useOpenFinance();
+  const { t } = useTranslation();
 
   const [connectingBroker, setConnectingBroker] = useState<string | null>(null);
   const [showConnectModal, setShowConnectModal] = useState<string | null>(null);
@@ -61,8 +64,8 @@ const OpenFinancePage: React.FC = () => {
   };
 
   const formatDate = (d: string | null) => {
-    if (!d) return 'Nunca';
-    return new Date(d).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    if (!d) return t('openFinance.never');
+    return new Date(d).toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
   };
 
   const statusIcon = (status: string) => {
@@ -81,10 +84,10 @@ const OpenFinancePage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
             <Link2 className="w-8 h-8 text-emerald-500" />
-            Open Finance
+            {t('openFinance.title')}
           </h1>
           <p className="text-gray-500 text-sm font-medium mt-1">
-            Conecte suas corretoras para sincronizacao automatica de posicoes e transacoes.
+            {t('openFinance.subtitle')}
           </p>
         </div>
         {connections.length > 0 && (
@@ -94,7 +97,7 @@ const OpenFinancePage: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all text-xs font-bold disabled:opacity-50"
           >
             {syncing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-            {syncing ? 'Sincronizando...' : 'Sincronizar Tudo'}
+            {syncing ? t('openFinance.syncing') : t('openFinance.syncAll')}
           </button>
         )}
       </div>
@@ -104,30 +107,30 @@ const OpenFinancePage: React.FC = () => {
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Link2 className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-[10px] font-bold text-gray-500 uppercase">Conexoes</span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase">{t('openFinance.statConnections')}</span>
           </div>
           <p className="text-2xl font-black text-white">{connections.length}</p>
-          <p className="text-[10px] text-gray-500">corretoras ativas</p>
+          <p className="text-[10px] text-gray-500">{t('openFinance.activeBrokers')}</p>
         </div>
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <BarChart3 className="w-3.5 h-3.5 text-blue-400" />
-            <span className="text-[10px] font-bold text-gray-500 uppercase">Posicoes</span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase">{t('openFinance.statPositions')}</span>
           </div>
           <p className="text-2xl font-black text-white">{totalPositions}</p>
-          <p className="text-[10px] text-gray-500">ativos sincronizados</p>
+          <p className="text-[10px] text-gray-500">{t('openFinance.syncedAssets')}</p>
         </div>
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Wallet className="w-3.5 h-3.5 text-purple-400" />
-            <span className="text-[10px] font-bold text-gray-500 uppercase">Valor Total</span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase">{t('openFinance.statTotalValue')}</span>
           </div>
           <p className="text-2xl font-black text-white">{formatBRL(totalValue)}</p>
         </div>
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <Clock className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-[10px] font-bold text-gray-500 uppercase">Ultima Sync</span>
+            <span className="text-[10px] font-bold text-gray-500 uppercase">{t('openFinance.statLastSync')}</span>
           </div>
           <p className="text-sm font-black text-white">{formatDate(lastSync)}</p>
         </div>
@@ -135,7 +138,7 @@ const OpenFinancePage: React.FC = () => {
 
       {/* Broker Grid */}
       <div>
-        <h2 className="text-lg font-bold text-white mb-4">Corretoras Disponiveis</h2>
+        <h2 className="text-lg font-bold text-white mb-4">{t('openFinance.brokersTitle')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {brokers.map(broker => {
             const connected = isConnected(broker.id);
@@ -159,18 +162,18 @@ const OpenFinancePage: React.FC = () => {
                       <p className="text-sm font-bold text-white">{broker.name}</p>
                       {connected && conn && (
                         <p className="text-[10px] text-gray-500">
-                          {conn.positionsCount} posicoes
+                          {t('openFinance.positionsCount', { count: conn.positionsCount })}
                         </p>
                       )}
                     </div>
                   </div>
                   {connected ? (
                     <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase">
-                      Conectado
+                      {t('openFinance.connected')}
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-gray-500 text-[9px] font-black uppercase">
-                      Desconectado
+                      {t('openFinance.disconnected')}
                     </span>
                   )}
                 </div>
@@ -178,8 +181,8 @@ const OpenFinancePage: React.FC = () => {
                 {connected && conn ? (
                   <div className="space-y-3">
                     <div className="text-[10px] text-gray-500">
-                      <p>Conectado em: {formatDate(conn.connectedAt)}</p>
-                      <p>Ultima sync: {formatDate(conn.lastSync)}</p>
+                      <p>{t('openFinance.connectedAt', { date: formatDate(conn.connectedAt) })}</p>
+                      <p>{t('openFinance.lastSyncLabel', { date: formatDate(conn.lastSync) })}</p>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -192,7 +195,7 @@ const OpenFinancePage: React.FC = () => {
                         ) : (
                           <RefreshCw className="w-3 h-3" />
                         )}
-                        {isSyncingThis ? 'Sync...' : 'Sincronizar'}
+                        {isSyncingThis ? t('openFinance.syncingBtn') : t('openFinance.syncBtn')}
                       </button>
                       <button
                         onClick={() => disconnectBroker(conn.id)}
@@ -213,7 +216,7 @@ const OpenFinancePage: React.FC = () => {
                     ) : (
                       <Link2 className="w-3.5 h-3.5" />
                     )}
-                    {isConnecting ? 'Conectando...' : 'Conectar'}
+                    {isConnecting ? t('openFinance.connecting') : t('openFinance.connect')}
                   </button>
                 )}
               </div>
@@ -227,21 +230,21 @@ const OpenFinancePage: React.FC = () => {
         <div className="fixed inset-0 z-[200] flex items-center justify-center">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowConnectModal(null)} />
           <div className="relative bg-[#0B1C17] border border-white/10 rounded-2xl p-8 max-w-md w-full mx-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white mb-2">Conectar Corretora</h3>
+            <h3 className="text-lg font-bold text-white mb-2">{t('openFinance.modalTitle')}</h3>
             <p className="text-sm text-gray-400 mb-6">
-              Voce sera redirecionado para o portal da corretora para autorizar o acesso somente leitura aos seus dados.
+              {t('openFinance.modalDesc')}
             </p>
             <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-6">
-              <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">Permissoes solicitadas:</p>
+              <p className="text-[10px] text-gray-500 uppercase font-bold mb-2">{t('openFinance.permsTitle')}</p>
               <ul className="space-y-1.5">
                 <li className="flex items-center gap-2 text-xs text-gray-300">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Visualizar posicoes e saldos
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" /> {t('openFinance.perm1')}
                 </li>
                 <li className="flex items-center gap-2 text-xs text-gray-300">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Importar historico de transacoes
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" /> {t('openFinance.perm2')}
                 </li>
                 <li className="flex items-center gap-2 text-xs text-gray-300">
-                  <XCircle className="w-3 h-3 text-red-400" /> Sem permissao de movimentacao (somente leitura)
+                  <XCircle className="w-3 h-3 text-red-400" /> {t('openFinance.perm3')}
                 </li>
               </ul>
             </div>
@@ -250,13 +253,13 @@ const OpenFinancePage: React.FC = () => {
                 onClick={() => setShowConnectModal(null)}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-gray-400 hover:text-white transition-all text-xs font-bold"
               >
-                Cancelar
+                {t('openFinance.cancel')}
               </button>
               <button
                 onClick={() => handleConnect(showConnectModal)}
                 className="flex-1 px-4 py-2.5 rounded-xl bg-emerald-500 text-black hover:bg-emerald-400 transition-all text-xs font-bold"
               >
-                Autorizar
+                {t('openFinance.authorize')}
               </button>
             </div>
           </div>
@@ -272,7 +275,7 @@ const OpenFinancePage: React.FC = () => {
           >
             <div className="flex items-center gap-3">
               <ArrowRightLeft className="w-5 h-5 text-blue-500" />
-              <h3 className="text-lg font-bold text-white">Posicoes Sincronizadas</h3>
+              <h3 className="text-lg font-bold text-white">{t('openFinance.positionsTitle')}</h3>
               <span className="px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 text-[10px] font-black border border-blue-500/30">
                 {allPositions.length}
               </span>
@@ -286,13 +289,13 @@ const OpenFinancePage: React.FC = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-white/5">
-                      <th className="text-left text-[10px] font-bold text-gray-500 uppercase py-3 px-2">Ticker</th>
-                      <th className="text-left text-[10px] font-bold text-gray-500 uppercase py-3 px-2">Empresa</th>
-                      <th className="text-left text-[10px] font-bold text-gray-500 uppercase py-3 px-2">Corretora</th>
-                      <th className="text-right text-[10px] font-bold text-gray-500 uppercase py-3 px-2">Qtd</th>
-                      <th className="text-right text-[10px] font-bold text-gray-500 uppercase py-3 px-2">PM</th>
-                      <th className="text-right text-[10px] font-bold text-gray-500 uppercase py-3 px-2">Valor Atual</th>
-                      <th className="text-left text-[10px] font-bold text-gray-500 uppercase py-3 px-2">Tipo</th>
+                      <th className="text-left text-[10px] font-bold text-gray-500 uppercase py-3 px-2">{t('openFinance.colTicker')}</th>
+                      <th className="text-left text-[10px] font-bold text-gray-500 uppercase py-3 px-2">{t('openFinance.colCompany')}</th>
+                      <th className="text-left text-[10px] font-bold text-gray-500 uppercase py-3 px-2">{t('openFinance.colBroker')}</th>
+                      <th className="text-right text-[10px] font-bold text-gray-500 uppercase py-3 px-2">{t('openFinance.colQty')}</th>
+                      <th className="text-right text-[10px] font-bold text-gray-500 uppercase py-3 px-2">{t('openFinance.colAvg')}</th>
+                      <th className="text-right text-[10px] font-bold text-gray-500 uppercase py-3 px-2">{t('openFinance.colCurrentValue')}</th>
+                      <th className="text-left text-[10px] font-bold text-gray-500 uppercase py-3 px-2">{t('openFinance.colType')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -327,7 +330,7 @@ const OpenFinancePage: React.FC = () => {
         >
           <div className="flex items-center gap-3">
             <Clock className="w-5 h-5 text-purple-500" />
-            <h3 className="text-lg font-bold text-white">Historico de Sincronizacoes</h3>
+            <h3 className="text-lg font-bold text-white">{t('openFinance.historyTitle')}</h3>
           </div>
           {expandedSection === 'history' ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
         </button>
@@ -345,12 +348,12 @@ const OpenFinancePage: React.FC = () => {
                 </div>
                 <div className="text-right">
                   <p className="text-[10px] text-gray-400">
-                    {h.positionsImported} posicoes, {h.transactionsImported} transacoes
+                    {t('openFinance.historyCounts', { positions: h.positionsImported, transactions: h.transactionsImported })}
                   </p>
                   <span className={`text-[9px] font-black uppercase ${
                     h.status === 'success' ? 'text-emerald-400' : h.status === 'error' ? 'text-red-400' : 'text-amber-400'
                   }`}>
-                    {h.status === 'success' ? 'Sucesso' : h.status === 'error' ? 'Erro' : 'Parcial'}
+                    {h.status === 'success' ? t('openFinance.statusSuccess') : h.status === 'error' ? t('openFinance.statusError') : t('openFinance.statusPartial')}
                   </span>
                 </div>
               </div>
@@ -367,7 +370,7 @@ const OpenFinancePage: React.FC = () => {
         >
           <div className="flex items-center gap-3">
             <Shield className="w-5 h-5 text-emerald-500" />
-            <h3 className="text-lg font-bold text-white">Seguranca</h3>
+            <h3 className="text-lg font-bold text-white">{t('openFinance.securityTitle')}</h3>
           </div>
           {expandedSection === 'security' ? <ChevronUp className="w-4 h-4 text-gray-500" /> : <ChevronDown className="w-4 h-4 text-gray-500" />}
         </button>
@@ -377,18 +380,18 @@ const OpenFinancePage: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                 <Shield className="w-5 h-5 text-emerald-400 mb-2" />
-                <p className="text-xs font-bold text-white mb-1">Somente Leitura</p>
-                <p className="text-[10px] text-gray-500">Acesso exclusivo para consulta. Nao e possivel realizar operacoes financeiras.</p>
+                <p className="text-xs font-bold text-white mb-1">{t('openFinance.sec1Title')}</p>
+                <p className="text-[10px] text-gray-500">{t('openFinance.sec1Desc')}</p>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                 <CheckCircle2 className="w-5 h-5 text-blue-400 mb-2" />
-                <p className="text-xs font-bold text-white mb-1">Criptografia E2E</p>
-                <p className="text-[10px] text-gray-500">Todas as conexoes usam criptografia de ponta a ponta via agregador certificado.</p>
+                <p className="text-xs font-bold text-white mb-1">{t('openFinance.sec2Title')}</p>
+                <p className="text-[10px] text-gray-500">{t('openFinance.sec2Desc')}</p>
               </div>
               <div className="p-4 rounded-xl bg-white/[0.02] border border-white/5">
                 <XCircle className="w-5 h-5 text-purple-400 mb-2" />
-                <p className="text-xs font-bold text-white mb-1">Revogavel</p>
-                <p className="text-[10px] text-gray-500">Voce pode desconectar qualquer corretora a qualquer momento.</p>
+                <p className="text-xs font-bold text-white mb-1">{t('openFinance.sec3Title')}</p>
+                <p className="text-[10px] text-gray-500">{t('openFinance.sec3Desc')}</p>
               </div>
             </div>
           </div>

@@ -15,6 +15,7 @@ import {
 import { useStore } from '../store/useStore';
 import { openPaymentLink } from '../services/billing';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -46,48 +47,34 @@ interface Plan {
 
 // ─── Plan data ────────────────────────────────────────────────────────────────
 
-const PLANS: Plan[] = [
+const getPlans = (t: (key: string, options?: Record<string, unknown>) => string): Plan[] => [
   {
     id: 'bronze',
-    tag: 'BRONZE',
-    title: 'Iniciante',
-    priceMonthly: 'Grátis',
-    priceAnnual: 'Grátis',
+    tag: t('plans.bronzeTag'),
+    title: t('plans.bronzeTitle'),
+    priceMonthly: t('plans.free'),
+    priceAnnual: t('plans.free'),
     rawMonthly: 0,
     rawAnnual: 0,
     isFree: true,
-    desc: 'Organização básica para quem está começando agora.',
-    features: [
-      { text: 'Dashboard Real-Time' },
-      { text: 'Hub de Mercado' },
-      { text: 'Extrato de transações' },
-      { text: 'Até 5 ativos' },
-      { text: 'Simulador Juros Simples' },
-      { text: '20 transações / mês' },
-    ],
+    desc: t('plans.bronzeDesc'),
+    features: (t('plans.bronzeFeatures', { returnObjects: true }) as unknown as string[]).map(text => ({ text })),
     theme: 'bg-[#0B1C17]/40 border-white/5',
     badgeColor: 'bg-gray-500/20 text-gray-400 border border-gray-500/20',
-    btnText: 'Plano Atual',
+    btnText: t('plans.currentPlan'),
   },
   {
     id: 'starter',
-    tag: 'PRATA',
-    title: 'Starter',
+    tag: t('plans.silverTag'),
+    title: t('plans.starterTitle'),
     priceMonthly: 'R$ 24,99',
     priceAnnual: 'R$ 20,82',
     rawMonthly: 24.99,
     rawAnnual: 20.82,
-    desc: 'Para evoluir com monitoramento de proventos e rebalanceamento.',
-    roi: 'Compensa com R$500/mês aportados',
+    desc: t('plans.starterDesc'),
+    roi: t('plans.starterRoi'),
     roiColor: 'text-blue-400',
-    features: [
-      { text: 'Tudo do Grátis' },
-      { text: 'Calendário de Dividendos', highlight: true },
-      { text: 'Rebalanceador básico', highlight: true },
-      { text: 'Importação Manual (CSV)', highlight: true },
-      { text: 'Até 15 ativos' },
-      { text: '200 transações / mês' },
-    ],
+    features: (t('plans.starterFeatures', { returnObjects: true }) as unknown as string[]).map((text, i) => ({ text, highlight: i >= 1 && i <= 3 })),
     theme: 'glass-blue border-blue-500/20',
     badgeColor: 'bg-blue-500/10 text-blue-400 border border-blue-500/20',
     paymentKey: 'starter',
@@ -95,24 +82,17 @@ const PLANS: Plan[] = [
   },
   {
     id: 'pro',
-    tag: 'MAIS POPULAR',
-    title: 'Pro',
+    tag: t('plans.popularTag'),
+    title: t('plans.proTitle'),
     priceMonthly: 'R$ 39,99',
     priceAnnual: 'R$ 33,25',
     rawMonthly: 39.99,
     rawAnnual: 33.25,
-    desc: 'O pacote completo para construir riqueza com inteligência.',
-    roi: 'Advisor AI recupera o valor em 1 operação',
+    desc: t('plans.proDesc'),
+    roi: t('plans.proRoi'),
     roiColor: 'text-emerald-400',
     popular: true,
-    features: [
-      { text: 'Tudo do Starter' },
-      { text: 'Advisor AI Tutor', highlight: true },
-      { text: 'Calculadora IR Completa', highlight: true },
-      { text: 'DRIP Simulator Premium', highlight: true },
-      { text: 'Até 30 ativos' },
-      { text: '1.000 transações / mês' },
-    ],
+    features: (t('plans.proFeatures', { returnObjects: true }) as unknown as string[]).map((text, i) => ({ text, highlight: i >= 1 && i <= 3 })),
     theme: 'glass-emerald border-emerald-500/40',
     badgeColor: 'bg-emerald-400 text-[#020617]',
     paymentKey: 'pro',
@@ -120,23 +100,16 @@ const PLANS: Plan[] = [
   },
   {
     id: 'master',
-    tag: 'PLATINA',
-    title: 'Master',
+    tag: t('plans.platinumTag'),
+    title: t('plans.masterTitle'),
     priceMonthly: 'R$ 50,00',
     priceAnnual: 'R$ 41,66',
     rawMonthly: 50,
     rawAnnual: 41.66,
-    desc: 'Aparato profissional para expatriados com foco em Portugal.',
-    roi: 'Radar de câmbio poupa +4% por remessa',
+    desc: t('plans.masterDesc'),
+    roi: t('plans.masterRoi'),
     roiColor: 'text-cyan-400',
-    features: [
-      { text: 'Tudo do Pro' },
-      { text: 'Radar de Câmbio EUR/BRL', highlight: true },
-      { text: 'Comparador de Ativos Pro', highlight: true },
-      { text: 'Comunidade VIP Hub', highlight: true },
-      { text: 'Importação Automática', highlight: true },
-      { text: 'Até 50 ativos' },
-    ],
+    features: (t('plans.masterFeatures', { returnObjects: true }) as unknown as string[]).map((text, i) => ({ text, highlight: i >= 1 && i <= 4 })),
     theme: 'glass-blue border-cyan-500/20',
     badgeColor: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20',
     paymentKey: 'master',
@@ -144,23 +117,16 @@ const PLANS: Plan[] = [
   },
   {
     id: 'elite',
-    tag: 'DIAMANTE',
-    title: 'Elite',
+    tag: t('plans.diamondTag'),
+    title: t('plans.eliteTitle'),
     priceMonthly: 'R$ 99,99',
     priceAnnual: 'R$ 83,25',
     rawMonthly: 99.99,
     rawAnnual: 83.25,
-    desc: 'Gestão de alto nível com IA avançada e consultoria humana.',
-    roi: 'Tax Harvesting economiza R$2k+/ano',
+    desc: t('plans.eliteDesc'),
+    roi: t('plans.eliteRoi'),
     roiColor: 'text-purple-400',
-    features: [
-      { text: 'Tudo do Platina' },
-      { text: 'Tax Loss Harvesting (IA)', highlight: true },
-      { text: 'Consultoria Humana Mensal', highlight: true },
-      { text: 'Relatórios Customizados', highlight: true },
-      { text: 'Ativos Ilimitados', highlight: true },
-      { text: 'VIP Concierge 24h', highlight: true },
-    ],
+    features: (t('plans.eliteFeatures', { returnObjects: true }) as unknown as string[]).map((text, i) => ({ text, highlight: i >= 1 })),
     theme: 'glass-purple border-purple-500/20',
     badgeColor: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
     paymentKey: 'elite',
@@ -170,20 +136,20 @@ const PLANS: Plan[] = [
 
 // ─── Comparison table data ────────────────────────────────────────────────────
 
-const COMPARE_ROWS = [
-  { label: 'Número máximo de ativos',   values: ['5',    '15',   '30',    '50',    '∞'] },
-  { label: 'Transações por mês',         values: ['20',   '200',  '1.000', '5.000', '∞'] },
-  { label: 'Dashboard Real-Time',        values: [true,   true,   true,    true,    true] },
-  { label: 'Calendário de Dividendos',   values: [false,  true,   true,    true,    true] },
-  { label: 'Rebalanceador',              values: [false,  true,   true,    true,    true] },
-  { label: 'Advisor AI Tutor',           values: [false,  false,  true,    true,    true] },
-  { label: 'Calculadora IR',             values: [false,  false,  true,    true,    true] },
-  { label: 'DRIP Simulator',             values: [false,  false,  true,    true,    true] },
-  { label: 'Radar de Câmbio EUR/BRL',    values: [false,  false,  false,   true,    true] },
-  { label: 'Importação Automática',      values: [false,  false,  false,   true,    true] },
-  { label: 'Tax Loss Harvesting (IA)',   values: [false,  false,  false,   false,   true] },
-  { label: 'Consultoria Humana',         values: [false,  false,  false,   false,   true] },
-  { label: 'VIP Concierge 24h',          values: [false,  false,  false,   false,   true] },
+const getCompareRows = (t: (key: string) => string) => [
+  { label: t('plans.cmpMaxAssets'),   values: ['5',    '15',   '30',    '50',    '∞'] },
+  { label: t('plans.cmpTxMonth'),         values: ['20',   '200',  '1.000', '5.000', '∞'] },
+  { label: t('plans.cmpDashboard'),    values: [true,   true,   true,    true,    true] },
+  { label: t('plans.cmpDivCalendar'),   values: [false,  true,   true,    true,    true] },
+  { label: t('plans.cmpRebalancer'),              values: [false,  true,   true,    true,    true] },
+  { label: t('plans.cmpTutor'),                  values: [false,  false,  true,    true,    true] },
+  { label: t('plans.cmpIrCalc'),             values: [false,  false,  true,    true,    true] },
+  { label: t('plans.cmpDrip'),             values: [false,  false,   true,    true,    true] },
+  { label: t('plans.cmpFxRadar'),    values: [false,  false,  false,   true,    true] },
+  { label: t('plans.cmpAutoImport'),      values: [false,  false,  false,   true,    true] },
+  { label: t('plans.cmpTaxLoss'),   values: [false,  false,  false,   false,   true] },
+  { label: t('plans.cmpHuman'),         values: [false,  false,  false,   false,   true] },
+  { label: t('plans.cmpConcierge'),          values: [false,  false,  false,   false,   true] },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -201,6 +167,7 @@ const PlanCard = ({
   onAction: () => void;
   onDev: () => void;
 }) => {
+  const { t } = useTranslation();
   const displayPrice = isAnnual ? plan.priceAnnual : plan.priceMonthly;
 
   return (
@@ -229,16 +196,16 @@ const PlanCard = ({
         <h3 className="text-lg font-black text-white mb-2">{plan.title}</h3>
         <div className="flex items-baseline gap-1">
           <span className="text-3xl font-black text-white">{displayPrice}</span>
-          {!plan.isFree && <span className="text-gray-500 text-xs">/mês</span>}
+          {!plan.isFree && <span className="text-gray-500 text-xs">{t('plans.perMonth')}</span>}
         </div>
         {isAnnual && !plan.isFree && (
           <div className="text-[10px] text-emerald-400 font-bold mt-1 flex items-center gap-1">
-            <Zap className="w-2.5 h-2.5" /> 2 meses grátis incluídos
+            <Zap className="w-2.5 h-2.5" /> {t('plans.twoMonthsFree')}
           </div>
         )}
         {!isAnnual && !plan.isFree && (
           <div className="text-[10px] text-gray-600 mt-1">
-            ou {plan.priceAnnual}/mês no anual
+            {t('plans.orAnnual', { price: plan.priceAnnual })}
           </div>
         )}
       </div>
@@ -283,7 +250,7 @@ const PlanCard = ({
             disabled
             className="w-full py-3 rounded-xl border border-white/10 text-gray-600 text-sm font-bold cursor-default"
           >
-            Plano Atual
+            {t('plans.currentPlan')}
           </button>
         ) : (
           <>
@@ -296,7 +263,7 @@ const PlanCard = ({
                   : 'bg-white/5 text-white hover:bg-white/10 border border-white/10 active:scale-95',
               )}
             >
-              {plan.btnText ?? 'Começar Agora'}
+              {plan.btnText ?? t('plans.startNow')}
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </button>
             {/* Dev mode — only visible in development */}
@@ -305,7 +272,7 @@ const PlanCard = ({
                 onClick={onDev}
                 className="w-full py-1.5 text-[10px] font-bold text-gray-700 hover:text-gray-500 transition-colors"
               >
-                ⚙ Ativar (Dev)
+                {t('plans.devActivate')}
               </button>
             )}
           </>
@@ -318,7 +285,10 @@ const PlanCard = ({
 // ─── Comparison table ─────────────────────────────────────────────────────────
 
 const ComparisonTable = () => {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const planNames = t('plans.planNames', { returnObjects: true }) as string[];
+  const compareRows = getCompareRows(t);
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 mt-12">
@@ -326,7 +296,7 @@ const ComparisonTable = () => {
         onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-center gap-3 py-4 text-sm font-bold text-gray-400 hover:text-white transition-colors group"
       >
-        <span>Comparar todos os planos em detalhe</span>
+        <span>{t('plans.compareToggle')}</span>
         <ChevronDown
           className={cn(
             'w-4 h-4 transition-transform duration-300',
@@ -342,9 +312,9 @@ const ComparisonTable = () => {
               <thead>
                 <tr className="border-b border-white/5">
                   <th className="text-left py-5 px-6 text-gray-500 text-xs font-bold uppercase tracking-widest w-[30%]">
-                    Funcionalidade
+                    {t('plans.compareFeatureCol')}
                   </th>
-                  {['Iniciante', 'Starter', 'Pro ⭐', 'Master', 'Elite'].map((name, i) => (
+                  {planNames.map((name, i) => (
                     <th
                       key={i}
                       className={cn(
@@ -358,7 +328,7 @@ const ComparisonTable = () => {
                 </tr>
               </thead>
               <tbody>
-                {COMPARE_ROWS.map((row, ri) => (
+                {compareRows.map((row, ri) => (
                   <tr
                     key={ri}
                     className={cn(
@@ -400,13 +370,15 @@ const ComparisonTable = () => {
 
 // ─── Trust bar ────────────────────────────────────────────────────────────────
 
-const TrustBar = () => (
+const TrustBar = () => {
+  const { t } = useTranslation();
+  return (
   <div className="flex flex-wrap justify-center items-center gap-8 md:gap-14 mt-16 mb-4 px-4">
     {[
-      { icon: <Lock className="w-4 h-4 text-emerald-400" />,   label: 'SSL 256-bit',    sub: 'Criptografia bancária' },
-      { icon: <Shield className="w-4 h-4 text-blue-400" />,    label: 'GDPR Compliant', sub: 'Lei europeia de dados' },
-      { icon: <Gem className="w-4 h-4 text-purple-400" />,     label: 'Stripe Verified',sub: 'Pagamento seguro' },
-      { icon: <CheckCircle2 className="w-4 h-4 text-cyan-400" />, label: 'Read-only',   sub: 'Nunca acessa sua corretora' },
+      { icon: <Lock className="w-4 h-4 text-emerald-400" />,   label: t('plans.trustSsl'),    sub: t('plans.trustSslSub') },
+      { icon: <Shield className="w-4 h-4 text-blue-400" />,    label: t('plans.trustGdpr'), sub: t('plans.trustGdprSub') },
+      { icon: <Gem className="w-4 h-4 text-purple-400" />,     label: t('plans.trustStripe'), sub: t('plans.trustStripeSub') },
+      { icon: <CheckCircle2 className="w-4 h-4 text-cyan-400" />, label: t('plans.trustReadonly'), sub: t('plans.trustReadonlySub') },
     ].map((item, i) => (
       <div key={i} className="flex items-center gap-2.5 text-left">
         <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
@@ -419,13 +391,16 @@ const TrustBar = () => (
       </div>
     ))}
   </div>
-);
+  );
+};
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const PremiumPlans: React.FC = () => {
   const { setPlan } = useStore();
+  const { t } = useTranslation();
   const [isAnnual, setIsAnnual] = useState(false);
+  const plans = getPlans(t);
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
@@ -433,16 +408,16 @@ const PremiumPlans: React.FC = () => {
       {/* ── Header ── */}
       <div className="text-center space-y-5 max-w-2xl mx-auto pt-12 px-4">
         <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-4 py-1.5 rounded-full border border-emerald-500/20 text-xs font-black uppercase tracking-widest">
-          <Crown className="w-3 h-3" /> Invista como um Profissional
+          <Crown className="w-3 h-3" /> {t('plans.headerBadge')}
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight leading-[1.1]">
-          Escolha seu caminho para a{' '}
+          {t('plans.titleStart')}{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
-            Liberdade.
+            {t('plans.titleHighlight')}
           </span>
         </h1>
         <p className="text-gray-400 text-base leading-relaxed">
-          Automatize sua estratégia, otimize seus impostos e deixe a IA cuidar do trabalho pesado.
+          {t('plans.subtitle')}
         </p>
 
         {/* Billing toggle */}
@@ -454,7 +429,7 @@ const PremiumPlans: React.FC = () => {
               !isAnnual ? 'bg-emerald-500 text-black shadow-md' : 'text-gray-400 hover:text-white',
             )}
           >
-            Mensal
+            {t('plans.monthly')}
           </button>
           <button
             onClick={() => setIsAnnual(true)}
@@ -463,7 +438,7 @@ const PremiumPlans: React.FC = () => {
               isAnnual ? 'bg-emerald-500 text-black shadow-md' : 'text-gray-400 hover:text-white',
             )}
           >
-            Anual
+            {t('plans.annual')}
             <span
               className={cn(
                 'text-[10px] px-2 py-0.5 rounded-full font-black transition-all',
@@ -484,7 +459,7 @@ const PremiumPlans: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5 max-w-[1400px] mx-auto px-4 items-stretch relative z-10">
-          {PLANS.map(plan => (
+          {plans.map(plan => (
             <PlanCard
               key={plan.id}
               plan={plan}
@@ -501,8 +476,8 @@ const PremiumPlans: React.FC = () => {
       {isAnnual && (
         <div className="text-center animate-in fade-in slide-in-from-top-2 duration-300">
           <p className="text-sm text-emerald-400 font-bold">
-            🎉 No plano anual você economiza até{' '}
-            <span className="text-white">R$ 199,92/ano</span> no Elite
+            {t('plans.annualSavingsStart')}{' '}
+            <span className="text-white">{t('plans.annualSavingsValue')}</span> {t('plans.annualSavingsEnd')}
           </p>
         </div>
       )}
@@ -520,8 +495,8 @@ const PremiumPlans: React.FC = () => {
             <Sparkles className="w-5 h-5 text-emerald-400" />
           </div>
           <p className="text-xs text-gray-400 text-left leading-relaxed">
-            <span className="text-white font-bold">Cancele quando quiser.</span>{' '}
-            Sem multa, sem burocracia. No plano anual, você mantém o acesso até o fim do período.
+            <span className="text-white font-bold">{t('plans.guaranteeBold')}</span>{' '}
+            {t('plans.guaranteeText')}
           </p>
         </div>
       </div>

@@ -25,6 +25,7 @@ interface AppState {
   // Actions
   addTransaction: (transaction: Omit<Transaction, 'id' | 'total'>) => boolean;
   setBaseCurrency: (currency: 'EUR' | 'BRL') => void;
+  setLanguage: (language: 'pt-BR' | 'en' | 'es') => void;
   updateExchangeRate: (rate: number, meta?: { source?: string; updatedAt?: string; changePct?: number }) => void;
   updateAllocationTargets: (targets: AllocationTarget[]) => void;
   updateCustodyRate: (rate: number) => void;
@@ -83,6 +84,7 @@ export const useStore = create<AppState>()(
     targetDividend: 500,
     allocationTargets: [],
     plan: 'free',
+    language: 'pt-BR',
     custodyRate: 0.002,
     selicCustodyThreshold: 10000,
     theme: 'dark'
@@ -305,8 +307,13 @@ export const useStore = create<AppState>()(
     return true;
   },
 
-  setBaseCurrency: (currency) => 
+  setBaseCurrency: (currency) =>
     set((state) => ({ settings: { ...state.settings, baseCurrency: currency } })),
+  
+  setLanguage: (language) => {
+    try { localStorage.setItem('app_language', language); } catch { /* ignore */ }
+    set((state) => ({ settings: { ...state.settings, language } }));
+  },
 
   updateExchangeRate: (rate, meta) => 
     set((state) => ({

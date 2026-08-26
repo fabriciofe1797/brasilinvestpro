@@ -8,6 +8,7 @@
 import type { Asset, PortfolioItem, Transaction, UserSettings } from '../types';
 import { calculateAssetScore } from '../lib/utils';
 import { formatCurrency } from '../lib/utils';
+import i18n from '../i18n';
 
 export interface PrescriptiveAction {
   id: string;
@@ -48,7 +49,7 @@ export function generatePrescriptiveActions(
 ): DecisionResult {
   const actions: PrescriptiveAction[] = [];
   const now = new Date();
-  const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  const monthLabel = now.toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' });
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthlyBudget = settings.monthlyContribution || 1000;
 
@@ -63,13 +64,13 @@ export function generatePrescriptiveActions(
       id: 'monthly-contribution',
       type: 'buy',
       priority: 'critical',
-      title: `Faça seu aporte de ${formatCompact(monthlyBudget)} este mês`,
-      description: `Você ainda não registrou nenhum aporte este mês. A consistência de aportes é o fator #1 para construção de patrimônio.`,
+      title: i18n.t('decisionEngine.contribTitle', { value: formatCompact(monthlyBudget) }),
+      description: i18n.t('decisionEngine.contribDesc'),
       amount: monthlyBudget,
       currency: 'BRL',
-      reason: 'Nenhum BUY registrado este mês.',
-      impact: `Mantenha a disciplina. Aportes consistentes geram o efeito composto que constrói riqueza.`,
-      deadline: `Faltam ${daysLeft} dias para fechar o mês`,
+      reason: i18n.t('decisionEngine.contribReason'),
+      impact: i18n.t('decisionEngine.contribImpact'),
+      deadline: i18n.t('decisionEngine.contribDeadline', { days: daysLeft }),
       category: 'aporte',
     });
   }
@@ -102,12 +103,12 @@ export function generatePrescriptiveActions(
             id: `reduce-${target.category}`,
             type: 'sell',
             priority: 'high',
-            title: `Reduza ${target.category}: ${(current * 100).toFixed(0)}% vs meta ${(targetPct * 100).toFixed(0)}%`,
-            description: `Sua posição em ${target.category} está ${(drift * 100).toFixed(0)}% acima da meta. Considere realizar lucros parciais de ~${formatCompact(excessValue)}.`,
+            title: i18n.t('decisionEngine.reduceTitle', { category: target.category, current: (current * 100).toFixed(0), target: (targetPct * 100).toFixed(0) }),
+            description: i18n.t('decisionEngine.reduceDesc', { category: target.category, drift: (drift * 100).toFixed(0), value: formatCompact(excessValue) }),
             amount: excessValue,
             currency: 'BRL',
-            reason: `Drift de alocação: +${(drift * 100).toFixed(0)}% acima do alvo.`,
-            impact: `Rebalancear reduz risco concentrado e melhora a eficiência do portfólio.`,
+            reason: i18n.t('decisionEngine.reduceReason', { drift: (drift * 100).toFixed(0) }),
+            impact: i18n.t('decisionEngine.rebalanceImpact'),
             category: 'rebalanceamento',
           });
         } else if (drift < -0.15 && hasContributionThisMonth) {
@@ -116,12 +117,12 @@ export function generatePrescriptiveActions(
             id: `increase-${target.category}`,
             type: 'buy',
             priority: 'medium',
-            title: `Aumente ${target.category}: ${(current * 100).toFixed(0)}% vs meta ${(targetPct * 100).toFixed(0)}%`,
-            description: `Destine o próximo aporte para ${target.category}. Necessário ~${formatCompact(neededValue)} para equilibrar.`,
+            title: i18n.t('decisionEngine.increaseTitle', { category: target.category, current: (current * 100).toFixed(0), target: (targetPct * 100).toFixed(0) }),
+            description: i18n.t('decisionEngine.increaseDesc', { category: target.category, value: formatCompact(neededValue) }),
             amount: neededValue,
             currency: 'BRL',
-            reason: `Drift de alocação: ${(Math.abs(drift) * 100).toFixed(0)}% abaixo do alvo.`,
-            impact: `Aportar na classe sub-representada melhora diversificação e retorno ajustado ao risco.`,
+            reason: i18n.t('decisionEngine.increaseReason', { drift: (Math.abs(drift) * 100).toFixed(0) }),
+            impact: i18n.t('decisionEngine.increaseImpact'),
             category: 'rebalanceamento',
           });
         }
@@ -156,13 +157,13 @@ export function generatePrescriptiveActions(
           id: `opportunity-${opp.asset.ticker}`,
           type: 'buy',
           priority: idx === 0 ? 'high' : 'medium',
-          title: `${opp.asset.ticker} — Score ${opp.score.total} (${opp.score.label})`,
-          description: `DY ${opp.asset.dividendYield.toFixed(1)}% com score "${opp.score.label}". ${opp.score.reasons.join('. ')}. Considere ${affordableQty} cotas (~${formatCompact(affordableQty * opp.asset.price)}).`,
+          title: i18n.t('decisionEngine.oppTitle', { ticker: opp.asset.ticker, score: opp.score.total, label: opp.score.label }),
+          description: i18n.t('decisionEngine.oppDesc', { dy: opp.asset.dividendYield.toFixed(1), label: opp.score.label, reasons: opp.score.reasons.join('. '), qty: affordableQty, value: formatCompact(affordableQty * opp.asset.price) }),
           ticker: opp.asset.ticker,
           amount: affordableQty * opp.asset.price,
           currency: 'BRL',
-          reason: `Score ${opp.score.total}/100. ${opp.score.reasons.slice(0, 2).join(', ')}.`,
-          impact: `Aporte de ${formatCompact(affordableQty * opp.asset.price)} geraria ~${formatCompact((affordableQty * opp.asset.price * opp.asset.dividendYield / 100) / 12)}/mês em dividendos.`,
+          reason: i18n.t('decisionEngine.oppReason', { score: opp.score.total, reasons: opp.score.reasons.slice(0, 2).join(', ') }),
+          impact: i18n.t('decisionEngine.oppImpact', { value: formatCompact(affordableQty * opp.asset.price), monthly: formatCompact((affordableQty * opp.asset.price * opp.asset.dividendYield / 100) / 12) }),
           category: 'oportunidade',
         });
       }
@@ -175,10 +176,10 @@ export function generatePrescriptiveActions(
       id: 'exchange-opportunity',
       type: 'exchange',
       priority: 'medium',
-      title: `Câmbio favorável: EUR/BRL caiu ${Math.abs(settings.exchangeRateChangePct).toFixed(1)}%`,
-      description: `O real fortaleceu recentemente. Se planeja aportar em ativos internacionais, este é um bom momento para converter.`,
-      reason: `Variação cambial: ${settings.exchangeRateChangePct.toFixed(1)}% (queda do EUR).`,
-      impact: `Converter agora pode economizar centenas de reais em comparação com a taxa média do mês.`,
+      title: i18n.t('decisionEngine.fxTitle', { pct: Math.abs(settings.exchangeRateChangePct).toFixed(1) }),
+      description: i18n.t('decisionEngine.fxDesc'),
+      reason: i18n.t('decisionEngine.fxReason', { pct: settings.exchangeRateChangePct.toFixed(1) }),
+      impact: i18n.t('decisionEngine.fxImpact'),
       category: 'câmbio',
     });
   }
@@ -194,13 +195,13 @@ export function generatePrescriptiveActions(
       id: 'tax-exemption-warning',
       type: 'tax',
       priority: 'high',
-      title: `Atenção: limite de isenção de R$20k próximo`,
-      description: `Você já vendeu R$${formatCompact(thisMonthSales)} em ações este mês. Faltam apenas ${formatCompact(remaining)} para o limite de isenção de IR sobre ganhos de capital.`,
+      title: i18n.t('decisionEngine.taxTitle'),
+      description: i18n.t('decisionEngine.taxDesc', { sold: formatCompact(thisMonthSales), remaining: formatCompact(remaining) }),
       amount: remaining,
       currency: 'BRL',
-      reason: `Vendas do mês: R$${formatCompact(thisMonthSales)}. Limite: R$20.000.`,
-      impact: `Vendas acima de R$20k/mês em ações estão sujeitas a 15% de IR sobre o ganho.`,
-      deadline: 'Até o fim do mês',
+      reason: i18n.t('decisionEngine.taxReason', { sold: formatCompact(thisMonthSales) }),
+      impact: i18n.t('decisionEngine.taxImpact'),
+      deadline: i18n.t('decisionEngine.taxDeadline'),
       category: 'fiscal',
     });
   }
@@ -221,12 +222,12 @@ export function generatePrescriptiveActions(
         id: `milestone-${ms}`,
         type: 'milestone',
         priority: 'medium',
-        title: `Meta de R$${ms.toLocaleString('pt-BR')}/mês próxima!`,
-        description: `Sua renda mensal atual é ${formatCurrency(monthlyIncome, 'BRL')}. Faltam apenas ${formatCompact(gap)} em dividendos. Com ~${formatCompact(neededCapital)} investidos a 8% DY, você atinge este marco.`,
+        title: i18n.t('decisionEngine.milestoneTitle', { value: ms.toLocaleString(i18n.language) }),
+        description: i18n.t('decisionEngine.milestoneDesc', { income: formatCurrency(monthlyIncome, 'BRL'), gap: formatCompact(gap), capital: formatCompact(neededCapital) }),
         amount: neededCapital,
         currency: 'BRL',
-        reason: `Renda atual: ${formatCurrency(monthlyIncome, 'BRL')}. Meta: R$${ms.toLocaleString('pt-BR')}/mês.`,
-        impact: `Atingir R$${ms.toLocaleString('pt-BR')}/mês em dividendos é um marco significativo de renda passiva.`,
+        reason: i18n.t('decisionEngine.milestoneReason', { income: formatCurrency(monthlyIncome, 'BRL'), value: ms.toLocaleString(i18n.language) }),
+        impact: i18n.t('decisionEngine.milestoneImpact', { value: ms.toLocaleString(i18n.language) }),
         category: 'meta',
       });
       break; // Only show the nearest milestone
@@ -251,7 +252,7 @@ export function generatePrescriptiveActions(
       criticalCount,
       highCount,
       totalInvestmentNeeded: totalInvestment,
-      topPriority: topActions[0]?.title || 'Nenhuma ação pendente',
+      topPriority: topActions[0]?.title || i18n.t('decisionEngine.noPending'),
     },
     monthLabel,
     generatedAt: new Date().toISOString(),

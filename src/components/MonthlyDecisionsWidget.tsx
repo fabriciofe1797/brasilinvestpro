@@ -2,19 +2,21 @@ import { useMonthlyDecisions } from '../hooks/useMonthlyDecisions';
 import { ArrowUpRight, ArrowDownRight, TrendingUp, Scale } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const MonthlyDecisionsWidget: React.FC = () => {
   const { decisions } = useMonthlyDecisions();
+  const { t } = useTranslation();
 
   if (decisions.length === 0) {
     return (
       <div className="glass-card rounded-2xl p-6 border border-white/5">
         <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 mb-4">
-          <Scale className="w-4 h-4 text-emerald-500" /> Decisões do Mês
+          <Scale className="w-4 h-4 text-emerald-500" /> {t('monthlyDecisions.title')}
         </h3>
         <div className="text-center py-4 text-gray-500 text-sm">
-          <p>Nenhuma ação recomendada no momento.</p>
-          <p className="text-xs mt-2">Continue fazendo aportes regulares.</p>
+          <p>{t('monthlyDecisions.empty')}</p>
+          <p className="text-xs mt-2">{t('monthlyDecisions.emptyHint')}</p>
         </div>
       </div>
     );
@@ -23,7 +25,7 @@ const MonthlyDecisionsWidget: React.FC = () => {
   return (
     <div className="glass-card rounded-2xl p-6 border border-white/5">
       <h3 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2 mb-4">
-        <Scale className="w-4 h-4 text-emerald-500" /> Decisões do Mês
+        <Scale className="w-4 h-4 text-emerald-500" /> {t('monthlyDecisions.title')}
       </h3>
       <div className="space-y-3">
         {decisions.map((decision) => (
@@ -60,7 +62,7 @@ const MonthlyDecisionsWidget: React.FC = () => {
                   to={'/market'}
                   className="text-xs font-black text-emerald-400 hover:text-emerald-300 uppercase"
                 >
-                  Ver no Mercado
+                  {t('monthlyDecisions.viewInMarket')}
                 </Link>
               )}
             </div>

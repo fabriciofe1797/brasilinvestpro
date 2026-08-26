@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
 import { Bell, Check, X, Info, AlertTriangle, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 const NotificationCenter: React.FC = () => {
   const { notifications, markAllAsRead } = useStore();
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -39,20 +42,20 @@ const NotificationCenter: React.FC = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div className="w-full max-w-lg md:max-w-xl bg-[#0B1C17] border border-white/10 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
               <div className="flex items-center justify-between p-4 border-b border-white/5 bg-white/5">
-                <h3 className="font-bold text-white">Notificações</h3>
+                <h3 className="font-bold text-white">{t('notificationCenter.title')}</h3>
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
                     <button 
                         onClick={() => markAllAsRead()}
                         className="text-xs text-emerald-400 hover:text-emerald-300 flex items-center gap-1"
                     >
-                        <Check className="w-3 h-3" /> Marcar lidas
+                        <Check className="w-3 h-3" /> {t('notificationCenter.markRead')}
                     </button>
                   )}
                   <button
                     onClick={() => setIsOpen(false)}
                     className="p-1 rounded-md text-gray-400 hover:text-white hover:bg-white/10"
-                    aria-label="Fechar"
+                    aria-label={t('notificationCenter.closeAria')}
                   >
                     <X className="w-4 h-4" />
                   </button>
@@ -63,7 +66,7 @@ const NotificationCenter: React.FC = () => {
                 {notifications.length === 0 ? (
                   <div className="p-8 text-center text-gray-500">
                     <Bell className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Tudo tranquilo por aqui.</p>
+                    <p className="text-sm">{t('notificationCenter.allCalm')}</p>
                   </div>
                 ) : (
                   <div className="divide-y divide-white/5">
@@ -80,7 +83,7 @@ const NotificationCenter: React.FC = () => {
                             {notif.message}
                           </p>
                           <span className="text-[10px] text-gray-600 mt-2 block">
-                            {new Date(notif.date).toLocaleDateString()} às {new Date(notif.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                            {t('notificationCenter.dateTime', { data: new Date(notif.date).toLocaleDateString(i18n.language), hora: new Date(notif.date).toLocaleTimeString(i18n.language, {hour: '2-digit', minute:'2-digit'}) })}
                           </span>
                         </div>
                       </div>

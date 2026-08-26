@@ -4,6 +4,8 @@ import { formatCurrency } from '../lib/utils';
 import { TrendingUp, DollarSign, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 interface TimelineEvent {
   date: string;
@@ -16,6 +18,7 @@ interface TimelineEvent {
 
 const PortfolioTimeline: React.FC = () => {
   const { transactions, assets, settings } = useStore();
+  const { t } = useTranslation();
 
   const events = useMemo((): TimelineEvent[] => {
     const eventList: TimelineEvent[] = [];
@@ -30,7 +33,7 @@ const PortfolioTimeline: React.FC = () => {
       eventList.push({
         date: tx.date,
         type: tx.type === 'BUY' ? 'buy' : 'sell',
-        label: tx.type === 'BUY' ? 'Aporte' : 'Resgate',
+        label: tx.type === 'BUY' ? t('portfolioTimeline.contribution') : t('portfolioTimeline.withdrawal'),
         value: tx.type === 'BUY' ? tx.quantity * tx.price : valueBRL,
         valueBRL: valueBRL,
         details: `${tx.quantity} ${asset?.ticker || tx.assetId}`,
@@ -42,10 +45,10 @@ const PortfolioTimeline: React.FC = () => {
       eventList.push({
         date: settings.exchangeRateUpdatedAt,
         type: 'exchange',
-        label: 'Câmbio Atualizado',
+        label: t('portfolioTimeline.exchangeUpdated'),
         value: settings.exchangeRate,
         valueBRL: settings.exchangeRate,
-        details: `Fonte: ${settings.exchangeRateSource || 'API'}`,
+        details: t('portfolioTimeline.source', { fonte: settings.exchangeRateSource || 'API' }),
       });
     }
 
@@ -53,7 +56,7 @@ const PortfolioTimeline: React.FC = () => {
     eventList.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return eventList;
-  }, [transactions, assets, settings]);
+  }, [transactions, assets, settings, t]);
 
   // Prepare chart data
   const chartData = useMemo(() => {
@@ -67,7 +70,7 @@ const PortfolioTimeline: React.FC = () => {
     return sortedEvents.map((event) => {
       cumulative += event.valueBRL;
       return {
-        date: new Date(event.date).toLocaleDateString('pt-BR', {
+        date: new Date(event.date).toLocaleDateString(i18n.language, {
           day: '2-digit',
           month: 'short',
         }),
@@ -94,8 +97,8 @@ const PortfolioTimeline: React.FC = () => {
       <div className="glass-card rounded-2xl p-8 border border-white/5">
         <div className="text-center text-gray-500">
           <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-          <p className="text-sm font-medium">Nenhum evento registado.</p>
-          <p className="text-xs mt-2">Os eventos aparecem aqui após operar.</p>
+          <p className="text-sm font-medium">{t('portfolioTimeline.noEvents')}</p>
+          <p className="text-xs mt-2">{t('portfolioTimeline.noEventsHint')}</p>
         </div>
       </div>
     );
@@ -108,7 +111,7 @@ const PortfolioTimeline: React.FC = () => {
         <div className="bg-white/5 rounded-xl p-4 border border-white/5">
           <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
             <ArrowUpRight className="w-3 h-3 text-emerald-400" />
-            Total Aportado
+            {t('portfolioTimeline.totalContributed')}
           </div>
           <div className="text-xl font-bold text-white">
             {formatCurrency(totalInvested, 'BRL')}
@@ -117,7 +120,7 @@ const PortfolioTimeline: React.FC = () => {
         <div className="bg-white/5 rounded-xl p-4 border border-white/5">
           <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
             <ArrowDownRight className="w-3 h-3 text-red-400" />
-            Total Resgatado
+            {t('portfolioTimeline.totalWithdrawn')}
           </div>
           <div className="text-xl font-bold text-white">
             {formatCurrency(totalReturns, 'BRL')}
@@ -126,7 +129,7 @@ const PortfolioTimeline: React.FC = () => {
         <div className="bg-white/5 rounded-xl p-4 border border-white/5">
           <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
             <DollarSign className="w-3 h-3 text-blue-400" />
-            Patrimônio Líquido
+            {t('portfolioTimeline.netEquity')}
           </div>
           <div className="text-xl font-bold text-emerald-400">
             {formatCurrency(totalInvested - totalReturns, 'BRL')}
@@ -137,7 +140,7 @@ const PortfolioTimeline: React.FC = () => {
       {/* Chart */}
       {chartData.length > 1 && (
         <div className="glass-card rounded-2xl p-6 border border-white/5">
-          <h3 className="text-sm font-bold text-white mb-4">Evolução do Patrimônio</h3>
+          <h3 className="text-sm font-bold text-white mb-4">{t('portfolioTimeline.equityEvolution')}</h3>
           <div className="h-48">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
@@ -166,7 +169,7 @@ const PortfolioTimeline: React.FC = () => {
                     borderRadius: '12px',
                   }}
                   labelStyle={{ color: '#9ca3af', fontSize: 12 }}
-                  formatter={(value: number) => [formatCurrency(value, 'BRL'), 'Patrimônio']}
+                  formatter={(value: number) => [formatCurrency(value, 'BRL'), t('portfolioTimeline.equity')]}
                 />
                 <Area
                   type="monotone"
@@ -183,7 +186,7 @@ const PortfolioTimeline: React.FC = () => {
 
       {/* Events List */}
       <div className="glass-card rounded-2xl p-6 border border-white/5">
-        <h3 className="text-sm font-bold text-white mb-4">Eventos Recentes</h3>
+        <h3 className="text-sm font-bold text-white mb-4">{t('portfolioTimeline.recentEvents')}</h3>
         <div className="space-y-3 max-h-64 overflow-y-auto">
           {events.slice(0, 20).map((event, idx) => (
             <div 
@@ -216,7 +219,7 @@ const PortfolioTimeline: React.FC = () => {
                   {event.type === 'sell' ? '-' : ''}{formatCurrency(event.valueBRL, 'BRL')}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {new Date(event.date).toLocaleDateString('pt-BR')}
+                  {new Date(event.date).toLocaleDateString(i18n.language)}
                 </div>
               </div>
             </div>

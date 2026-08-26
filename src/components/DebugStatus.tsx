@@ -82,19 +82,19 @@ const DebugStatus: React.FC = () => {
         <div><span className="text-gray-500">DB Records:</span> {loading ? '...' : (error ? <span className="text-red-500">{error}</span> : dbCount)}</div>
         <div className="flex gap-1">
           <button onClick={checkDb} className="bg-emerald-500/20 hover:bg-emerald-500/40 px-2 py-0.5 rounded text-white">Check</button>
-          <button onClick={() => forceSync()} className="bg-blue-500/20 hover:bg-blue-500/40 px-2 py-0.5 rounded text-white font-bold">Force Sync</button>
+          <button onClick={() => forceSync()} className="bg-blue-500/20 hover:bg-blue-500/40 px-2 py-0.5 rounded text-white font-bold">Forçar Sincronização</button>
         </div>
       </div>
       <div className="grid grid-cols-3 gap-2 border-t border-white/10 pt-1 mt-1">
         <div><span className="text-gray-500">Store Txs:</span> {transactions.length}</div>
-        <div><span className="text-gray-500">Portfolio:</span> {portfolio.length}</div>
-        <div><span className="text-gray-500">Assets:</span> {assets.length}</div>
+        <div><span className="text-gray-500">Carteira:</span> {portfolio.length}</div>
+        <div><span className="text-gray-500">Ativos:</span> {assets.length}</div>
       </div>
       <div className="text-[9px] text-gray-600 mt-1">
          Auto Sync: <span className={autoSyncStatus === 'success' ? 'text-green-500' : 'text-yellow-500'}>{autoSyncStatus.toUpperCase()}</span>
       </div>
       {portfolio.length === 0 && transactions.length > 0 && (
-         <div className="text-yellow-500 animate-pulse">⚠️ Txs loaded but Portfolio empty! Missing Assets?</div>
+         <div className="text-yellow-500 animate-pulse">⚠️ Transações carregadas mas carteira vazia! Ativos ausentes?</div>
       )}
     </div>
   );

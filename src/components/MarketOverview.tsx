@@ -11,6 +11,8 @@ import React from 'react';
 import { TrendingUp, TrendingDown, RefreshCw, DollarSign, Coins, Bitcoin, BarChart3 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useMarketOverview } from '../hooks/useMarketOverview';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 interface MarketOverviewProps {
   compact?: boolean;
@@ -18,7 +20,7 @@ interface MarketOverviewProps {
 }
 
 function formatBRL(n: number): string {
-  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function formatUSD(n: number): string {
@@ -46,6 +48,7 @@ function ChangeBadge({ value }: { value: number | null }) {
 
 const MarketOverview: React.FC<MarketOverviewProps> = ({ compact = false, className }) => {
   const { data, isLoading, lastUpdated, refetch, error } = useMarketOverview();
+  const { t } = useTranslation();
 
   const ibov = data.ibovespa;
 
@@ -82,16 +85,16 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ compact = false, classN
         <div className="flex items-center gap-3">
           <BarChart3 className="w-5 h-5 text-emerald-400" />
           <h3 className="text-sm font-black text-white uppercase tracking-widest">
-            Mercado em Tempo Real
+            {t('marketOverview.title')}
           </h3>
           {isStale && (
             <span className="text-[9px] font-bold text-amber-400/80 bg-amber-400/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-              Dados estimados
+              {t('marketOverview.estimatedData')}
             </span>
           )}
           {error && (
             <span className="text-[9px] font-bold text-red-400/80 bg-red-400/10 px-2 py-0.5 rounded-full uppercase tracking-wider">
-              API offline
+              {t('marketOverview.apiOffline')}
             </span>
           )}
         </div>
@@ -102,8 +105,8 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ compact = false, classN
         >
           <RefreshCw className={cn('w-3 h-3', isLoading && 'animate-spin')} />
           {lastUpdated
-            ? new Date(lastUpdated).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-            : isLoading ? 'Carregando...' : 'Atualizar'}
+            ? new Date(lastUpdated).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })
+            : isLoading ? t('common.loading') : t('marketOverview.refresh')}
         </button>
       </div>
 
@@ -115,7 +118,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ compact = false, classN
               <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-2">IBOVESPA</p>
               {ibov?.value > 0 ? (
                 <p className="text-3xl font-black text-white tracking-tighter">
-                  {ibov.value.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                  {ibov.value.toLocaleString(i18n.language, { minimumFractionDigits: 0 })}
                 </p>
               ) : (
                 <p className="text-3xl font-black text-white/40 tracking-tighter">---</p>
@@ -132,7 +135,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ compact = false, classN
                 <ChangeBadge value={ibov.changePercent} />
               </div>
             ) : (
-              <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">Indisponivel</span>
+              <span className="text-[9px] font-bold text-gray-600 uppercase tracking-wider">{t('marketOverview.unavailable')}</span>
             )}
           </div>
         </div>
@@ -144,7 +147,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ compact = false, classN
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <DollarSign className="w-4 h-4 text-blue-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Moedas</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('marketOverview.currencies')}</span>
           </div>
           <div className="space-y-3">
             {Object.entries(exchange).map(([key, val]) => {
@@ -167,7 +170,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ compact = false, classN
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <Coins className="w-4 h-4 text-amber-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Indicadores</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('marketOverview.indicators')}</span>
           </div>
           <div className="space-y-3">
             {data.macroIndices.length > 0 ? (
@@ -200,7 +203,7 @@ const MarketOverview: React.FC<MarketOverviewProps> = ({ compact = false, classN
         <div className="glass-card rounded-2xl p-5 border-white/5">
           <div className="flex items-center gap-2 mb-4">
             <Bitcoin className="w-4 h-4 text-orange-400" />
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Cripto</span>
+            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('marketOverview.crypto')}</span>
           </div>
           <div className="space-y-3">
             {Object.entries(crypto).map(([key, val]) => {

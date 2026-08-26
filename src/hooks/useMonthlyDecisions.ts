@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { calculateAssetScore } from '../lib/utils';
+import i18n from '../i18n';
 
 export interface MonthlyDecision {
   id: string;
@@ -32,11 +33,11 @@ export function useMonthlyDecisions() {
       recs.push({
         id: 'monthly-contribution',
         type: 'buy',
-        title: 'Faça seu aporte mensal',
-        description: 'Seu plano de accumulation de patrimônio depende de aportes regulares.',
+        title: i18n.t('decisionHook.contribTitle'),
+        description: i18n.t('decisionHook.contribDesc'),
         priority: 'high',
         amount: monthlyBudget,
-        reason: 'Aporte mensal configured in your settings.',
+        reason: i18n.t('decisionHook.contribReason'),
       });
     }
 
@@ -67,21 +68,21 @@ export function useMonthlyDecisions() {
             recs.push({
               id: `rebalance-sell-${target.category}`,
               type: 'sell',
-              title: `Reduce ${target.category}`,
-              description: `Sua alocação em ${target.category} está ${(current * 100).toFixed(0)}% (meta: ${target.targetPercentage}%). Considere realizar lucros parciais.`,
+              title: i18n.t('decisionHook.reduceTitle', { category: target.category }),
+              description: i18n.t('decisionHook.reduceDesc', { category: target.category, current: (current * 100).toFixed(0), target: target.targetPercentage }),
               priority: 'medium',
-              reason: `Alocação above target by ${(drift * 100).toFixed(0)}%`,
+              reason: i18n.t('decisionHook.reduceReason', { drift: (drift * 100).toFixed(0) }),
             });
           } else if (drift < -0.1) {
             const needed = (targetPct - current) * totalValue;
             recs.push({
               id: `rebalance-buy-${target.category}`,
               type: 'buy',
-              title: `Aumente ${target.category}`,
-              description: `Sua alocação em ${target.category} está ${(current * 100).toFixed(0)}% (meta: ${target.targetPercentage}%). Necesita ~${(needed / exchangeRate).toFixed(0)} EUR para equilibrar.`,
+              title: i18n.t('decisionHook.increaseTitle', { category: target.category }),
+              description: i18n.t('decisionHook.increaseDesc', { category: target.category, current: (current * 100).toFixed(0), target: target.targetPercentage, value: (needed / exchangeRate).toFixed(0) }),
               priority: 'medium',
               amount: needed,
-              reason: `Alocação below target by ${(Math.abs(drift) * 100).toFixed(0)}%`,
+              reason: i18n.t('decisionHook.increaseReason', { drift: (Math.abs(drift) * 100).toFixed(0) }),
             });
           }
         });
@@ -112,11 +113,11 @@ export function useMonthlyDecisions() {
       recs.push({
         id: `opportunity-${top.asset.ticker}`,
         type: 'buy',
-        title: `Considere ${top.asset.ticker}`,
-        description: `${top.asset.ticker} tem DY de ${top.asset.dividendYield.toFixed(1)}% e score "${top.score.label}". Potencial para geração de renda.`,
+        title: i18n.t('decisionHook.oppTitle', { ticker: top.asset.ticker }),
+        description: i18n.t('decisionHook.oppDesc', { ticker: top.asset.ticker, dy: top.asset.dividendYield.toFixed(1), label: top.score.label }),
         priority: 'medium',
         asset: top.asset.ticker,
-        reason: `Score: ${top.score.total} - High dividend yield.`,
+        reason: i18n.t('decisionHook.oppReason', { score: top.score.total }),
       });
     }
 
@@ -126,10 +127,10 @@ export function useMonthlyDecisions() {
         recs.push({
           id: 'exchange-favorable',
           type: 'exchange',
-          title: 'Momento favorable para câmbio',
-          description: 'EUR/BRL caiu recently. Bom momento para convertir BRL para EUR se inúmer.',
+          title: i18n.t('decisionHook.fxTitle'),
+          description: i18n.t('decisionHook.fxDesc'),
           priority: 'low',
-          reason: 'Câmbio em queda recently.',
+          reason: i18n.t('decisionHook.fxReason'),
         });
       }
     }
@@ -139,7 +140,7 @@ export function useMonthlyDecisions() {
     recs.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
 
     return recs.slice(0, 5);
-  }, [portfolio, assets, settings, transactions]);
+  }, [portfolio, assets, settings, transactions, i18n.language]);
 
   return { decisions };
 }

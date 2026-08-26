@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { PortfolioItem, Asset } from "../types";
+import i18n from '../i18n';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -82,7 +83,7 @@ export interface AssetScore {
   dividendScore: number;
   priceScore: number;
   categoryScore: number;
-  label: 'Excelente' | 'Bom' | 'Moderado' | 'Baixo';
+  label: string;
   reasons: string[];
 }
 
@@ -99,54 +100,54 @@ export function calculateAssetScore(params: AssetScoreParams): AssetScore {
   if (pvp !== undefined) {
     if (pvp <= 0.8) {
       valuation += 25;
-      reasons.push('P/VP muito abaixo de 1');
+      reasons.push(i18n.t('score.reasonPvpFarBelow'));
     } else if (pvp <= 1.0) {
       valuation += 15;
-      reasons.push('P/VP below 1');
+      reasons.push(i18n.t('score.reasonPvpBelow'));
     } else if (pvp <= 1.1) {
       valuation += 5;
     } else if (pvp > 1.3) {
       valuation -= 20;
-      reasons.push('P/VP elevado');
+      reasons.push(i18n.t('score.reasonPvpHigh'));
     }
   } else if (pl !== undefined) {
     if (pl > 0 && pl <= 10) {
       valuation += 20;
-      reasons.push('P/L atrativo');
+      reasons.push(i18n.t('score.reasonPlAttractive'));
     } else if (pl > 10 && pl <= 15) {
       valuation += 5;
     } else if (pl > 25) {
       valuation -= 20;
-      reasons.push('P/L elevado');
+      reasons.push(i18n.t('score.reasonPlHigh'));
     }
   }
 
   // Dividend Score
   if (dividendYield >= 8) {
     dividendScore += 30;
-    reasons.push('DY acima de 8%');
+    reasons.push(i18n.t('score.reasonDy8'));
   } else if (dividendYield >= 6) {
     dividendScore += 20;
-    reasons.push('DY acima de 6%');
+    reasons.push(i18n.t('score.reasonDy6'));
   } else if (dividendYield >= 4) {
     dividendScore += 10;
-    reasons.push('DY respeitável');
+    reasons.push(i18n.t('score.reasonDyRespectable'));
   } else if (dividendYield < 2) {
     dividendScore -= 20;
-    reasons.push('DY baixo');
+    reasons.push(i18n.t('score.reasonDyLow'));
   }
 
   // Price Score (Variação do preço)
   const priceChange = ((price - lastClose) / lastClose) * 100;
   if (priceChange < -10) {
     priceScore += 20;
-    reasons.push('Queda recente >10%');
+    reasons.push(i18n.t('score.reasonDrop10'));
   } else if (priceChange < -5) {
     priceScore += 10;
-    reasons.push('Queda >5%');
+    reasons.push(i18n.t('score.reasonDrop5'));
   } else if (priceChange > 15) {
     priceScore -= 15;
-    reasons.push('Alta reciente >15%');
+    reasons.push(i18n.t('score.reasonRise15'));
   }
 
   // Category Score (Bônus por tipo)
@@ -154,10 +155,10 @@ export function calculateAssetScore(params: AssetScoreParams): AssetScore {
   const isCrypto = category === 'Cripto';
   if (isFII) {
     categoryScore += 10;
-    reasons.push('FII - estável');
+    reasons.push(i18n.t('score.reasonFiiStable'));
   } else if (isCrypto) {
     categoryScore -= 10;
-    reasons.push('Cripto - volátil');
+    reasons.push(i18n.t('score.reasonCryptoVolatile'));
   }
 
   // Cálculo do total (média ponderada)
@@ -168,11 +169,11 @@ export function calculateAssetScore(params: AssetScoreParams): AssetScore {
     (categoryScore * 0.15)
   );
 
-  let label: AssetScore['label'];
-  if (total >= 75) label = 'Excelente';
-  else if (total >= 55) label = 'Bom';
-  else if (total >= 35) label = 'Moderado';
-  else label = 'Baixo';
+  let label: string;
+  if (total >= 75) label = i18n.t('score.labelExcellent');
+  else if (total >= 55) label = i18n.t('score.labelGood');
+  else if (total >= 35) label = i18n.t('score.labelModerate');
+  else label = i18n.t('score.labelLow');
 
   return {
     total: Math.max(0, Math.min(100, total)),

@@ -1,8 +1,10 @@
 import React from 'react';
 import SmartAlertsPanel from '../components/SmartAlertsPanel';
+import { useTranslation } from 'react-i18next';
 import { Bell } from 'lucide-react';
 
 const AlertsPage: React.FC = () => {
+  const { t } = useTranslation();
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
       {/* Header */}
@@ -10,10 +12,10 @@ const AlertsPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3">
             <Bell className="w-8 h-8 text-emerald-500" />
-            Alertas Inteligentes
+            {t('alertsPage.title')}
           </h1>
           <p className="text-gray-500 text-sm font-medium mt-1">
-            Monitoramento proativo da sua carteira e do mercado.
+            {t('alertsPage.subtitle')}
           </p>
         </div>
       </div>

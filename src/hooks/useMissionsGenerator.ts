@@ -3,6 +3,7 @@ import { useStore } from '../store/useStore';
 import { usePortfolioMetrics } from './usePortfolioMetrics';
 import { useContributionStreak } from './useContributionStreak';
 import type { PlanMission } from '../types';
+import i18n from '../i18n';
 
 /**
  * Gera missions automaticamente baseado no estado da carteira.
@@ -22,10 +23,10 @@ export const useMissionsGenerator = (): PlanMission[] => {
     );
     generated.push({
       id: 'monthly-total',
-      title: hasContributionThisMonth ? 'Aporte do mês realizado!' : 'Fazer aporte mensal',
+      title: hasContributionThisMonth ? i18n.t('missions.contribDoneTitle') : i18n.t('missions.contribTodoTitle'),
       description: hasContributionThisMonth
-        ? `Sequência de ${streak} meses consecutivos. Continue assim!`
-        : `Meta: R$ ${settings.monthlyContribution.toLocaleString('pt-BR')}/mês. Último aporte: ${lastContributionDate ? new Date(lastContributionDate).toLocaleDateString('pt-BR') : 'Nunca'}`,
+        ? i18n.t('missions.contribDoneDesc', { count: streak })
+        : i18n.t('missions.contribTodoDesc', { value: settings.monthlyContribution.toLocaleString(i18n.language), date: lastContributionDate ? new Date(lastContributionDate).toLocaleDateString(i18n.language) : i18n.t('missions.never') }),
       status: hasContributionThisMonth ? 'completed' : 'pending',
       category: 'aporte',
     });
@@ -38,10 +39,10 @@ export const useMissionsGenerator = (): PlanMission[] => {
     const incomeCompleted = incomeProgress >= 100;
     generated.push({
       id: incomeMissionId,
-      title: incomeCompleted ? 'Meta de renda atingida!' : `Renda: R$ ${monthlyIncome.toFixed(0)} / R$ ${targetDividend}`,
+      title: incomeCompleted ? i18n.t('missions.incomeDoneTitle') : i18n.t('missions.incomeTodoTitle', { current: monthlyIncome.toFixed(0), target: targetDividend }),
       description: incomeCompleted
-        ? `Parabéns! Sua renda mensal de R$ ${monthlyIncome.toFixed(0)} superou a meta de R$ ${targetDividend}!`
-        : `Faltam R$ ${(targetDividend - monthlyIncome).toFixed(0)} para atingir sua meta de renda mensal passiva.`,
+        ? i18n.t('missions.incomeDoneDesc', { current: monthlyIncome.toFixed(0), target: targetDividend })
+        : i18n.t('missions.incomeTodoDesc', { gap: (targetDividend - monthlyIncome).toFixed(0) }),
       status: incomeCompleted ? 'completed' : 'pending',
       category: 'aporte',
     });
@@ -52,10 +53,10 @@ export const useMissionsGenerator = (): PlanMission[] => {
     const diversificationCompleted = uniqueAssets >= 5;
     generated.push({
       id: diversificationId,
-      title: diversificationCompleted ? 'Carteira diversificada!' : `Diversificar carteira (${uniqueAssets}/5 ativos)`,
+      title: diversificationCompleted ? i18n.t('missions.divDoneTitle') : i18n.t('missions.divTodoTitle', { count: uniqueAssets }),
       description: diversificationCompleted
-        ? `Sua carteira tem ${uniqueAssets} ativos diferentes. Boa diversificação!`
-        : `Adicione mais ativos para reduzir risco. Meta mínima: 5 ativos distintos.`,
+        ? i18n.t('missions.divDoneDesc', { count: uniqueAssets })
+        : i18n.t('missions.divTodoDesc'),
       status: diversificationCompleted ? 'completed' : 'pending',
       category: 'aporte',
     });
@@ -72,10 +73,10 @@ export const useMissionsGenerator = (): PlanMission[] => {
       const rebalanceCompleted = maxDeviation <= 5;
       generated.push({
         id: rebalanceId,
-        title: rebalanceCompleted ? 'Alocação equilibrada!' : 'Rebalancear carteira',
+        title: rebalanceCompleted ? i18n.t('missions.rebDoneTitle') : i18n.t('missions.rebTodoTitle'),
         description: rebalanceCompleted
-          ? `Desvio máximo de ${maxDeviation.toFixed(1)}%. Carteira dentro do esperado.`
-          : `Desvio de até ${maxDeviation.toFixed(1)}% detectado. Considere rebalancear para manter suas metas de alocação.`,
+          ? i18n.t('missions.rebDoneDesc', { deviation: maxDeviation.toFixed(1) })
+          : i18n.t('missions.rebTodoDesc', { deviation: maxDeviation.toFixed(1) }),
         status: rebalanceCompleted ? 'completed' : 'pending',
         category: 'rebalanceamento',
       });
@@ -85,12 +86,12 @@ export const useMissionsGenerator = (): PlanMission[] => {
     const educationId = 'education-monthly';
     generated.push({
       id: educationId,
-      title: 'Estudar um ativo novo',
-      description: 'Pesquise um ativo que ainda não conhece e avalie se faz sentido para sua carteira.',
+      title: i18n.t('missions.eduTitle'),
+      description: i18n.t('missions.eduDesc'),
       status: 'pending' as const,
       category: 'educacao',
     });
 
     return generated;
-  }, [portfolio, assets, settings, missions, metrics, streak, lastContributionDate]);
+  }, [portfolio, assets, settings, missions, metrics, streak, lastContributionDate, i18n.language]);
 };

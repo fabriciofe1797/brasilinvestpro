@@ -3,6 +3,7 @@ import { useAuth } from '@clerk/clerk-react';
 import { fetchLicense } from '../services/license';
 import { AlertTriangle, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 const daysBetween = (a: Date, b: Date) => {
   const msDay = 24 * 60 * 60 * 1000;
@@ -11,6 +12,7 @@ const daysBetween = (a: Date, b: Date) => {
 
 export default function LicenseExpiryPrompt() {
   const { getToken, isSignedIn } = useAuth();
+  const { t } = useTranslation();
   const [show, setShow] = useState(false);
   const [daysLeft, setDaysLeft] = useState<number | null>(null);
   const [plan, setPlan] = useState<string>('free');
@@ -43,9 +45,9 @@ export default function LicenseExpiryPrompt() {
 
   const label = useMemo(() => {
     if (!daysLeft || daysLeft <= 0) return '';
-    if (daysLeft === 1) return '1 dia';
-    return `${daysLeft} dias`;
-  }, [daysLeft]);
+    if (daysLeft === 1) return t('licenseExpiry.oneDay');
+    return t('licenseExpiry.days', { count: daysLeft });
+  }, [daysLeft, t]);
 
   if (!show) return null;
 
@@ -55,22 +57,22 @@ export default function LicenseExpiryPrompt() {
         <div className="p-6 space-y-4">
           <div className="flex items-center gap-2 text-amber-400">
             <AlertTriangle className="w-5 h-5" />
-            <h2 className="text-xl font-bold text-white">Sua licença expira em breve</h2>
+            <h2 className="text-xl font-bold text-white">{t('licenseExpiry.title')}</h2>
           </div>
           <p className="text-gray-300">
-            Sua licença {plan.toUpperCase()} irá expirar em <span className="font-bold text-white">{label}</span>. 
-            Renove agora para evitar o downgrade para o plano Free.
+            {t('licenseExpiry.messageStart', { plano: plan.toUpperCase() })} <span className="font-bold text-white">{label}</span>. 
+            {t('licenseExpiry.messageEnd')}
           </p>
           <div className="flex items-center gap-2 text-xs text-gray-400">
             <Clock className="w-4 h-4" />
-            <span>Este aviso aparece sempre que você entrar no app até a renovação.</span>
+            <span>{t('licenseExpiry.hint')}</span>
           </div>
           <div className="flex gap-2 pt-2">
             <Link to="/premium" className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-black font-bold px-6 py-2 rounded-xl text-center">
-              Renovar Agora
+              {t('licenseExpiry.renewNow')}
             </Link>
             <button onClick={() => setShow(false)} className="border border-white/10 text-white hover:bg-white/5 font-bold px-6 py-2 rounded-xl">
-              Depois
+              {t('licenseExpiry.later')}
             </button>
           </div>
         </div>

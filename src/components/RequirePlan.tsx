@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStore } from '../store/useStore';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 type Plan = 'free' | 'starter' | 'pro' | 'master' | 'elite';
 
@@ -8,6 +9,7 @@ const order: Plan[] = ['free', 'starter', 'pro', 'master', 'elite'];
 
 export default function RequirePlan({ min, children }: { min: Plan; children: React.ReactNode }) {
   const { settings } = useStore();
+  const { t } = useTranslation();
   const current = settings.plan ?? 'free';
   const ok = order.indexOf(current) >= order.indexOf(min);
 
@@ -22,19 +24,19 @@ export default function RequirePlan({ min, children }: { min: Plan; children: Re
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="bg-[#0B1C17] border border-emerald-500/20 rounded-2xl p-8 max-w-lg text-center space-y-4">
-        <h2 className="text-2xl font-bold text-white">Recurso Premium</h2>
+        <h2 className="text-2xl font-bold text-white">{t('requirePlan.title')}</h2>
         <p className="text-gray-400">
-          Este recurso requer o plano {min.toUpperCase()} ou superior. Faça upgrade para desbloquear.
+          {t('requirePlan.message', { plano: min.toUpperCase() })}
         </p>
         <div className="flex justify-center gap-2">
           <Link to="/premium" className="bg-emerald-500 hover:bg-emerald-600 text-black font-bold px-6 py-2 rounded-xl">
-            Ver Planos
+            {t('requirePlan.viewPlans')}
           </Link>
           <Link to="/" className="border border-white/10 text-white hover:bg-white/5 font-bold px-6 py-2 rounded-xl">
-            Voltar
+            {t('requirePlan.back')}
           </Link>
         </div>
-        <div className="text-xs text-gray-500">Plano atual: {current.toUpperCase()}</div>
+        <div className="text-xs text-gray-500">{t('requirePlan.currentPlan', { plano: current.toUpperCase() })}</div>
       </div>
     </div>
   );

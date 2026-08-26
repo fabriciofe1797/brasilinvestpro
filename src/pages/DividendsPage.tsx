@@ -7,10 +7,16 @@ import {
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { useTranslation } from 'react-i18next';
+import i18n from '../i18n';
 
 const DividendsPage: React.FC = () => {
   const { portfolio, assets, transactions } = useStore();
+  const { t } = useTranslation();
   const [calendarDate, setCalendarDate] = useState(new Date());
+
+  const monthNames = t('dividends.monthsShort', { returnObjects: true }) as string[];
+  const weekDays = t('dividends.weekDays', { returnObjects: true }) as string[];
 
   // 1. Enrich Portfolio with Dividend Data & Magic Number
   const dividendPortfolio = useMemo(() => {
@@ -47,7 +53,6 @@ const DividendsPage: React.FC = () => {
     const magicNumberAchieved = dividendPortfolio.filter(item => item.magic.reached).length;
     
     const projection = Array.from({ length: 12 }, (_, i) => {
-      const monthNames = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
       const variation = 0.95 + (Math.random() * 0.1); 
       return {
         month: monthNames[i],
@@ -56,7 +61,7 @@ const DividendsPage: React.FC = () => {
     });
 
     return { totalMonthly, magicNumberAchieved, projection };
-  }, [dividendPortfolio]);
+  }, [dividendPortfolio, monthNames]);
 
   return (
     <div className="bg-premium min-h-screen">
@@ -67,11 +72,11 @@ const DividendsPage: React.FC = () => {
         {/* Header */}
         <div className="flex flex-col space-y-4">
           <div className="flex items-center gap-4">
-             <h1 className="text-3xl font-black tracking-tight text-white uppercase underline decoration-emerald-500 decoration-4 underline-offset-8">Proventos <span className="text-emerald-500">& Bola de Neve</span></h1>
-             <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-amber-500/20">Elite Tracking</span>
+             <h1 className="text-3xl font-black tracking-tight text-white uppercase underline decoration-emerald-500 decoration-4 underline-offset-8">{t('dividends.titleStart')}<span className="text-emerald-500">{t('dividends.titleHighlight')}</span></h1>
+             <span className="bg-gradient-to-r from-amber-500 to-orange-500 text-black text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg shadow-amber-500/20">{t('dividends.badge')}</span>
           </div>
           <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">
-            Acompanhe sua liberdade. O ponto onde seus ativos compram o futuro.
+            {t('dividends.subtitle')}
           </p>
         </div>
 
@@ -82,12 +87,12 @@ const DividendsPage: React.FC = () => {
                 <Calendar className="w-24 h-24 text-emerald-500" />
              </div>
              <div className="flex items-center gap-2 mb-4">
-               <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">Estimate Mo. Yield</span>
+               <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em]">{t('dividends.kpiMonthly')}</span>
                <Info className="w-3.5 h-3.5 text-emerald-500/50" />
              </div>
              <div className="text-4xl font-black text-white px-1 tracking-tighter">{formatCurrency(stats.totalMonthly, 'BRL')}</div>
              <div className="flex items-center gap-2 mt-6 text-[9px] font-black text-emerald-400 uppercase tracking-widest bg-emerald-500/10 w-fit px-4 py-1.5 rounded-full border border-emerald-500/20">
-                <Zap className="w-3 h-3" /> Passive Cashflow
+                <Zap className="w-3 h-3" /> {t('dividends.kpiMonthlyBadge')}
              </div>
           </div>
 
@@ -95,12 +100,12 @@ const DividendsPage: React.FC = () => {
              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                 <Snowflake className="w-24 h-24 text-blue-500" />
              </div>
-             <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4 block">Snowball Index</span>
+             <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4 block">{t('dividends.kpiSnowball')}</span>
              <div className="text-4xl font-black text-blue-400 px-1 tracking-tighter">
-                {stats.magicNumberAchieved} <span className="text-lg text-gray-700 uppercase tracking-[0.1em]">Assets</span>
+                {stats.magicNumberAchieved} <span className="text-lg text-gray-700 uppercase tracking-[0.1em]">{t('dividends.assetsLabel')}</span>
              </div>
              <div className="flex items-center gap-2 mt-6 text-[9px] font-black text-blue-400 uppercase tracking-widest bg-blue-500/10 w-fit px-4 py-1.5 rounded-full border border-blue-500/20">
-                Auto-Sustaining
+                {t('dividends.kpiSnowballBadge')}
              </div>
           </div>
 
@@ -108,10 +113,10 @@ const DividendsPage: React.FC = () => {
              <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity">
                 <TrendingUp className="w-24 h-24 text-purple-500" />
              </div>
-             <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4 block">Annual Projection (12M)</span>
+             <span className="text-gray-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4 block">{t('dividends.kpiProjection')}</span>
              <div className="text-4xl font-black text-purple-400 px-1 tracking-tighter">{formatCurrency(stats.totalMonthly * 12, 'BRL')}</div>
              <div className="flex items-center gap-2 mt-6 text-[9px] font-black text-purple-400 uppercase tracking-widest bg-purple-500/10 w-fit px-4 py-1.5 rounded-full border border-purple-500/20">
-                Projected Equity Growth
+                {t('dividends.kpiProjectionBadge')}
              </div>
           </div>
         </div>
@@ -122,9 +127,9 @@ const DividendsPage: React.FC = () => {
               <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-blue-500 opacity-50" />
               <div className="flex items-center justify-between mb-10">
                  <h3 className="text-lg font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
-                    <Calendar className="w-5 h-5 text-emerald-500"/> Cashflow Forecast
+                    <Calendar className="w-5 h-5 text-emerald-500"/> {t('dividends.chartTitle')}
                  </h3>
-                 <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">Simulation Next 12 Months</span>
+                 <span className="text-[10px] font-black text-gray-600 uppercase tracking-widest">{t('dividends.chartSub')}</span>
               </div>
               
               <div className="h-[350px] w-full mt-4">
@@ -154,7 +159,7 @@ const DividendsPage: React.FC = () => {
                           }}
                           itemStyle={{ fontSize: '10px', fontWeight: '900', textTransform: 'uppercase', color: '#10B981' }}
                           labelStyle={{ fontSize: '12px', fontWeight: '900', color: '#fff', marginBottom: '8px' }}
-                          formatter={(value: number) => [formatCurrency(value, 'BRL'), 'EXPECTED']}
+                          formatter={(value: number) => [formatCurrency(value, 'BRL'), t('dividends.tooltipLabel')]}
                        />
                        <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
                           {stats.projection.map((entry, index) => (
@@ -171,14 +176,14 @@ const DividendsPage: React.FC = () => {
               <div className="mb-8">
                  <div className="flex items-center justify-between mb-4">
                     <h3 className="text-sm font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
-                       <Snowflake className="w-5 h-5 text-blue-500"/> Snowball Meter
+                       <Snowflake className="w-5 h-5 text-blue-500"/> {t('dividends.snowballTitle')}
                     </h3>
                     <div className="bg-blue-500/10 text-blue-400 p-2 rounded-xl border border-blue-500/20">
                        <Sparkles className="w-4 h-4" />
                     </div>
                  </div>
                  <p className="text-[10px] text-gray-600 font-bold uppercase tracking-widest leading-relaxed">
-                    Track the efficiency of your recurring yield to auto-purchase shares.
+                    {t('dividends.snowballSub')}
                  </p>
               </div>
 
@@ -198,12 +203,12 @@ const DividendsPage: React.FC = () => {
                              )}
                              <div>
                                 <div className="font-black text-white text-base tracking-tighter">{asset.ticker}</div>
-                                <div className="text-[9px] text-gray-600 font-black uppercase tracking-widest">{formatCurrency(asset.lastDividend, 'BRL')} / SHARE</div>
+                                <div className="text-[9px] text-gray-600 font-black uppercase tracking-widest">{formatCurrency(asset.lastDividend, 'BRL')} {t('dividends.perShare')}</div>
                              </div>
                           </div>
                           <div className="text-right">
-                             <div className="text-[10px] text-gray-600 font-black uppercase tracking-tighter">Target: <span className="text-white">{asset.magicNumber || '??'}</span></div>
-                             <div className="text-[10px] text-emerald-500 font-black uppercase tracking-tighter mt-0.5">Held: {asset.quantity}</div>
+                             <div className="text-[10px] text-gray-600 font-black uppercase tracking-tighter">{t('dividends.target')} <span className="text-white">{asset.magicNumber || '??'}</span></div>
+                             <div className="text-[10px] text-emerald-500 font-black uppercase tracking-tighter mt-0.5">{t('dividends.held')} {asset.quantity}</div>
                           </div>
                        </div>
                        
@@ -217,9 +222,9 @@ const DividendsPage: React.FC = () => {
                        
                        {!asset.magic.reached && asset.magicNumber > 0 && (
                           <div className="mt-3 flex justify-between items-center relative z-10">
-                             <span className="text-[8px] font-black text-gray-700 uppercase tracking-widest">{asset.magic.progress.toFixed(0)}% Complete</span>
+                             <span className="text-[8px] font-black text-gray-700 uppercase tracking-widest">{t('dividends.percentDone', { value: asset.magic.progress.toFixed(0) })}</span>
                              <span className="text-[8px] font-black text-emerald-400 bg-emerald-500/5 px-2 py-0.5 rounded-lg border border-emerald-500/10 uppercase tracking-widest">
-                                {asset.magic.remaining} Shares Left
+                                {t('dividends.sharesRemaining', { count: asset.magic.remaining })}
                              </span>
                           </div>
                        )}
@@ -232,7 +237,7 @@ const DividendsPage: React.FC = () => {
                           <TrendingDown className="w-8 h-8 text-gray-700" />
                        </div>
                        <p className="text-gray-500 font-black uppercase text-xs tracking-[0.2em] leading-relaxed">
-                          No income generators detected. Add dividend assets to begin snowball tracking.
+                          {t('dividends.empty')}
                        </p>
                     </div>
                  )}
@@ -246,7 +251,7 @@ const DividendsPage: React.FC = () => {
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-lg font-black text-white uppercase tracking-[0.2em] flex items-center gap-3">
               <Calendar className="w-5 h-5 text-emerald-500" />
-              Histórico de Proventos
+              {t('dividends.historyTitle')}
             </h3>
             <div className="flex items-center gap-2">
               <button 
@@ -256,7 +261,7 @@ const DividendsPage: React.FC = () => {
                 <ChevronLeft className="w-4 h-4 text-white" />
               </button>
               <span className="text-sm font-black text-white uppercase tracking-widest min-w-[140px] text-center">
-                {calendarDate.toLocaleString('pt-BR', { month: 'long', year: 'numeric' })}
+                {calendarDate.toLocaleString(i18n.language, { month: 'long', year: 'numeric' })}
               </span>
               <button 
                 onClick={() => setCalendarDate(new Date(calendarDate.getFullYear(), calendarDate.getMonth() + 1, 1))}
@@ -269,7 +274,7 @@ const DividendsPage: React.FC = () => {
 
           {/* Calendar Grid */}
           <div className="grid grid-cols-7 gap-2 mb-6">
-            {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(day => (
+            {weekDays.map(day => (
               <div key={day} className="text-center text-[10px] font-black text-gray-600 uppercase tracking-widest py-2">
                 {day}
               </div>
@@ -314,7 +319,7 @@ const DividendsPage: React.FC = () => {
                           {formatCurrency(totalDividends, 'BRL')}
                         </div>
                         <div className="text-[7px] text-gray-500 font-bold mt-0.5">
-                          {dayTransactions.length} tx
+                          {t('dividends.txCount', { count: dayTransactions.length })}
                         </div>
                       </div>
                     )}
@@ -329,7 +334,7 @@ const DividendsPage: React.FC = () => {
           {/* Monthly Summary */}
           <div className="mt-8 pt-6 border-t border-white/5 grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
-              <div className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">Total Recebido</div>
+              <div className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">{t('dividends.totalReceived')}</div>
               <div className="text-2xl font-black text-emerald-400">
                 {formatCurrency(
                   transactions
@@ -340,13 +345,13 @@ const DividendsPage: React.FC = () => {
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">Nº de Transações</div>
+              <div className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">{t('dividends.numTransactions')}</div>
               <div className="text-2xl font-black text-white">
                 {transactions.filter(tx => tx.date.startsWith(`${calendarDate.getFullYear()}-${String(calendarDate.getMonth() + 1).padStart(2, '0')}`) && tx.type === 'DIVIDEND').length}
               </div>
             </div>
             <div>
-              <div className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">Ativos Pagantes</div>
+              <div className="text-[10px] font-black text-gray-600 uppercase tracking-widest mb-2">{t('dividends.payingAssets')}</div>
               <div className="text-2xl font-black text-blue-400">
                 {new Set(
                   transactions

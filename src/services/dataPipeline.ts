@@ -6,6 +6,7 @@
  */
 
 import type { MarketQuote, ExchangeQuote, QuoteSource, FreshnessStatus } from '../types';
+import i18n from '../i18n';
 
 // ─── Freshness Logic ─────────────────────────────────────────────────────────
 const FRESHNESS_THRESHOLDS = {
@@ -35,25 +36,25 @@ export function getFreshnessColor(status: FreshnessStatus): string {
 
 export function getFreshnessLabel(status: FreshnessStatus): string {
   switch (status) {
-    case 'live': return 'Tempo real';
-    case 'delayed': return 'Atrasado';
-    case 'stale': return 'Dados antigos';
-    case 'unavailable': return 'Indisponível';
+    case 'live': return i18n.t('freshness.live');
+    case 'delayed': return i18n.t('freshness.delayed');
+    case 'stale': return i18n.t('freshness.stale');
+    case 'unavailable': return i18n.t('freshness.unavailable');
   }
 }
 
 export function getSourceLabel(source: QuoteSource): string {
   switch (source) {
-    case 'brapi': return 'BrAPI';
-    case 'brapi-funds': return 'BrAPI Funds';
-    case 'coingecko': return 'CoinGecko';
-    case 'awesomeapi': return 'AwesomeAPI';
-    case 'awesomeapi-direct': return 'AwesomeAPI';
-    case 'exchangerate': return 'ExchangeRate';
-    case 'bcb': return 'Banco Central';
-    case 'manual': return 'Manual';
-    case 'derived': return 'Calculado';
-    case 'mock': return 'Estimado';
+    case 'brapi': return i18n.t('freshness.srcBrapi');
+    case 'brapi-funds': return i18n.t('freshness.srcBrapiFunds');
+    case 'coingecko': return i18n.t('freshness.srcCoinGecko');
+    case 'awesomeapi': return i18n.t('freshness.srcAwesomeApi');
+    case 'awesomeapi-direct': return i18n.t('freshness.srcAwesomeApi');
+    case 'exchangerate': return i18n.t('freshness.srcExchangeRate');
+    case 'bcb': return i18n.t('freshness.srcBcb');
+    case 'manual': return i18n.t('freshness.srcManual');
+    case 'derived': return i18n.t('freshness.srcDerived');
+    case 'mock': return i18n.t('freshness.srcMock');
   }
 }
 
@@ -208,7 +209,7 @@ export function setCachedExchange(quote: ExchangeQuote): void {
 // ─── Formatação de Freshness ─────────────────────────────────────────────────
 
 export function formatLastUpdated(isoString: string | null): string {
-  if (!isoString) return 'Nunca atualizado';
+  if (!isoString) return i18n.t('freshness.neverUpdated');
   const date = new Date(isoString);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
@@ -216,10 +217,10 @@ export function formatLastUpdated(isoString: string | null): string {
   const diffMin = Math.floor(diffSec / 60);
   const diffHour = Math.floor(diffMin / 60);
 
-  if (diffSec < 60) return 'Agora mesmo';
-  if (diffMin < 60) return `${diffMin} min atrás`;
-  if (diffHour < 24) return `${diffHour}h atrás`;
-  return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  if (diffSec < 60) return i18n.t('freshness.justNow');
+  if (diffMin < 60) return i18n.t('freshness.minAgo', { count: diffMin });
+  if (diffHour < 24) return i18n.t('freshness.hourAgo', { count: diffHour });
+  return date.toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 }
 
 // ─── Confidence Badge ────────────────────────────────────────────────────────

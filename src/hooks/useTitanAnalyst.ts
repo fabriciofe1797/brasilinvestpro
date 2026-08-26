@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
+import i18n from '../i18n';
 import {
   calculateGrahamPrice,
   calculateBazinPrice,
@@ -172,17 +173,17 @@ export const useTitanAnalyst = (assetId: string): TitanAnalystResult | null => {
     const strengths: string[] = [];
     const weaknesses: string[] = [];
 
-    if (dividendos >= 70) strengths.push(`DY atrativo de ${dy.toFixed(2)}%`);
-    if (valuation >= 70) strengths.push('Preço abaixo dos modelos de valuation');
-    if (crescimento >= 70) strengths.push('Tendência de crescimento de dividendos');
-    if (solidez >= 75) strengths.push('Indicadores de solidez financeira');
-    if (momentum >= 70) strengths.push('Momentum positivo recente');
+    if (dividendos >= 70) strengths.push(i18n.t('titanGen.strengthDy', { value: dy.toFixed(2) }));
+    if (valuation >= 70) strengths.push(i18n.t('titanGen.strengthValuation'));
+    if (crescimento >= 70) strengths.push(i18n.t('titanGen.strengthGrowth'));
+    if (solidez >= 75) strengths.push(i18n.t('titanGen.strengthSolidity'));
+    if (momentum >= 70) strengths.push(i18n.t('titanGen.strengthMomentum'));
 
-    if (dividendos < 40) weaknesses.push('Dividend Yield baixo');
-    if (valuation < 40) weaknesses.push('Preço acima dos modelos de valuation');
-    if (crescimento < 40) weaknesses.push('Sem sinais de crescimento de dividendos');
-    if (solidez < 50) weaknesses.push('Indicadores de solidez preocupantes');
-    if (momentum < 40) weaknesses.push('Momentum negativo recente');
+    if (dividendos < 40) weaknesses.push(i18n.t('titanGen.weaknessDy'));
+    if (valuation < 40) weaknesses.push(i18n.t('titanGen.weaknessValuation'));
+    if (crescimento < 40) weaknesses.push(i18n.t('titanGen.weaknessGrowth'));
+    if (solidez < 50) weaknesses.push(i18n.t('titanGen.weaknessSolidity'));
+    if (momentum < 40) weaknesses.push(i18n.t('titanGen.weaknessMomentum'));
 
     // ─── Comparação com Setor (proxy) ─────────────────────────────────────
     // Setor proxy baseado em categoria
@@ -200,20 +201,23 @@ export const useTitanAnalyst = (assetId: string): TitanAnalystResult | null => {
     };
 
     // ─── Narrativa ────────────────────────────────────────────────────────
-    let narrative = `${asset.ticker} apresenta DY de ${dy.toFixed(2)}% ${
-      dy > sectorDY ? 'acima' : 'abaixo'
-    } da média do setor (${sectorDY.toFixed(2)}%). `;
+    let narrative = i18n.t('titanGen.narrativeStart', {
+      ticker: asset.ticker,
+      dy: dy.toFixed(2),
+      position: dy > sectorDY ? i18n.t('titanGen.narrativeAbove') : i18n.t('titanGen.narrativeBelow'),
+      sectorDy: sectorDY.toFixed(2),
+    });
 
     if (verdict === 'COMPRAR') {
-      narrative += `Com score Titan de ${score}/100, o ativo demonstra atratividade com base nos modelos de Graham, Bazin e preço teto. `;
+      narrative += i18n.t('titanGen.narrativeBuy', { score });
     } else if (verdict === 'MANTER') {
-      narrative += `Com score Titan de ${score}/100, o ativo está em zona de manutenção. `;
+      narrative += i18n.t('titanGen.narrativeHold', { score });
     } else {
-      narrative += `Com score Titan de ${score}/100, o ativo apresenta riscos ou está sobrevalorizado. `;
+      narrative += i18n.t('titanGen.narrativeSell', { score });
     }
 
     if (position) {
-      narrative += `Você possui ${position.quantity} cotas a preço médio de R$ ${position.averagePrice.toFixed(2)}.`;
+      narrative += i18n.t('titanGen.narrativePosition', { qty: position.quantity, price: position.averagePrice.toFixed(2) });
     }
 
     return {
@@ -234,5 +238,5 @@ export const useTitanAnalyst = (assetId: string): TitanAnalystResult | null => {
       sectorComparison,
       narrative,
     };
-  }, [assetId, assets, portfolio]);
+  }, [assetId, assets, portfolio, i18n.language]);
 };

@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth } from '@clerk/clerk-react';
 import { useStore } from '../store/useStore';
 import { getUserData, setUserData } from '../services/userData';
+import i18n from '../i18n';
 
 export interface BacktestInput {
   ticker: string;
@@ -92,7 +93,7 @@ export const useBacktest = () => {
     try {
       const asset = assets.find(a => a.ticker === input.ticker.toUpperCase() || a.id === input.ticker);
       if (!asset) {
-        throw new Error(`Ativo ${input.ticker} nao encontrado`);
+        throw new Error(i18n.t('backtest.errAssetNotFound', { ticker: input.ticker }));
       }
 
       const startDate = new Date(input.startDate);
@@ -100,7 +101,7 @@ export const useBacktest = () => {
       const daysElapsed = Math.floor((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
 
       if (daysElapsed <= 0) {
-        throw new Error('Data inicial deve ser no passado');
+        throw new Error(i18n.t('backtest.errInitialDate'));
       }
 
       const yearsElapsed = daysElapsed / 365.25;

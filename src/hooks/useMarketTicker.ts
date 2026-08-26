@@ -11,6 +11,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
+import i18n from '../i18n';
 
 export interface TickerItem {
   label: string;
@@ -113,8 +114,8 @@ async function fetchCryptoDirect(): Promise<{ BTC?: { usd: number; brl: number; 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatBRL(n: number): string {
-  if (n >= 1000) return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return n.toFixed(2).replace('.', ',');
+  if (n >= 1000) return n.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return n.toLocaleString(i18n.language, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
 function calcChange(current: number, previous: number): { change: string; up: boolean } {

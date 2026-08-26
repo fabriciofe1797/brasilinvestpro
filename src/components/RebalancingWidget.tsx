@@ -4,6 +4,7 @@ import { formatCurrency } from '../lib/utils';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { Settings, RefreshCw, AlertCircle, Info, PieChart as PieChartIcon } from 'lucide-react';
 import { AssetCategory } from '../types';
+import { useTranslation } from 'react-i18next';
 
 const COLORS: Record<string, string> = {
   'FII Tijolo': '#10b981',
@@ -25,6 +26,7 @@ interface RebalancingWidgetProps {
 
 const RebalancingWidget: React.FC<RebalancingWidgetProps> = ({ categoryBreakdown: externalBreakdown }) => {
   const { portfolio, assets, settings, updateAllocationTargets } = useStore();
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [tempTargets, setTempTargets] = useState(settings.allocationTargets);
 
@@ -100,15 +102,13 @@ const RebalancingWidget: React.FC<RebalancingWidgetProps> = ({ categoryBreakdown
         <div className="flex items-center gap-2">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <RefreshCw className="w-5 h-5 text-emerald-500" />
-            Alocação de Ativos
+            {t('rebalancing.title')}
           </h3>
           <div className="relative inline-block group">
             <Info className="w-3 h-3 text-emerald-400 cursor-default" />
             <div className="absolute left-1/2 -translate-x-1/2 mt-2 z-20 hidden group-hover:block">
               <div className="bg-black/80 text-white text-[10px] font-bold px-2 py-1 rounded-md border border-white/10 max-w-xs text-center">
-                Mostra quanto cada classe de ativos representa hoje em relação à meta de
-                alocação definida. O rebalanceamento sugere aportes onde o peso está abaixo
-                do alvo.
+                {t('rebalancing.infoHint')}
               </div>
             </div>
           </div>
@@ -124,12 +124,12 @@ const RebalancingWidget: React.FC<RebalancingWidgetProps> = ({ categoryBreakdown
       {allocationData.length === 0 ? (
         <div className="flex flex-col items-center justify-center flex-1 py-12 text-center">
           <PieChartIcon className="w-12 h-12 text-gray-600 mb-4" />
-          <p className="text-sm text-gray-400 font-medium">Nenhum ativo na carteira</p>
-          <p className="text-xs text-gray-600 mt-1">Adicione investimentos para ver sua alocação</p>
+          <p className="text-sm text-gray-400 font-medium">{t('rebalancing.empty')}</p>
+          <p className="text-xs text-gray-600 mt-1">{t('rebalancing.emptyHint')}</p>
         </div>
       ) : isEditing ? (
         <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar">
-          <p className="text-sm text-gray-400 mb-2">Defina a % ideal para cada classe.</p>
+          <p className="text-sm text-gray-400 mb-2">{t('rebalancing.defineIdeal')}</p>
           {tempTargets.map((target) => (
             <div key={target.category} className="space-y-1">
               <div className="flex justify-between text-sm">
@@ -149,7 +149,7 @@ const RebalancingWidget: React.FC<RebalancingWidgetProps> = ({ categoryBreakdown
           
           <div className="pt-4 border-t border-white/10 mt-4">
             <div className="flex justify-between items-center mb-4">
-              <span className="text-sm text-gray-400">Total</span>
+              <span className="text-sm text-gray-400">{t('rebalancing.total')}</span>
               <span className={`text-sm font-bold ${totalTarget === 100 ? 'text-emerald-500' : 'text-red-500'}`}>
                 {totalTarget}%
               </span>
@@ -159,7 +159,7 @@ const RebalancingWidget: React.FC<RebalancingWidgetProps> = ({ categoryBreakdown
               disabled={totalTarget !== 100}
               className="w-full py-2 bg-emerald-500 text-black font-bold rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-400 transition-colors"
             >
-              Salvar Metas
+              {t('rebalancing.saveTargets')}
             </button>
           </div>
         </div>
@@ -225,7 +225,7 @@ const RebalancingWidget: React.FC<RebalancingWidgetProps> = ({ categoryBreakdown
                   {isUnderweight && (
                     <div className="flex items-center gap-1 mt-1 text-[10px] text-emerald-400 animate-pulse">
                       <AlertCircle className="w-3 h-3" />
-                      <span>Aporte sugerido aqui</span>
+                      <span>{t('rebalancing.suggestedHere')}</span>
                     </div>
                   )}
                 </div>
@@ -236,7 +236,7 @@ const RebalancingWidget: React.FC<RebalancingWidgetProps> = ({ categoryBreakdown
                 onClick={() => setIsEditing(true)}
                 className="text-[10px] text-emerald-400 hover:text-emerald-300 transition-colors font-bold uppercase tracking-wider mt-2"
               >
-                + Definir metas de alocação
+                {t('rebalancing.defineTargets')}
               </button>
             )}
           </div>

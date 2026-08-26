@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { PortfolioAlert } from '../types';
 import { calculateAssetScore } from '../lib/utils';
+import i18n from '../i18n';
 
 const ALLOCATION_DRIFT_THRESHOLD = 0.10; // 10% drift triggers alert
 const EXCHANGE_MOVE_THRESHOLD = 0.05; // 5% move triggers alert
@@ -34,11 +35,11 @@ export function useSmartAlerts() {
           const current = currentAllocation[target.category] || 0;
           const drift = Math.abs(current - target.targetPercentage / 100);
           if (drift > ALLOCATION_DRIFT_THRESHOLD) {
-            const direction = current > target.targetPercentage / 100 ? 'acima' : 'abaixo';
+            const direction = current > target.targetPercentage / 100 ? i18n.t('smartAlertsGen.driftAbove') : i18n.t('smartAlertsGen.driftBelow');
             newAlerts.push({
               type: 'allocation_drift',
-              title: `Alocação ${target.category} ${direction}`,
-              message: `Sua alocação em ${target.category} está ${(current * 100).toFixed(1)}% (meta: ${target.targetPercentage}%). Considere rebalancear.`,
+              title: i18n.t('smartAlertsGen.driftTitle', { category: target.category, direction }),
+              message: i18n.t('smartAlertsGen.driftMessage', { category: target.category, pct: (current * 100).toFixed(1), target: target.targetPercentage }),
             });
           }
         });
@@ -53,8 +54,8 @@ export function useSmartAlerts() {
         if (priceChange < -15) {
           newAlerts.push({
             type: 'price_event',
-            title: `Queda em ${asset.ticker}`,
-            message: asset.ticker + ' caiu ' + priceChange.toFixed(1) + '% desde o último fechamento.',
+            title: i18n.t('smartAlertsGen.dropTitle', { ticker: asset.ticker }),
+            message: i18n.t('smartAlertsGen.dropMessage', { ticker: asset.ticker, pct: priceChange.toFixed(1) }),
           });
         }
       }
@@ -64,11 +65,13 @@ export function useSmartAlerts() {
     if (settings.exchangeRateUpdatedAt && settings.exchangeRateChangePct !== undefined) {
       const changeAbs = Math.abs(settings.exchangeRateChangePct);
       if (changeAbs > EXCHANGE_MOVE_THRESHOLD * 100) {
-        const direction = settings.exchangeRateChangePct > 0 ? 'alta' : 'baixa';
         newAlerts.push({
           type: 'exchange_alert',
-          title: `Câmbio em ${direction}`,
-          message: 'EUR/BRL moveu ' + (settings.exchangeRateChangePct > 0 ? '+' : '') + settings.exchangeRateChangePct.toFixed(2) + '%. ' + (settings.exchangeRateChangePct > 0 ? 'Desfavorável para' : 'Favorável para') + ' aportes em EUR.',
+          title: settings.exchangeRateChangePct > 0 ? i18n.t('smartAlertsGen.fxTitleUp') : i18n.t('smartAlertsGen.fxTitleDown'),
+          message: i18n.t('smartAlertsGen.fxMessage', {
+            pct: (settings.exchangeRateChangePct > 0 ? '+' : '') + settings.exchangeRateChangePct.toFixed(2),
+            favorability: settings.exchangeRateChangePct > 0 ? i18n.t('smartAlertsGen.fxUnfavorable') : i18n.t('smartAlertsGen.fxFavorable'),
+          }),
         });
       }
     }
@@ -95,13 +98,13 @@ export function useSmartAlerts() {
     if (opportunities.length > 0) {
       newAlerts.push({
         type: 'price_event',
-        title: 'Oportunidades de Aporte',
-        message: `${opportunities.map(o => o.asset.ticker).join(', ')} têm score elevado (${opportunities[0].score.label}).`,
+        title: i18n.t('smartAlertsGen.oppTitle'),
+        message: i18n.t('smartAlertsGen.oppMessage', { tickers: opportunities.map(o => o.asset.ticker).join(', '), label: opportunities[0].score.label }),
       });
     }
 
     return newAlerts.slice(0, 10);
-  }, [portfolio, assets, settings]);
+  }, [portfolio, assets, settings, i18n.language]);
 
   const combinedAlerts = useMemo(() => {
     const existing = alerts.map(a => ({

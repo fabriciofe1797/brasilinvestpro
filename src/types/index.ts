@@ -165,6 +165,7 @@ export interface UserSettings {
   targetDividend: number;
   allocationTargets: AllocationTarget[];
   plan?: 'free' | 'starter' | 'pro' | 'master' | 'elite';
+  language?: 'pt-BR' | 'en' | 'es';
   custodyRate?: number;
   selicCustodyThreshold?: number;
 }

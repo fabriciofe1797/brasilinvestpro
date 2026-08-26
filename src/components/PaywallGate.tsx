@@ -11,6 +11,7 @@ import React from 'react';
 import { Lock, Crown, ArrowRight, Check, Sparkles } from 'lucide-react';
 import { useStore } from '../store/useStore';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 interface PaywallGateProps {
   requiredPlan: 'starter' | 'pro' | 'master' | 'elite';
@@ -32,6 +33,7 @@ const PLAN_ORDER = ['free', 'starter', 'pro', 'master', 'elite'];
 export default function PaywallGate({ requiredPlan, featureName, description, benefits, children }: PaywallGateProps) {
   const { settings } = useStore();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const currentPlan = settings.plan ?? 'free';
   const currentIdx = PLAN_ORDER.indexOf(currentPlan);
   const requiredIdx = PLAN_ORDER.indexOf(requiredPlan);
@@ -57,7 +59,7 @@ export default function PaywallGate({ requiredPlan, featureName, description, be
 
         {/* Benefits */}
         <div className="bg-white/[0.02] border border-white/10 rounded-2xl p-5 space-y-3">
-          <h3 className="text-white font-bold text-xs uppercase tracking-wider">O que você terá acesso:</h3>
+          <h3 className="text-white font-bold text-xs uppercase tracking-wider">{t('paywall.benefitsTitle')}</h3>
           {benefits.map((benefit, idx) => (
             <div key={idx} className="flex items-center gap-3">
               <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
@@ -75,18 +77,18 @@ export default function PaywallGate({ requiredPlan, featureName, description, be
             className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-black font-black text-sm uppercase tracking-wider hover:from-emerald-400 hover:to-emerald-500 transition-all shadow-[0_0_30px_rgba(16,185,129,0.2)] hover:shadow-[0_0_40px_rgba(16,185,129,0.3)]"
           >
             <Crown className="w-4 h-4" />
-            Fazer Upgrade para {config.label}
+            {t('paywall.upgradeTo', { plano: t(`layout.planFooter.${requiredPlan}`) })}
             <ArrowRight className="w-4 h-4" />
           </button>
           <p className="text-center text-gray-500 text-xs">
-            A partir de {config.price}/mês &middot; Cancele quando quiser
+            {t('paywall.fromPrice', { preco: config.price })}
           </p>
         </div>
 
         {/* Current Plan */}
         <div className="text-center">
           <p className="text-gray-600 text-xs">
-            Plano atual: <span className="text-gray-400 font-bold capitalize">{currentPlan}</span>
+            {t('paywall.currentPlan')} <span className="text-gray-400 font-bold capitalize">{currentPlan}</span>
           </p>
         </div>
       </div>
@@ -98,6 +100,7 @@ export default function PaywallGate({ requiredPlan, featureName, description, be
  * FeaturePreview — Mini preview de feature bloqueada (blur + lock)
  */
 export function FeaturePreview({ children, requiredPlan }: { children: React.ReactNode; requiredPlan: string }) {
+  const { t } = useTranslation();
   return (
     <div className="relative">
       {/* Blurred Content */}
@@ -110,12 +113,12 @@ export function FeaturePreview({ children, requiredPlan }: { children: React.Rea
           <div className="w-12 h-12 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto">
             <Sparkles className="w-5 h-5 text-amber-400" />
           </div>
-          <p className="text-white font-bold text-sm">Conteúdo {requiredPlan}</p>
+          <p className="text-white font-bold text-sm">{t('paywall.previewContent', { plano: requiredPlan })}</p>
           <button
             onClick={() => window.location.href = '/premium'}
             className="text-amber-400 text-xs font-bold hover:text-amber-300 transition-colors"
           >
-            Fazer upgrade para desbloquear
+            {t('paywall.previewUnlock')}
           </button>
         </div>
       </div>

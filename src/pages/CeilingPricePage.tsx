@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useCeilingPrice } from '../hooks/useCeilingPrice';
 import { formatCurrency, formatPercent, cn } from '../lib/utils';
+import { useTranslation } from 'react-i18next';
 import {
   TrendingUp, Target, Award, AlertTriangle,
   BarChart3, DollarSign, Eye, ArrowUpRight, ArrowDownRight,
@@ -22,6 +23,8 @@ const CeilingPricePage: React.FC = () => {
     belowCeiling,
     aboveCeiling,
   } = useCeilingPrice();
+
+  const { t } = useTranslation();
 
   const [sortField, setSortField] = useState<SortField>('score');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
@@ -100,10 +103,10 @@ const CeilingPricePage: React.FC = () => {
       <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black tracking-tight text-white uppercase underline decoration-emerald-500 decoration-4 underline-offset-8">
-            Preço <span className="text-emerald-500">Teto</span> & Ranking
+            {t('ceiling.titleStart')} <span className="text-emerald-500">{t('ceiling.titleHighlight')}</span> {t('ceiling.titleEnd')}
           </h1>
           <p className="text-gray-500 text-sm font-bold uppercase mt-4 tracking-widest">
-            Análise de valuation com métodos Bazin, Graham e Consenso.
+            {t('ceiling.subtitle')}
           </p>
         </div>
         <div className="flex gap-2">
@@ -121,7 +124,7 @@ const CeilingPricePage: React.FC = () => {
                   : "bg-white/5 border-white/5 text-gray-500 hover:border-emerald-500/30"
               )}
             >
-              {f === 'all' ? 'Todos' : f === 'buy' ? 'Compra' : f === 'hold' ? 'Manter' : 'Venda'}
+              {t(f === 'all' ? 'ceiling.filterAll' : f === 'buy' ? 'ceiling.filterBuy' : f === 'hold' ? 'ceiling.filterHold' : 'ceiling.filterSell')}
             </button>
           ))}
         </div>
@@ -132,41 +135,41 @@ const CeilingPricePage: React.FC = () => {
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <DollarSign className="w-4 h-4 text-emerald-500" />
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">YoC Carteira</span>
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('ceiling.kpiYoc')}</span>
           </div>
           <div className="text-2xl font-black text-emerald-400">{yoc.yieldOnCost.toFixed(2)}%</div>
           <div className="text-[10px] text-gray-500 mt-1">
-            {formatCurrency(yoc.monthlyIncome, 'BRL')}/mês em dividendos
+            {t('ceiling.kpiYocSub', { value: formatCurrency(yoc.monthlyIncome, 'BRL') })}
           </div>
         </div>
 
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <Target className="w-4 h-4 text-blue-500" />
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Total Investido</span>
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('ceiling.kpiInvested')}</span>
           </div>
           <div className="text-2xl font-black text-white">{formatCurrency(yoc.totalInvested, 'BRL')}</div>
           <div className="text-[10px] text-gray-500 mt-1">
-            {yoc.perAsset.length} ativos na carteira
+            {t('ceiling.kpiInvestedSub', { count: yoc.perAsset.length })}
           </div>
         </div>
 
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <ArrowUpRight className="w-4 h-4 text-emerald-500" />
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Oportunidades</span>
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('ceiling.kpiOpportunities')}</span>
           </div>
           <div className="text-2xl font-black text-emerald-400">{belowCeiling.length}</div>
-          <div className="text-[10px] text-gray-500 mt-1">ativos abaixo do preço-teto</div>
+          <div className="text-[10px] text-gray-500 mt-1">{t('ceiling.kpiOpportunitiesSub')}</div>
         </div>
 
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-5">
           <div className="flex items-center gap-2 mb-3">
             <AlertTriangle className="w-4 h-4 text-red-500" />
-            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Sobrevalorizados</span>
+            <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('ceiling.kpiOvervalued')}</span>
           </div>
           <div className="text-2xl font-black text-red-400">{aboveCeiling.length}</div>
-          <div className="text-[10px] text-gray-500 mt-1">ativos acima do preço-teto</div>
+          <div className="text-[10px] text-gray-500 mt-1">{t('ceiling.kpiOvervaluedSub')}</div>
         </div>
       </div>
 
@@ -176,7 +179,7 @@ const CeilingPricePage: React.FC = () => {
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
             <TrendingUp className="w-5 h-5 text-emerald-500" />
-            Top 5 Oportunidades (Preço Teto)
+            {t('ceiling.topOpportunities')}
           </h3>
           {topOpportunities.length > 0 ? (
             <div className="space-y-3">
@@ -196,7 +199,7 @@ const CeilingPricePage: React.FC = () => {
                   <div className="text-right">
                     <div className="text-sm font-bold text-emerald-400">+{item.upsideClassic.toFixed(1)}%</div>
                     <div className="text-[10px] text-gray-500">
-                      Teto: {item.ceilingClassic ? formatCurrency(item.ceilingClassic, 'BRL') : 'N/A'}
+                      {t('ceiling.ceilingLabel', { value: item.ceilingClassic ? formatCurrency(item.ceilingClassic, 'BRL') : 'N/A' })}
                     </div>
                   </div>
                 </Link>
@@ -204,7 +207,7 @@ const CeilingPricePage: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500 text-sm">
-              Nenhuma oportunidade identificada no momento.
+              {t('ceiling.emptyOpportunities')}
             </div>
           )}
         </div>
@@ -213,7 +216,7 @@ const CeilingPricePage: React.FC = () => {
         <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6">
           <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
             <Award className="w-5 h-5 text-amber-500" />
-            Top 5 Yield on Cost (Sua Carteira)
+            {t('ceiling.topYoC')}
           </h3>
           {topYieldOnCost.length > 0 ? (
             <div className="space-y-3">
@@ -228,14 +231,14 @@ const CeilingPricePage: React.FC = () => {
                     <div>
                       <div className="text-sm font-bold text-white group-hover:text-amber-400 transition-colors">{item.ticker}</div>
                       <div className="text-[10px] text-gray-500">
-                        PM: {formatCurrency(item.averagePrice, 'BRL')} | {item.quantity} cotas
+                        {t('ceiling.pmLabel', { price: formatCurrency(item.averagePrice, 'BRL'), quantity: item.quantity })}
                       </div>
                     </div>
                   </div>
                   <div className="text-right">
                     <div className="text-sm font-bold text-amber-400">{item.yieldOnCost.toFixed(2)}%</div>
                     <div className="text-[10px] text-gray-500">
-                      {formatCurrency(item.annualIncome / 12, 'BRL')}/mês
+                      {t('ceiling.perMonth', { value: formatCurrency(item.annualIncome / 12, 'BRL') })}
                     </div>
                   </div>
                 </Link>
@@ -243,7 +246,7 @@ const CeilingPricePage: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-8 text-gray-500 text-sm">
-              Adicione ativos à carteira para ver o YoC.
+              {t('ceiling.emptyYoC')}
             </div>
           )}
         </div>
@@ -254,13 +257,13 @@ const CeilingPricePage: React.FC = () => {
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <h3 className="text-lg font-bold text-white flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-blue-500" />
-            Ranking de Ativos
+            {t('ceiling.rankingTitle')}
           </h3>
           <div className="relative">
             <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-600" />
             <input
               type="text"
-              placeholder="Buscar ticker..."
+              placeholder={t('ceiling.searchPlaceholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="h-10 rounded-xl bg-white/5 border border-white/10 pl-10 pr-4 text-sm text-white placeholder:text-gray-600 focus:border-emerald-500/50 focus:ring-2 focus:ring-emerald-500/10 outline-none transition-all w-full md:w-64"
@@ -274,12 +277,12 @@ const CeilingPricePage: React.FC = () => {
               <tr className="border-b border-white/5">
                 <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-gray-500">#</th>
                 <SortHeader field="ticker" label="Ticker" />
-                <SortHeader field="price" label="Preço" />
+                <SortHeader field="price" label={t('ceiling.colPrice')} />
                 <SortHeader field="dy" label="DY (12M)" />
-                <SortHeader field="upside" label="Margem Teto" />
+                <SortHeader field="upside" label={t('ceiling.colCeilingMargin')} />
                 <SortHeader field="yoc" label="YoC" />
                 <SortHeader field="score" label="Score" />
-                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-gray-500">Veredito</th>
+                <th className="px-4 py-3 text-left text-[10px] font-black uppercase tracking-widest text-gray-500">{t('ceiling.colVerdict')}</th>
               </tr>
             </thead>
             <tbody>
@@ -317,7 +320,7 @@ const CeilingPricePage: React.FC = () => {
                           {Math.abs(item.upsideClassic).toFixed(1)}%
                         </div>
                         {item.ceilingClassic && (
-                          <div className="text-[10px] text-gray-500">Teto: {formatCurrency(item.ceilingClassic, 'BRL')}</div>
+                          <div className="text-[10px] text-gray-500">{t('ceiling.ceilingLabel', { value: formatCurrency(item.ceilingClassic, 'BRL') })}</div>
                         )}
                       </td>
                       <td className="px-4 py-3">
@@ -337,7 +340,7 @@ const CeilingPricePage: React.FC = () => {
                       </td>
                       <td className="px-4 py-3">
                         <span className={cn("text-[10px] font-black uppercase px-2 py-1 rounded border", verdictColor)}>
-                          {cp?.verdict === 'buy' ? 'Compra' : cp?.verdict === 'hold' ? 'Manter' : cp?.verdict === 'sell' ? 'Venda' : 'Neutro'}
+                          {cp?.verdict === 'buy' ? t('ceiling.verdictBuy') : cp?.verdict === 'hold' ? t('ceiling.verdictHold') : cp?.verdict === 'sell' ? t('ceiling.verdictSell') : t('ceiling.verdictNeutral')}
                         </span>
                       </td>
                     </tr>
@@ -347,7 +350,7 @@ const CeilingPricePage: React.FC = () => {
                         <td colSpan={8} className="px-4 py-4">
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-white/[0.02] border border-white/5">
                             <div>
-                              <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Preço Teto Clássico (Bazin)</div>
+                              <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">{t('ceiling.detailClassic')}</div>
                               <div className="text-lg font-bold text-white">
                                 {cp.classicCeiling ? formatCurrency(cp.classicCeiling, 'BRL') : 'N/A'}
                               </div>
@@ -356,7 +359,7 @@ const CeilingPricePage: React.FC = () => {
                               </div>
                             </div>
                             <div>
-                              <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Preço Teto Projetivo</div>
+                              <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">{t('ceiling.detailProjective')}</div>
                               <div className="text-lg font-bold text-white">
                                 {cp.projectiveCeiling ? formatCurrency(cp.projectiveCeiling, 'BRL') : 'N/A'}
                               </div>
@@ -365,7 +368,7 @@ const CeilingPricePage: React.FC = () => {
                               </div>
                             </div>
                             <div>
-                              <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Preço de Graham</div>
+                              <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">{t('ceiling.detailGraham')}</div>
                               <div className="text-lg font-bold text-white">
                                 {cp.grahamPrice ? formatCurrency(cp.grahamPrice, 'BRL') : 'N/A'}
                               </div>
@@ -374,7 +377,7 @@ const CeilingPricePage: React.FC = () => {
                               </div>
                             </div>
                             <div>
-                              <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">Preço de Consenso</div>
+                              <div className="text-[10px] text-gray-500 uppercase tracking-widest mb-1">{t('ceiling.detailConsensus')}</div>
                               <div className="text-lg font-bold text-white">
                                 {cp.consensusCeiling ? formatCurrency(cp.consensusCeiling, 'BRL') : 'N/A'}
                               </div>
@@ -385,7 +388,7 @@ const CeilingPricePage: React.FC = () => {
                           </div>
                           <div className="mt-3 flex items-center gap-2">
                             <Info className="w-3 h-3 text-gray-500" />
-                            <span className="text-[10px] text-gray-500">{cp.verdictLabel}</span>
+                            <span className="text-[10px] text-gray-500">{t(cp.verdictLabel)}</span>
                           </div>
                         </td>
                       </tr>
@@ -399,7 +402,7 @@ const CeilingPricePage: React.FC = () => {
 
         {filteredRanking.length === 0 && (
           <div className="text-center py-12 text-gray-500 text-sm">
-            Nenhum ativo encontrado com os filtros selecionados.
+            {t('ceiling.empty')}
           </div>
         )}
       </div>
@@ -408,26 +411,26 @@ const CeilingPricePage: React.FC = () => {
       <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6">
         <h3 className="text-sm font-bold text-white flex items-center gap-2 mb-4">
           <Eye className="w-4 h-4 text-gray-500" />
-          Metodologia
+          {t('ceiling.methodology')}
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-gray-400 leading-relaxed">
           <div>
-            <div className="text-white font-bold mb-1">Preço Teto Clássico (Bazin)</div>
-            <p>DJA ÷ 6%. Preço máximo para garantir 6% de retorno anual em dividendos. Metodologia de Décio Bazin / Luiz Barsi.</p>
+            <div className="text-white font-bold mb-1">{t('ceiling.detailClassic')}</div>
+            <p>{t('ceiling.classicDesc')}</p>
           </div>
           <div>
-            <div className="text-white font-bold mb-1">Preço Teto Projetivo</div>
-            <p>Estende o clássico aplicando fator de crescimento baseado na tendência dos últimos dividendos. Antecipa aumentos/cortes.</p>
+            <div className="text-white font-bold mb-1">{t('ceiling.detailProjective')}</div>
+            <p>{t('ceiling.projectiveDesc')}</p>
           </div>
           <div>
-            <div className="text-white font-bold mb-1">Preço de Graham</div>
-            <p>√(22.5 × LPA × VPA). Fórmula de Benjamin Graham para ações de valor. Considera lucro e valor patrimonial.</p>
+            <div className="text-white font-bold mb-1">{t('ceiling.detailGraham')}</div>
+            <p>{t('ceiling.grahamDesc')}</p>
           </div>
         </div>
         <div className="mt-4 pt-4 border-t border-white/5">
           <div className="text-xs text-gray-400 leading-relaxed">
-            <span className="text-white font-bold">Score</span> = DY (35%) + Margem Teto (30%) + YoC (20%) + Valuation P/VP ou P/L (15%).
-            <span className="text-white font-bold ml-2">YoC</span> = Dividendo Anual ÷ Preço Médio de Compra. Mostra a rentabilidade real sobre o capital investido.
+            <span className="text-white font-bold">Score</span> {t('ceiling.scoreFormula')}
+            <span className="text-white font-bold ml-2">YoC</span> {t('ceiling.yocFormula')}
           </div>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { MOCK_ASSETS } from '../data/mockData';
+import i18n from '../i18n';
 
 export interface InvestorProfile {
   riskTolerance: 'Conservador' | 'Moderado' | 'Agressivo';
@@ -92,11 +93,11 @@ const selectTacticalAssets = (
         }
 
         if (profile.timeHorizon === 'Curto (até 2 anos)') {
-            rationale = 'Segurança e liquidez são prioridade aqui. Como seu horizonte é curto, privilegiamos mais Selic (IRFM11) e menos IPCA (IMAB11).';
+            rationale = i18n.t('ai.advisor.tacRationaleShort');
         } else if (profile.timeHorizon === 'Longo (5+ anos)') {
-            rationale = 'Segurança continua importante, mas como seu horizonte é longo, aumentamos a fatia em IPCA (IMAB11) para reforçar a proteção contra a inflação.';
+            rationale = i18n.t('ai.advisor.tacRationaleLong');
         } else {
-            rationale = 'Equilíbrio entre liquidez e proteção. Com horizonte médio, dividimos Renda Fixa entre Selic (IRFM11) e IPCA (IMAB11).';
+            rationale = i18n.t('ai.advisor.tacRationaleMedium');
         }
 
         const selicAmount = budget * selicShare;
@@ -108,7 +109,7 @@ const selectTacticalAssets = (
                 price: selicEtf.price,
                 quantity: qty,
                 total: qty * selicEtf.price,
-                reason: 'Exposição a títulos públicos de renda fixa para reserva e colchão de segurança.',
+                reason: i18n.t('ai.advisor.tacReasonSelic'),
                 type: 'FixedIncome'
             });
         }
@@ -122,7 +123,7 @@ const selectTacticalAssets = (
                 price: ipcaEtf.price,
                 quantity: qty,
                 total: qty * ipcaEtf.price,
-                reason: 'Proteção contra inflação usando ETF de títulos indexados ao IPCA.',
+                reason: i18n.t('ai.advisor.tacReasonIpca'),
                 type: 'FixedIncome'
             });
         }
@@ -130,7 +131,7 @@ const selectTacticalAssets = (
     
     // 2. FIIs (Tijolo/Papel/Agro)
     else if (assetClass.includes('FII')) {
-        rationale = 'Seleção dos melhores Fundos Imobiliários com foco em P/VP justo e dividendos consistentes.';
+        rationale = i18n.t('ai.advisor.tacRationaleFiis');
         
         // Filter FIIs from Mock
         const candidates = MOCK_ASSETS.filter(a => a.category.includes('FII'));
@@ -151,7 +152,7 @@ const selectTacticalAssets = (
                     price: asset.price,
                     quantity: qtd,
                     total: qtd * asset.price,
-                    reason: `DY: ${asset.dividendYield}% | Setor: ${asset.subCategory}`,
+                    reason: i18n.t('ai.advisor.tacReasonFii', { dy: asset.dividendYield, sector: asset.subCategory }),
                     type: 'FII'
                 });
             }
@@ -160,7 +161,7 @@ const selectTacticalAssets = (
 
     // 3. Ações
     else if (assetClass.includes('Ações')) {
-        rationale = 'Empresas perenes (Bancos, Elétricas, Seguradoras) que pagam bons dividendos e têm lucro consistente.';
+        rationale = i18n.t('ai.advisor.tacRationaleStocks');
         
         let candidates = MOCK_ASSETS.filter(a => a.category.includes('Ações'));
         
@@ -186,7 +187,7 @@ const selectTacticalAssets = (
                     price: asset.price,
                     quantity: qtd,
                     total: qtd * asset.price,
-                    reason: `Setor Perene (${asset.subCategory}). Foco em Dividendos.`,
+                    reason: i18n.t('ai.advisor.tacReasonStock', { sector: asset.subCategory }),
                     type: 'Stock'
                 });
             } else {
@@ -197,7 +198,7 @@ const selectTacticalAssets = (
                     price: asset.price,
                     quantity: 0,
                     total: 0,
-                    reason: `Aguarde acumular ~${asset.price.toFixed(2)} para comprar 1 unidade. (${asset.subCategory})`,
+                    reason: i18n.t('ai.advisor.tacReasonStockWait', { value: asset.price.toFixed(2), sector: asset.subCategory }),
                     type: 'Stock'
                 });
             }
@@ -206,7 +207,7 @@ const selectTacticalAssets = (
 
     // 4. Cripto
     else if (assetClass.includes('Cripto')) {
-        rationale = 'Exposição assimétrica. Apenas Bitcoin e Ethereum para segurança, fugindo de "shitcoins".';
+        rationale = i18n.t('ai.advisor.tacRationaleCrypto');
         
         const btc = MOCK_ASSETS.find(a => a.ticker === 'BTC');
         const eth = MOCK_ASSETS.find(a => a.ticker === 'ETH');
@@ -219,7 +220,7 @@ const selectTacticalAssets = (
                 price: btc.price,
                 quantity: Number((btcAlloc / btc.price).toFixed(6)),
                 total: btcAlloc,
-                reason: 'Ouro digital. Reserva de valor descentralizada.',
+                reason: i18n.t('ai.advisor.tacReasonBtc'),
                 type: 'Crypto'
             });
         }
@@ -231,7 +232,7 @@ const selectTacticalAssets = (
                 price: eth.price,
                 quantity: Number((ethAlloc / eth.price).toFixed(6)),
                 total: ethAlloc,
-                reason: 'Plataforma de contratos inteligentes.',
+                reason: i18n.t('ai.advisor.tacReasonEth'),
                 type: 'Crypto'
             });
         }
@@ -239,7 +240,7 @@ const selectTacticalAssets = (
 
     // 5. Internacional
     else if (assetClass.includes('Internacional')) {
-        rationale = 'Diversificação global via BDRs de ETFs para dolarizar o patrimônio.';
+        rationale = i18n.t('ai.advisor.tacRationaleIntl');
         const amount = budget;
         suggestions.push({
             ticker: 'IVVB11',
@@ -247,7 +248,7 @@ const selectTacticalAssets = (
             price: 300, // Approx
             quantity: Math.max(1, Math.floor(amount / 300)),
             total: amount,
-            reason: 'Exposição às 500 maiores empresas dos EUA (S&P 500).',
+            reason: i18n.t('ai.advisor.tacReasonSp500'),
             type: 'ETF'
         });
     }
@@ -274,17 +275,17 @@ export const generateInvestmentPlan = (profile: InvestorProfile): InvestmentPlan
 
   // --- Etapa 2: Análise do Perfil ---
   if (profile.riskTolerance === 'Conservador') {
-    plan.profileAnalysis.title = 'Preservação de Capital';
-    plan.profileAnalysis.description = 'Seu foco principal é não perder dinheiro. Você prioriza segurança sobre rentabilidade explosiva.';
-    plan.profileAnalysis.warnings = ['Cuidado com a inflação corroendo seu poder de compra no longo prazo.', 'Evite produtos complexos que você não entende.'];
+    plan.profileAnalysis.title = i18n.t('ai.advisor.profileConservadorTitle');
+    plan.profileAnalysis.description = i18n.t('ai.advisor.profileConservadorDesc');
+    plan.profileAnalysis.warnings = [i18n.t('ai.advisor.profileConservadorWarn1'), i18n.t('ai.advisor.profileConservadorWarn2')];
   } else if (profile.riskTolerance === 'Moderado') {
-    plan.profileAnalysis.title = 'Equilíbrio Inteligente';
-    plan.profileAnalysis.description = 'Você aceita oscilações moderadas em troca de retornos acima da inflação. Busca o meio-termo entre segurança e crescimento.';
-    plan.profileAnalysis.warnings = ['Não se assuste com quedas pontuais do mercado.', 'Mantenha a disciplina nos aportes.'];
+    plan.profileAnalysis.title = i18n.t('ai.advisor.profileModeradoTitle');
+    plan.profileAnalysis.description = i18n.t('ai.advisor.profileModeradoDesc');
+    plan.profileAnalysis.warnings = [i18n.t('ai.advisor.profileModeradoWarn1'), i18n.t('ai.advisor.profileModeradoWarn2')];
   } else {
-    plan.profileAnalysis.title = 'Crescimento Agressivo';
-    plan.profileAnalysis.description = 'Você tem estômago para volatilidade e foco total no longo prazo. Aceita ver seu patrimônio cair temporariamente para buscar multiplicação futura.';
-    plan.profileAnalysis.warnings = ['Alta volatilidade é garantida. Não venda no fundo.', 'Diversificação é sua única proteção real.'];
+    plan.profileAnalysis.title = i18n.t('ai.advisor.profileAgressivoTitle');
+    plan.profileAnalysis.description = i18n.t('ai.advisor.profileAgressivoDesc');
+    plan.profileAnalysis.warnings = [i18n.t('ai.advisor.profileAgressivoWarn1'), i18n.t('ai.advisor.profileAgressivoWarn2')];
   }
 
   // --- Etapa 3: Estratégia de Alocação ---
@@ -292,24 +293,24 @@ export const generateInvestmentPlan = (profile: InvestorProfile): InvestmentPlan
   
   if (profile.riskTolerance === 'Conservador') {
     allocation = [
-      { assetClass: 'Renda Fixa / Caixa', percentage: 60, reason: 'Bloco de segurança e liquidez imediata.', color: '#10B981' },
-      { assetClass: 'FIIs (Tijolo/Papel)', percentage: 20, reason: 'Renda recorrente com volatilidade moderada.', color: '#3B82F6' },
-      { assetClass: 'Ações Dividendos', percentage: 10, reason: 'Exposição controlada a empresas sólidas que pagam proventos.', color: '#F59E0B' },
-      { assetClass: 'Internacional', percentage: 10, reason: 'Proteção cambial e diversificação geográfica.', color: '#8B5CF6' },
+      { assetClass: 'Renda Fixa / Caixa', percentage: 60, reason: i18n.t('ai.advisor.reasonSafetyLiquidity'), color: '#10B981' },
+      { assetClass: 'FIIs (Tijolo/Papel)', percentage: 20, reason: i18n.t('ai.advisor.reasonFiiIncome'), color: '#3B82F6' },
+      { assetClass: 'Ações Dividendos', percentage: 10, reason: i18n.t('ai.advisor.reasonDivStocks'), color: '#F59E0B' },
+      { assetClass: 'Internacional', percentage: 10, reason: i18n.t('ai.advisor.reasonFxProtection'), color: '#8B5CF6' },
     ];
   } else if (profile.riskTolerance === 'Moderado') {
     allocation = [
-      { assetClass: 'Renda Fixa / Caixa', percentage: 40, reason: 'Estabilidade e colchão para oportunidades.', color: '#10B981' },
-      { assetClass: 'FIIs', percentage: 25, reason: 'Motor de renda passiva mensal.', color: '#3B82F6' },
-      { assetClass: 'Ações', percentage: 25, reason: 'Crescimento do patrimônio com dividendos.', color: '#F59E0B' },
-      { assetClass: 'Internacional/Stocks', percentage: 10, reason: 'Exposição às maiores empresas do mundo.', color: '#8B5CF6' },
+      { assetClass: 'Renda Fixa / Caixa', percentage: 40, reason: i18n.t('ai.advisor.reasonStability'), color: '#10B981' },
+      { assetClass: 'FIIs', percentage: 25, reason: i18n.t('ai.advisor.reasonIncomeEngine'), color: '#3B82F6' },
+      { assetClass: 'Ações', percentage: 25, reason: i18n.t('ai.advisor.reasonGrowthDiv'), color: '#F59E0B' },
+      { assetClass: 'Internacional/Stocks', percentage: 10, reason: i18n.t('ai.advisor.reasonGlobalCompanies'), color: '#8B5CF6' },
     ];
   } else {
     allocation = [
-      { assetClass: 'Renda Fixa / Caixa', percentage: 20, reason: 'Reserva tática para volatilidade e oportunidades.', color: '#10B981' },
-      { assetClass: 'FIIs', percentage: 25, reason: 'Renda para reinvestimento e efeito bola de neve.', color: '#3B82F6' },
-      { assetClass: 'Ações Valor/Crescimento', percentage: 35, reason: 'Principal motor de multiplicação de capital.', color: '#F59E0B' },
-      { assetClass: 'Internacional', percentage: 20, reason: 'Diversificação geográfica obrigatória e proteção cambial.', color: '#8B5CF6' },
+      { assetClass: 'Renda Fixa / Caixa', percentage: 20, reason: i18n.t('ai.advisor.reasonTacticalReserve'), color: '#10B981' },
+      { assetClass: 'FIIs', percentage: 25, reason: i18n.t('ai.advisor.reasonSnowball'), color: '#3B82F6' },
+      { assetClass: 'Ações Valor/Crescimento', percentage: 35, reason: i18n.t('ai.advisor.reasonMainEngine'), color: '#F59E0B' },
+      { assetClass: 'Internacional', percentage: 20, reason: i18n.t('ai.advisor.reasonGlobalMandatory'), color: '#8B5CF6' },
     ];
   }
 
@@ -322,7 +323,7 @@ export const generateInvestmentPlan = (profile: InvestorProfile): InvestmentPlan
     allocation.push({ 
         assetClass: 'Criptomoedas', 
         percentage: cryptoShare, 
-        reason: 'Assimetria de risco (alto potencial/alto risco).', 
+        reason: i18n.t('ai.advisor.reasonCryptoAsymmetry'), 
         color: '#EC4899' 
     });
   }
@@ -360,29 +361,29 @@ export const generateInvestmentPlan = (profile: InvestorProfile): InvestmentPlan
   // --- Etapa 5: Prioridades ---
   if (profile.mainGoal === 'Reserva de Emergência') {
     plan.steps = [
-      { order: 1, title: 'Focar na Renda Fixa', description: 'Seu objetivo nº 1 é ter 6 meses de custo de vida em liquidez diária (CDB, Tesouro Selic).' },
-      { order: 2, title: 'Começar FIIs devagar', description: 'Apenas após ter 3 meses de reserva, inicie aportes em FIIs de tijolo para sentir o mercado.' },
-      { order: 3, title: 'Estudo Contínuo', description: 'Enquanto monta a reserva, estude sobre ações para a próxima fase.' }
+      { order: 1, title: i18n.t('ai.advisor.stepEmergency1Title'), description: i18n.t('ai.advisor.stepEmergency1Desc') },
+      { order: 2, title: i18n.t('ai.advisor.stepEmergency2Title'), description: i18n.t('ai.advisor.stepEmergency2Desc') },
+      { order: 3, title: i18n.t('ai.advisor.stepEmergency3Title'), description: i18n.t('ai.advisor.stepEmergency3Desc') }
     ];
   } else if (profile.mainGoal === 'Renda Passiva') {
     plan.steps = [
-      { order: 1, title: 'Base de FIIs', description: 'Priorize FIIs de Tijolo e Papel High Grade para gerar fluxo de caixa mensal imediato.' },
-      { order: 2, title: 'Reinvestimento', description: 'Use os dividendos recebidos para comprar mais cotas (Bola de Neve).' },
-      { order: 3, title: 'Ações de Dividendos', description: 'Adicione empresas perenes (Bancos, Elétricas) para diversificar a fonte de renda.' }
+      { order: 1, title: i18n.t('ai.advisor.stepIncome1Title'), description: i18n.t('ai.advisor.stepIncome1Desc') },
+      { order: 2, title: i18n.t('ai.advisor.stepIncome2Title'), description: i18n.t('ai.advisor.stepIncome2Desc') },
+      { order: 3, title: i18n.t('ai.advisor.stepIncome3Title'), description: i18n.t('ai.advisor.stepIncome3Desc') }
     ];
   } else {
     plan.steps = [
-      { order: 1, title: 'Diversificação Estrutural', description: 'Monte a carteira comprando um pouco de cada classe todos os meses.' },
-      { order: 2, title: 'Aportes Constantes', description: 'Não tente acertar o "timing". O tempo de mercado ganha do timing de mercado.' },
-      { order: 3, title: 'Rebalanceamento', description: 'A cada 6 meses, venda o que subiu demais e compre o que ficou para trás.' }
+      { order: 1, title: i18n.t('ai.advisor.stepGrowth1Title'), description: i18n.t('ai.advisor.stepGrowth1Desc') },
+      { order: 2, title: i18n.t('ai.advisor.stepGrowth2Title'), description: i18n.t('ai.advisor.stepGrowth2Desc') },
+      { order: 3, title: i18n.t('ai.advisor.stepGrowth3Title'), description: i18n.t('ai.advisor.stepGrowth3Desc') }
     ];
   }
 
   // --- Etapa 6: Educação ---
   plan.education = [
-    { title: 'Diversificação', content: 'É o único "almoço grátis" do mercado. Nunca coloque todos os ovos na mesma cesta.' },
-    { title: 'Juros Compostos', content: 'Seu dinheiro trabalha para você. No começo é lento, mas após 5-10 anos a curva se torna exponencial.' },
-    { title: 'Risco vs Retorno', content: 'Não existe retorno alto sem risco alto. Se alguém prometer lucro garantido, é golpe.' }
+    { title: i18n.t('ai.advisor.eduDivTitle'), content: i18n.t('ai.advisor.eduDivContent') },
+    { title: i18n.t('ai.advisor.eduCompoundTitle'), content: i18n.t('ai.advisor.eduCompoundContent') },
+    { title: i18n.t('ai.advisor.eduRiskTitle'), content: i18n.t('ai.advisor.eduRiskContent') }
   ];
 
   return plan;
