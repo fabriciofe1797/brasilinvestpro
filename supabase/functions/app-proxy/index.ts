@@ -1682,7 +1682,7 @@ Deno.serve(async (req) => {
       if (type === "SELL") {
         const q = encodeURIComponent(assetId);
         const upTo = encodeURIComponent(date);
-        const r = await rest("GET", `/transactions?select=type,quantity,price,fees,date&user_id=eq.${encodeURIComponent(sub)}&asset_ticker=eq.${q}&date=lt.${upTo}&order=date.asc`);
+        const r = await rest("GET", `/transactions?select=type,quantity,price,fees,date&user_id=eq.${encodeURIComponent(sub)}&asset_ticker=eq.${q}&date=lte.${upTo}&order=date.asc`);
         if (!r.ok) {
           const errText = await r.text().catch(() => "fetch_error");
           return json({ ok: false, error: `inventory_fetch_failed:${errText}` }, 200);

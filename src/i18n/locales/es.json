@@ -758,6 +758,7 @@
   "addInvestment": {
     "title": "Nueva Movimentación",
     "planLimitTitle": "Límite del plan alcanzado",
+    "syncIssueTitle": "No se pudo guardar en la nube",
     "viewPlans": "Ver planes Premium",
     "buy": "Compra",
     "sell": "Venta",

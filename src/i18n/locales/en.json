@@ -758,6 +758,7 @@
   "addInvestment": {
     "title": "New Transaction",
     "planLimitTitle": "Plan limit reached",
+    "syncIssueTitle": "Could not save to the cloud",
     "viewPlans": "View Premium plans",
     "buy": "Buy",
     "sell": "Sell",

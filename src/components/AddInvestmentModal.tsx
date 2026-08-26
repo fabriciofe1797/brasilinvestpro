@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Search, Check, Calendar, Loader2, AlertTriangle } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { useStore } from '../store/useStore';
-import { saveTransaction, ensureUserProfile, upsertAsset, getQuotes } from '../services/database';
+import { saveTransaction, ensureUserProfile, upsertAsset, getQuotes, getTransactions } from '../services/database';
 import { searchAssets, fetchAssetQuote, fetchCryptoQuote, SearchResult } from '../services/api';
 import { formatCurrency, applyTickerAlias } from '../lib/utils';
 import { cn } from '../lib/utils';
@@ -37,7 +37,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
   const [isSearching, setIsSearching] = useState(false);
   const [loadingAssetDetails, setLoadingAssetDetails] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [planLimitMessage, setPlanLimitMessage] = useState<string | null>(null);
+  const [warning, setWarning] = useState<{ kind: 'plan' | 'sync'; text: string } | null>(null);
 
   // Debounced Search
   useEffect(() => {
@@ -183,6 +183,24 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
     }
   };
 
+  // Envia compras locais ainda não persistidas na nuvem e tenta salvar a venda novamente.
+  // Resolve inventário dessincronizado sem exigir ação manual do usuário.
+  const reconcileInventoryAndSave = async (token: string) => {
+    const ticker = selectedAsset?.ticker || selectedAssetId;
+    const cloudTxs = await getTransactions(token);
+    const localBuys = useStore.getState().transactions
+      .filter(l => l.type === 'BUY' && (l.assetId === ticker || l.assetId === selectedAssetId))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const missing = localBuys.filter(l => !cloudTxs.some(c =>
+      c.type === 'BUY' && c.assetId === ticker && c.date === l.date &&
+      Math.abs(c.quantity - l.quantity) < 1e-9 && Math.abs(c.price - l.price) < 1e-6
+    ));
+    for (const m of missing) {
+      await saveTransaction({ assetId: ticker, type: 'BUY', quantity: m.quantity, price: m.price, date: m.date, fees: m.fees ?? 0 }, token);
+    }
+    await saveTransaction({ assetId: ticker, type, quantity: Number(quantity), price: Number(price), date, fees: 0 }, token);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedAssetId && quantity && price && date) {
@@ -221,17 +239,26 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
              upsertAsset(assetToSave, token);
            }
 
-           await saveTransaction({
-            assetId: selectedAsset?.ticker || selectedAssetId,
-            type,
-            quantity: Number(quantity),
-            price: Number(price),
-            date,
-            fees: 0
-          }, token);
+           try {
+             await saveTransaction({
+              assetId: selectedAsset?.ticker || selectedAssetId,
+              type,
+              quantity: Number(quantity),
+              price: Number(price),
+              date,
+              fees: 0
+            }, token);
+           } catch (saveErr: any) {
+             // Inventário dessincronizado: reconcilia compras locais e tenta de novo
+             if (type === 'SELL' && String(saveErr?.message || '').includes('insufficient_inventory')) {
+               await reconcileInventoryAndSave(token);
+             } else {
+               throw saveErr;
+             }
+           }
         }
         
-        setPlanLimitMessage(null);
+        setWarning(null);
         onClose();
         // Reset form
         setQuantity('');
@@ -247,35 +274,33 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
           rawMessage.includes('limit_exceeded');
 
         if (settings.plan === 'elite' && isLicenseError) {
-          setPlanLimitMessage(null);
+          setWarning(null);
           onClose();
           setQuantity('');
           setSearch('');
           setType('BUY');
         } else {
           let errorMessage = rawMessage;
-          let isPlanLimit = false;
+          let kind: 'plan' | 'sync' = 'sync';
           
           if (rawMessage.includes('No JWT template exists')) {
             errorMessage = t('addInvestment.errClerk');
           } else if (rawMessage.includes('license_expired')) {
             errorMessage = t('addInvestment.errLicenseExpired');
-            isPlanLimit = true;
+            kind = 'plan';
           } else if (rawMessage.includes('license_inactive')) {
             errorMessage = t('addInvestment.errLicenseInactive');
-            isPlanLimit = true;
+            kind = 'plan';
           } else if (rawMessage.includes('limit_exceeded')) {
             errorMessage = t('addInvestment.errLimitExceeded');
-            isPlanLimit = true;
-          } else if (rawMessage.includes('insufficient_inventory')) {
+            kind = 'plan';
+          } else if (rawMessage.includes('insufficient_inventory') || rawMessage.includes('inventory_fetch_failed')) {
             errorMessage = t('addInvestment.errInsufficient');
           }
 
-          if (isPlanLimit) {
-            setPlanLimitMessage(errorMessage);
+          setWarning({ kind, text: errorMessage });
+          if (kind === 'plan') {
             triggerUpgradeModal?.('transaction');
-          } else {
-            setPlanLimitMessage(errorMessage);
           }
         }
       } finally {
@@ -296,28 +321,30 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
           </button>
         </div>
 
-        {planLimitMessage && (
+        {warning && (
           <div className="px-6 pt-4">
             <div className="flex items-start justify-between gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-xs text-amber-50">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 text-amber-300 mt-0.5" />
                 <div>
-                  <div className="font-semibold text-amber-200">{t('addInvestment.planLimitTitle')}</div>
-                  <div className="mt-1 text-[11px] text-amber-100/90">
-                    {planLimitMessage}
+                  <div className="font-semibold text-amber-200">{warning.kind === 'plan' ? t('addInvestment.planLimitTitle') : t('addInvestment.syncIssueTitle')}</div>
+                  <div className="mt-1 text-[11px] text-amber-100/90 whitespace-pre-line">
+                    {warning.text}
                   </div>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  navigate('/premium');
-                  triggerUpgradeModal?.('transaction');
-                }}
-                className="ml-4 px-3 py-1.5 rounded-full bg-emerald-400 text-black text-[11px] font-semibold hover:bg-emerald-300 whitespace-nowrap"
-              >
-                {t('addInvestment.viewPlans')}
-              </button>
+              {warning.kind === 'plan' && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate('/premium');
+                    triggerUpgradeModal?.('transaction');
+                  }}
+                  className="ml-4 px-3 py-1.5 rounded-full bg-emerald-400 text-black text-[11px] font-semibold hover:bg-emerald-300 whitespace-nowrap"
+                >
+                  {t('addInvestment.viewPlans')}
+                </button>
+              )}
             </div>
           </div>
         )}
