@@ -17,9 +17,10 @@ interface AddInvestmentModalProps {
   preSelectedAssetId?: string;
   prefillType?: 'BUY' | 'SELL';
   prefillQuantity?: number;
+  prefillDate?: string;
 }
 
-const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose, preSelectedAssetId, prefillType, prefillQuantity }) => {
+const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose, preSelectedAssetId, prefillType, prefillQuantity, prefillDate }) => {
   const { getToken } = useAuth();
   const { user } = useUser();
   const { t } = useTranslation();
@@ -73,11 +74,13 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
     if (!isOpen) return;
     if (prefillType) setType(prefillType);
     if (prefillQuantity != null) setQuantity(String(prefillQuantity));
-  }, [isOpen, prefillType, prefillQuantity]);
+    if (prefillDate) setDate(prefillDate);
+  }, [isOpen, prefillType, prefillQuantity, prefillDate]);
 
   if (!isOpen) return null;
 
   const selectedAsset = assets.find(a => a.id === selectedAssetId);
+  const availableQty = portfolio.find(p => p.assetId === selectedAssetId)?.quantity ?? 0;
   const sanitizeDecimal = (v: string) => {
     const s = v.replace(',', '.');
     return s.replace(/[eE+-]/g, '');
@@ -204,6 +207,10 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedAssetId && quantity && price && date) {
+      if (type === 'SELL' && Number(quantity) > availableQty + 1e-9) {
+        setWarning({ kind: 'sync', text: t('addInvestment.errNoPosition', { qtd: availableQty }) });
+        return;
+      }
       setIsSubmitting(true);
       try {
         const token = await getToken({ template: 'supabase' });
@@ -542,6 +549,9 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                 }}
                 onChange={(e) => setQuantity(sanitizeDecimal(e.target.value))}
               />
+              {type === 'SELL' && (
+                <p className="text-[10px] text-gray-500 font-bold">{t('addInvestment.sellAvailable', { qtd: availableQty })}</p>
+              )}
             </div>
             <div className="space-y-2">
               <label className="text-sm text-gray-400 font-medium">{t('addInvestment.priceLabel')}</label>

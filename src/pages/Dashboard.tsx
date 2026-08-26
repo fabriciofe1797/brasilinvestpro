@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { formatCurrency } from '../lib/utils';
 import { cn } from '../lib/utils';
-import { Wallet, TrendingUp, ArrowRight, Plus, CheckCircle, Bell, RefreshCw } from 'lucide-react';
+import { Wallet, TrendingUp, ArrowRight, Plus, CheckCircle, Bell, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AddInvestmentModal from '../components/AddInvestmentModal';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -28,7 +28,7 @@ import i18n from '../i18n';
 const Dashboard: React.FC = () => {
   const { user } = useUser();
   const { t } = useTranslation();
-  const { portfolio, assets, settings } = useStore();
+  const { portfolio, assets, settings, transactions } = useStore();
   const metrics = usePortfolioMetrics();
   const { streak: contributionStreak } = useContributionStreak();
   const generatedMissions = useMissionsGenerator();
@@ -82,6 +82,35 @@ const Dashboard: React.FC = () => {
     setIsAddModalOpen(true);
   };
 
+  // Ativos com vendas sem compra correspondente (histórico dessincronizado na nuvem)
+  const inconsistentAssets = useMemo(() => {
+    const map = new Map<string, { sold: number; bought: number; firstSellDate: string }>();
+    for (const tx of transactions) {
+      const e = map.get(tx.assetId) ?? { sold: 0, bought: 0, firstSellDate: '' };
+      if (tx.type === 'BUY') e.bought += tx.quantity;
+      else {
+        e.sold += tx.quantity;
+        if (!e.firstSellDate || tx.date < e.firstSellDate) e.firstSellDate = tx.date;
+      }
+      map.set(tx.assetId, e);
+    }
+    return [...map.entries()]
+      .filter(([, v]) => v.sold > v.bought)
+      .map(([assetId, v]) => ({ assetId, missing: v.sold - v.bought, firstSellDate: v.firstSellDate }));
+  }, [transactions]);
+
+  const [modalPrefill, setModalPrefill] = useState<{ type?: 'BUY' | 'SELL'; quantity?: number; date?: string }>({});
+  const handleOpenAddModalWithPrefill = (assetId: string, prefill: { type?: 'BUY' | 'SELL'; quantity?: number; date?: string }) => {
+    setSelectedAssetForModal(assetId);
+    setModalPrefill(prefill);
+    setIsAddModalOpen(true);
+  };
+  const handleRegularize = (assetId: string, missing: number, firstSellDate: string) => {
+    const d = new Date(`${firstSellDate}T00:00:00`);
+    d.setDate(d.getDate() - 1);
+    handleOpenAddModalWithPrefill(assetId, { type: 'BUY', quantity: missing, date: d.toISOString().split('T')[0] });
+  };
+
   return (
     <div className="bg-premium min-h-screen">
       {/* Background Glows */}
@@ -110,6 +139,35 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
         </div>
+
+        {/* Regularização de histórico (vendas sem compra na nuvem) */}
+        {inconsistentAssets.length > 0 && (
+          <div className="glass-card rounded-[2rem] p-6 border-amber-500/20 bg-amber-500/[0.03]">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <div>
+                <h3 className="text-sm font-black text-white uppercase tracking-widest">{t('dashboard.regularizeTitle')}</h3>
+                <p className="text-[10px] text-gray-500 font-bold uppercase mt-0.5">{t('dashboard.regularizeSubtitle')}</p>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {inconsistentAssets.map(item => (
+                <div key={item.assetId} className="flex items-center justify-between gap-4 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                  <div>
+                    <p className="text-sm font-black text-white">{item.assetId}</p>
+                    <p className="text-[10px] text-amber-300/90 font-bold">{t('dashboard.regularizeMissing', { qtd: item.missing })}</p>
+                  </div>
+                  <button
+                    onClick={() => handleRegularize(item.assetId, item.missing, item.firstSellDate)}
+                    className="px-4 py-2 rounded-lg bg-amber-400 text-black text-[10px] font-black uppercase tracking-widest hover:bg-amber-300 transition-colors cursor-pointer"
+                  >
+                    {t('dashboard.regularizeBtn')}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Top Stats: Exchange Rate & Magic Number */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -515,10 +573,13 @@ const Dashboard: React.FC = () => {
         )}
       </div>
 
-      <AddInvestmentModal 
+      <AddInvestmentModal
         isOpen={isAddModalOpen} 
         onClose={() => setIsAddModalOpen(false)}
         preSelectedAssetId={selectedAssetForModal}
+        prefillType={modalPrefill.type}
+        prefillQuantity={modalPrefill.quantity}
+        prefillDate={modalPrefill.date}
       />
     </div>
   );

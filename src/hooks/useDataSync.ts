@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { useStore } from '../store/useStore';
-import { getTransactions, getAssets, getExchangeRates, getQuotesDetailed } from '../services/database';
+import { getTransactions, getAssets, getExchangeRates, getQuotesDetailed, saveTransaction } from '../services/database';
 import { getUserData, setUserData } from '../services/userData';
 import { fetchLicense } from '../services/license';
 import { Asset, QuoteSource, PlanMission, PortfolioAlert, Transaction } from '../types';
@@ -232,9 +232,28 @@ export const useDataSync = () => {
       }
 
       // ── Transactions ──
-      if (dbTransactions && dbTransactions.length > 0) {
-        hardSetTransactions(dbTransactions);
-        syncTransactions(dbTransactions);
+      // Merge nuvem + local (nunca sobrescreve registros locais ainda não sincronizados)
+      if (dbTransactions) {
+        const localTxs = useStore.getState().transactions;
+        const sameTx = (a: Transaction, b: Transaction) =>
+          a.assetId === b.assetId && a.type === b.type && a.date === b.date &&
+          Math.abs(a.quantity - b.quantity) < 1e-9 && Math.abs(a.price - b.price) < 1e-6;
+        const localOnly = localTxs.filter(l => !dbTransactions.some(c => sameTx(c, l)));
+        const merged = [...dbTransactions, ...localOnly];
+        hardSetTransactions(merged);
+        syncTransactions(merged);
+
+        // Envia registros locais ausentes na nuvem (cronológico, compras primeiro)
+        if (localOnly.length > 0) {
+          const sorted = [...localOnly].sort((a, b) => a.date.localeCompare(b.date) || (a.type === 'BUY' ? -1 : 1));
+          for (const tx of sorted) {
+            try {
+              await saveTransaction({ assetId: tx.assetId, type: tx.type, quantity: tx.quantity, price: tx.price, date: tx.date, fees: tx.fees ?? 0 }, token);
+            } catch (err) {
+              console.warn('⚠️ Falha ao enviar transação local para a nuvem:', tx.assetId, tx.type, err);
+            }
+          }
+        }
       }
       
       // Mark sync as complete only after everything succeeded

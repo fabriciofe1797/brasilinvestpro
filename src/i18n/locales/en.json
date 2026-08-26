@@ -200,6 +200,10 @@
     "statusArrivingGoal": "Status: Approaching Goal",
     "topAssetsTitle": "Top Portfolio Assets",
     "topAssetsSubtitle": "Your current exposure and performance",
+    "regularizeTitle": "Regularize history",
+    "regularizeSubtitle": "Sales without a matching buy — register the buy to unify your history in the cloud",
+    "regularizeMissing": "{{qtd}} units sold without a registered buy",
+    "regularizeBtn": "Regularize",
     "marketIntelligence": "Market Intelligence",
     "colAsset": "Asset",
     "colStatus": "Status",
@@ -787,7 +791,9 @@
     "errLicenseExpired": "Your license expired or the grace period ended. Upgrade your plan to keep registering new transactions.",
     "errLicenseInactive": "Your license is inactive. Check your payment or choose a new plan to continue.",
     "errLimitExceeded": "You reached the transaction limit of your current plan. Consider upgrading to a plan with higher capacity.",
-    "errInsufficient": "In your cloud history you don't have enough quantity registered for this asset to sell this batch. The sale was registered locally only."
+    "errInsufficient": "In your cloud history you don't have enough quantity registered for this asset to sell this batch. The sale was registered locally only.",
+    "sellAvailable": "Available: {{qtd}}",
+    "errNoPosition": "Insufficient quantity: you own {{qtd}} of this asset in the history. Register the corresponding buy before selling."
   },
   "importNotes": {
     "title": "Import Transactions",

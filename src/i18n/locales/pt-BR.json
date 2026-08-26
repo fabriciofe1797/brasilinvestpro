@@ -200,6 +200,10 @@
     "statusArrivingGoal": "Status: Chegando à Meta",
     "topAssetsTitle": "Principais Ativos da Carteira",
     "topAssetsSubtitle": "Sua exposição atual e performance",
+    "regularizeTitle": "Regularizar histórico",
+    "regularizeSubtitle": "Vendas sem compra correspondente — registre a compra para unificar o histórico na nuvem",
+    "regularizeMissing": "{{qtd}} unid. vendidas sem compra registrada",
+    "regularizeBtn": "Regularizar",
     "marketIntelligence": "Market Intelligence",
     "colAsset": "Asset",
     "colStatus": "Status",
@@ -787,7 +791,9 @@
     "errLicenseExpired": "Sua licença expirou ou o período de carência terminou. Atualize seu plano para continuar registrando novas operações.",
     "errLicenseInactive": "Sua licença está inativa. Verifique seu pagamento ou escolha um novo plano para continuar.",
     "errLimitExceeded": "Você atingiu o limite de transações do seu plano atual. Considere fazer upgrade para um plano com capacidade maior.",
-    "errInsufficient": "No histórico salvo na nuvem você não tem quantidade suficiente registrada desse ativo para vender esse lote. A venda foi registrada apenas localmente."
+    "errInsufficient": "No histórico salvo na nuvem você não tem quantidade suficiente registrada desse ativo para vender esse lote. A venda foi registrada apenas localmente.",
+    "sellAvailable": "Disponível: {{qtd}}",
+    "errNoPosition": "Quantidade insuficiente: você possui {{qtd}} desse ativo no histórico. Registre a compra correspondente antes de vender."
   },
   "importNotes": {
     "title": "Importar Operações",
