@@ -24,7 +24,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
   const { getToken } = useAuth();
   const { user } = useUser();
   const { t } = useTranslation();
-  const { assets, addTransaction, registerAsset, settings, portfolio, triggerUpgradeModal } = useStore();
+  const { assets, addTransaction, registerAsset, settings, portfolio, transactions, triggerUpgradeModal } = useStore();
   const navigate = useNavigate();
   const [selectedAssetId, setSelectedAssetId] = useState<string>(preSelectedAssetId || '');
   const [type, setType] = useState<'BUY' | 'SELL'>(prefillType ?? 'BUY');
@@ -72,6 +72,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
 
   useEffect(() => {
     if (!isOpen) return;
+    setWarning(null);
     if (prefillType) setType(prefillType);
     if (prefillQuantity != null) setQuantity(String(prefillQuantity));
     if (prefillDate) setDate(prefillDate);
@@ -80,7 +81,10 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
   if (!isOpen) return null;
 
   const selectedAsset = assets.find(a => a.id === selectedAssetId);
-  const availableQty = portfolio.find(p => p.assetId === selectedAssetId)?.quantity ?? 0;
+  // Saldo líquido (compras - vendas) — mesma contabilidade do inventário da nuvem
+  const availableQty = transactions
+    .filter(t => t.assetId === selectedAssetId)
+    .reduce((acc, t) => acc + (t.type === 'BUY' ? t.quantity : -t.quantity), 0);
   const sanitizeDecimal = (v: string) => {
     const s = v.replace(',', '.');
     return s.replace(/[eE+-]/g, '');
@@ -550,7 +554,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
                 onChange={(e) => setQuantity(sanitizeDecimal(e.target.value))}
               />
               {type === 'SELL' && (
-                <p className="text-[10px] text-gray-500 font-bold">{t('addInvestment.sellAvailable', { qtd: availableQty })}</p>
+                <p className="text-[10px] text-gray-500 font-bold">{t('addInvestment.sellAvailable', { qtd: Math.max(0, availableQty) })}</p>
               )}
             </div>
             <div className="space-y-2">
