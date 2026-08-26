@@ -23,11 +23,6 @@ interface AssetRankingsProps {
   className?: string;
 }
 
-function formatBRL(n: number): string {
-  if (n >= 1000) return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-  return n.toFixed(2).replace('.', ',');
-}
-
 interface RankingRowProps {
   rank: number;
   ticker: string;

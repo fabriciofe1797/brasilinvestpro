@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
-import { formatCurrency, formatPercent } from '../lib/utils';
-import { TrendingUp, TrendingDown, DollarSign, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
+import { TrendingUp, DollarSign, Calendar, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '../lib/utils';
 
@@ -19,7 +19,6 @@ const PortfolioTimeline: React.FC = () => {
 
   const events = useMemo((): TimelineEvent[] => {
     const eventList: TimelineEvent[] = [];
-    const exchangeRate = settings.exchangeRate;
 
     // Process transactions
     transactions.forEach((tx) => {

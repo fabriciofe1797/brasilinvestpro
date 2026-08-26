@@ -19,7 +19,6 @@ import {
   Info,
   ArrowRightLeft,
   Clock,
-  ExternalLink,
 } from 'lucide-react';
 
 const DualTaxPage: React.FC = () => {

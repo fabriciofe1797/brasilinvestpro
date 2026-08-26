@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useChatAdvisor } from '../hooks/useChatAdvisor';
 import { formatCurrency } from '../lib/utils';
 import {
-  MessageSquare,
   Send,
   Trash2,
   Bot,

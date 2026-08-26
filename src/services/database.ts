@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { Transaction } from '../types';
-import { ensureWriteAllowed } from './license';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -33,21 +32,6 @@ export const getAuthenticatedClient = (token: string) => {
       }
     }
   });
-};
-
-// Helper to decode JWT to get the sub (user_id)
-const getUserIdFromToken = (token: string): string | null => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-        return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload).sub;
-  } catch (e) {
-    console.error('Failed to decode token', e);
-    return null;
-  }
 };
 
 /**
@@ -117,7 +101,7 @@ export const saveTransaction = async (transaction: Omit<Transaction, 'id' | 'tot
 };
 
 // Deprecated: No longer needed with new per-request client pattern
-export const setAuthToken = (token: string) => {
+export const setAuthToken = (_token: string) => {
   // No-op
 };
 

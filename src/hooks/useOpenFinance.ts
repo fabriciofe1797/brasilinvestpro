@@ -7,7 +7,6 @@ import {
   getSupportedBrokers,
   initiateConnection,
   syncPositions,
-  mapBrokerPositionsToTransactions,
   getSyncHistory,
   getInitialConnections,
   saveConnections,

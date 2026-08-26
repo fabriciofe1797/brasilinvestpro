@@ -25,7 +25,6 @@ const categoryColors: Record<string, string> = {
 
 const LifeMap: React.FC = () => {
   const { 
-    expenses, 
     totalExpensesBRL, 
     monthlyIncomeBRL, 
     coveragePct, 

@@ -205,7 +205,6 @@ const intentHandlers: { pattern: RegExp; handler: IntentHandler }[] = [
       const ceiling = calculateClassicCeiling(annualDiv);
       const upside = ceiling ? ((ceiling - asset.price) / asset.price) * 100 : 0;
 
-      const isFII = asset.category.includes('FII');
       const position = ctx.portfolio.find(p => p.assetId === asset.id || p.assetId === asset.ticker);
 
       let response = `📊 **Analise de ${asset.ticker}** — ${asset.name}\n\n`;

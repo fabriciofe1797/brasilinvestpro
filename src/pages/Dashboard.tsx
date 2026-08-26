@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../store/useStore';
-import { formatCurrency, getMonthlyDividendIncome } from '../lib/utils';
+import { formatCurrency } from '../lib/utils';
 import { cn } from '../lib/utils';
-import { Wallet, TrendingUp, ArrowRight, Plus, Snowflake, CheckCircle, Bell, Info, AlertTriangle, Shield, RefreshCw } from 'lucide-react';
+import { Wallet, TrendingUp, ArrowRight, Plus, CheckCircle, Bell, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AddInvestmentModal from '../components/AddInvestmentModal';
 import RebalancingWidget from '../components/RebalancingWidget';
 import DividendCalendar from '../components/DividendCalendar';
 import HealthScoreWidget from '../components/HealthScoreWidget';
-import { useSmartAlerts } from '../hooks/useSmartAlerts';
 import MonthlyDecisionsWidget from '../components/MonthlyDecisionsWidget';
 import SmartAlertsPanel from '../components/SmartAlertsPanel';
 import { useUser } from '@clerk/clerk-react';
@@ -25,8 +24,7 @@ import type { QuoteSource } from '../types';
 
 const Dashboard: React.FC = () => {
   const { user } = useUser();
-  const { portfolio, assets, settings, alerts } = useStore();
-  const { alerts: smartAlerts } = useSmartAlerts();
+  const { portfolio, assets, settings } = useStore();
   const metrics = usePortfolioMetrics();
   const { streak: contributionStreak } = useContributionStreak();
   const generatedMissions = useMissionsGenerator();
@@ -56,11 +54,9 @@ const Dashboard: React.FC = () => {
       })
     : null;
   const exchangeRateChange = settings.exchangeRateChangePct ?? 0;
-  const exchangeRateSource = settings.exchangeRateSource?.toUpperCase() || 'SYNC';
 
   const monthlyIncomeBRL = metrics.monthlyIncome;
   const mainMonthlyIncome = mainCurrency === 'EUR' ? monthlyIncomeBRL / settings.exchangeRate : monthlyIncomeBRL;
-  const secMonthlyIncome = mainCurrency === 'EUR' ? monthlyIncomeBRL : monthlyIncomeBRL / settings.exchangeRate;
 
   // Snowball Progress
   const snowballProgress = portfolio.length > 0 
@@ -76,7 +72,6 @@ const Dashboard: React.FC = () => {
   const pendingMissions = generatedMissions.filter(m => m.status === 'pending');
   const completedMissions = generatedMissions.filter(m => m.status === 'completed');
   const nextMissions = [...pendingMissions, ...completedMissions].slice(0, 3);
-  const topAlerts = (smartAlerts?.length ? smartAlerts : alerts).slice(0, 3);
 
   const handleOpenAddModal = (assetId?: string) => {
     setSelectedAssetForModal(assetId);

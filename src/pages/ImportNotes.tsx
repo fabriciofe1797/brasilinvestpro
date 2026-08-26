@@ -4,13 +4,13 @@ import { useStore } from '../store/useStore';
 import { getPlanLimits } from '../services/billing';
 import { parseBrokerageNote, parseCsvTransactions, ExtractedTransaction, CsvProvider } from '../services/pdfParser';
 import { applyTickerAlias } from '../lib/utils';
-import { saveTransaction, upsertAsset, getAssets } from '../services/database';
-import { Upload, FileText, Check, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { saveTransaction } from '../services/database';
+import { Upload, FileText, Check, AlertCircle, Loader2 } from 'lucide-react';
 import { formatCurrency } from '../lib/utils';
 
 const ImportNotes: React.FC = () => {
   const { getToken } = useAuth();
-  const { assets: storeAssets, settings, portfolio, transactions: storeTx, addTransaction, addNotification } = useStore();
+  const { settings, portfolio, transactions: storeTx, addTransaction, addNotification } = useStore();
   
   const [isDragging, setIsDragging] = useState(false);
   const [isParsing, setIsParsing] = useState(false);
@@ -25,8 +25,6 @@ const ImportNotes: React.FC = () => {
       i === idx ? { ...tx, _valid: tx._valid === false ? true : false } : tx
     ));
   };
-
-  const validCount = transactions.filter(tx => tx._valid !== false).length;
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();

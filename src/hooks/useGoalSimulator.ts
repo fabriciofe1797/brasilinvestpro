@@ -38,19 +38,6 @@ export function useGoalSimulator() {
   const currentExchangeRate = settings.exchangeRate;
 
   const projections = useMemo((): GoalProjection[] => {
-    const portfolioYield = useMemo(() => {
-      if (portfolio.length === 0) return 0;
-      const totalYield = portfolio.reduce((acc, item) => {
-        const asset = assets.find(a => a.id === item.assetId);
-        return acc + (asset ? asset.dividendYield * item.quantity : 0);
-      }, 0);
-      const totalValue = portfolio.reduce((acc, item) => {
-        const asset = assets.find(a => a.id === item.assetId);
-        return acc + (asset ? asset.price * item.quantity : 0);
-      }, 0);
-      return totalValue > 0 ? totalYield / (totalValue / 100) : 0;
-    }, [portfolio, assets]);
-
     return goals.map(goal => {
       const targetInBRL = goal.currency === 'EUR' 
         ? goal.targetAmount * currentExchangeRate 

@@ -1,9 +1,13 @@
 <!doctype html>
-<html lang="pt-PT" class="dark">
+<html lang="pt-BR" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#030816" />
+    <meta name="description" content="Plataforma inteligente de gestão de investimentos — renda passiva, dividendos e análises." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
     <title>BrasilInvest Pro</title>
     <script type="module">
       if (import.meta.hot?.on) {
@@ -14,6 +18,14 @@
             )
           }
         })
+      }
+    </script>
+    <script>
+      // Registra o service worker apenas em produção (PWA instalável + offline básico)
+      if ('serviceWorker' in navigator && !location.hostname.includes('localhost') && !location.hostname.startsWith('127.')) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
       }
     </script>
   </head>

@@ -8,11 +8,10 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { Trophy, TrendingUp, TrendingDown, Filter, Star } from 'lucide-react';
+import { Trophy, TrendingUp, TrendingDown, Filter } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { MOCK_ASSETS } from '../data/mockData';
 import { calculateRanking, calculateClassicCeiling } from '../lib/formulas';
-import type { Asset } from '../types';
 
 type TabFilter = 'geral' | 'acoes' | 'fiis' | 'cripto';
 type SortField = 'dy' | 'score' | 'upside' | 'pvp' | 'pl' | 'variacao' | 'price';

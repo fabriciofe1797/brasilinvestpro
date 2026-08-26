@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useCeilingPrice } from '../hooks/useCeilingPrice';
 import { formatCurrency, formatPercent, cn } from '../lib/utils';
 import {
-  TrendingUp, TrendingDown, Target, Award, AlertTriangle,
+  TrendingUp, Target, Award, AlertTriangle,
   BarChart3, DollarSign, Eye, ArrowUpRight, ArrowDownRight,
   Info, ChevronDown, ChevronUp, Filter
 } from 'lucide-react';

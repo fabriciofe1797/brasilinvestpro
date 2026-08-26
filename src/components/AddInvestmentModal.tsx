@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Search, Check, Calendar, Loader2, AlertTriangle } from 'lucide-react';
 import { useAuth, useUser } from '@clerk/clerk-react';
 import { useStore } from '../store/useStore';
@@ -78,7 +78,7 @@ const AddInvestmentModal: React.FC<AddInvestmentModalProps> = ({ isOpen, onClose
   const selectedAsset = assets.find(a => a.id === selectedAssetId);
   const sanitizeDecimal = (v: string) => {
     const s = v.replace(',', '.');
-    return s.replace(/[eE\+\-]/g, '');
+    return s.replace(/[eE+-]/g, '');
   };
   
   // Combine local filtering with API results

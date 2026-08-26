@@ -1,20 +1,16 @@
-import { Asset, MarketQuote } from '../types';
+import { MarketQuote } from '../types';
 import {
   normalizeBrapiQuote,
   normalizeCoinGeckoQuote,
-  createFallbackQuote,
-  getFreshnessStatus,
   getCachedQuote,
   setCachedQuote,
 } from './dataPipeline';
 
 const BRAPI_BASE_URL = 'https://brapi.dev/api';
-const AWESOME_API_BASE_URL = 'https://economia.awesomeapi.com.br/last';
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
 
 // Cache Duration: 15 minutes (in milliseconds)
 const CACHE_DURATION = 15 * 60 * 1000;
-const SEARCH_CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours for search results
 
 interface CacheItem<T> {
   data: T;
@@ -72,8 +68,6 @@ export const searchAssets = async (query: string): Promise<SearchResult[]> => {
   if (cached) return cached;
 
   try {
-    const results: SearchResult[] = [];
-
     // 1. Search BRAPI (Stocks & FIIs)
     // Using list endpoint as search if available, or just construct from know patterns?
     // BRAPI free tier list endpoint is good.
@@ -149,33 +143,6 @@ export const fetchCryptoQuote = async (id: string, ticker?: string): Promise<Mar
 };
 
 /**
- * Fetches current exchange rates (EUR-BRL, USD-BRL)
- */
-export const fetchExchangeRates = async (): Promise<{ EUR: number; USD: number }> => {
-  const cacheKey = 'rates_cache';
-  const cached = getCachedData<{ EUR: number; USD: number }>(cacheKey);
-  if (cached) return cached;
-
-  try {
-    // Fetches EUR-BRL and USD-BRL
-    const response = await fetch(`${AWESOME_API_BASE_URL}/EUR-BRL,USD-BRL`);
-    const data = await response.json();
-    
-    const rates = {
-      EUR: parseFloat(data.EURBRL.bid),
-      USD: parseFloat(data.USDBRL.bid),
-    };
-
-    setCachedData(cacheKey, rates);
-    return rates;
-  } catch (error) {
-    console.error('Failed to fetch exchange rates:', error);
-    // Fallback to static if offline
-    return { EUR: 6.20, USD: 5.80 };
-  }
-};
-
-/**
  * Fetches stock/FII data from BRAPI — returns MarketQuote
  */
 export const fetchAssetQuote = async (ticker: string): Promise<MarketQuote | null> => {
@@ -196,6 +163,65 @@ export const fetchAssetQuote = async (ticker: string): Promise<MarketQuote | nul
   } catch (error) {
     console.error(`Failed to fetch quote for ${ticker}:`, error);
     return null;
+  }
+};
+
+// --- Historical Data & Dividends (BrAPI) ---
+
+export interface PricePoint {
+  date: string; // ISO 'YYYY-MM-DD'
+  close: number;
+}
+
+export interface DividendEvent {
+  type: string;           // 'dividend' | 'interest-on-capital' | ...
+  date: string;           // 'YYYY-MM-DD' (data-com)
+  valuePerShare: number;
+}
+
+/**
+ * Busca histórico de preços (1 ano, mensal) via BrAPI.
+ * Retorna [] em caso de falha — a UI exibe estado degradado.
+ */
+export const fetchAssetHistory = async (ticker: string, range: '1y' | '6mo' | '3mo' = '1y'): Promise<PricePoint[]> => {
+  try {
+    const response = await fetch(`${BRAPI_BASE_URL}/quote/${ticker}?range=${range}&interval=1mo&adjust=false`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const raw: any[] = data?.results?.[0]?.historicalDataPrice || [];
+    return raw
+      .map((p: any) => ({
+        date: typeof p?.date === 'string' ? p.date : '',
+        close: typeof p?.close === 'number' ? p.close : NaN,
+      }))
+      .filter(p => p.date && Number.isFinite(p.close));
+  } catch (error) {
+    console.error(`Failed to fetch history for ${ticker}:`, error);
+    return [];
+  }
+};
+
+/**
+ * Busca histórico real de dividendos/proventos via BrAPI.
+ * Retorna [] quando indisponível (ativo sem histórico ou endpoint sem acesso).
+ */
+export const fetchAssetDividends = async (ticker: string): Promise<DividendEvent[]> => {
+  try {
+    const response = await fetch(`${BRAPI_BASE_URL}/quote/${ticker}/dividends`);
+    if (!response.ok) return [];
+    const data = await response.json();
+    const events: any[] = Array.isArray(data?.events) ? data.events : [];
+    return events
+      .map((e: any) => ({
+        type: typeof e?.type === 'string' ? e.type : 'dividend',
+        date: typeof e?.date === 'string' ? e.date : '',
+        valuePerShare: typeof e?.dividendPerShare === 'number' ? e.dividendPerShare : NaN,
+      }))
+      .filter(e => e.date && Number.isFinite(e.valuePerShare))
+      .sort((a, b) => b.date.localeCompare(a.date));
+  } catch (error) {
+    console.error(`Failed to fetch dividends for ${ticker}:`, error);
+    return [];
   }
 };
 

@@ -27,7 +27,7 @@ export const useDataSync = () => {
   const { getToken, isSignedIn } = useAuth();
   const { user } = useUser();
   const {
-    syncTransactions, mergeAssets, setPlan, setMissions, setAlerts,
+    syncTransactions, mergeAssets, setPlan,
     updateExchangeRate, updateAssetsWithQuotes, loadFromSupabase,
     settings, notifications, missions, alerts,
   } = useStore();

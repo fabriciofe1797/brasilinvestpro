@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { GitCompare, Search, TrendingUp, AlertCircle, CheckCircle2, Info, ArrowRight, Star } from 'lucide-react';
+import { GitCompare, TrendingUp, CheckCircle2, Info, ArrowRight, Star } from 'lucide-react';
 import { cn, formatCurrency } from '../lib/utils';
 
 const mockAssets = [

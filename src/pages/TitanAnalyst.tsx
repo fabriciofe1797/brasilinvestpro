@@ -6,7 +6,6 @@ import { formatCurrency } from '../lib/utils';
 import {
   ArrowLeft,
   TrendingUp,
-  TrendingDown,
   CheckCircle2,
   AlertTriangle,
   Shield,

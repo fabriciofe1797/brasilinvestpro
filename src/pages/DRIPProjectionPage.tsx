@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart, Legend } from 'recharts';
-import { TrendingUp, Target, Calendar, Zap, ArrowRight, RotateCcw, DollarSign, Percent, Clock } from 'lucide-react';
+import { TrendingUp, Target, Zap, ArrowRight, RotateCcw, DollarSign } from 'lucide-react';
 import { useDRIP } from '../hooks/useDRIP';
 import { formatCurrency } from '../lib/utils';
 

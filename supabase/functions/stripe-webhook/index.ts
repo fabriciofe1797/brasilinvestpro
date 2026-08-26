@@ -19,13 +19,6 @@ const PRICE_TO_PLAN: Record<string, string> = {
 // Ordem dos planos para determinar from_plan
 const PLAN_ORDER = ['free', 'starter', 'pro', 'master', 'elite']
 
-function getPlanFromPriceId(priceId: string): string {
-  if (PRICE_TO_PLAN[priceId]) return PRICE_TO_PLAN[priceId]
-  // Fallback: tentar extrair do price ID (ex: price_starter_monthly -> starter)
-  const match = priceId.match(/_(starter|pro|master|elite)_/i)
-  return match ? match[1].toLowerCase() : 'starter'
-}
-
 async function getCurrentPlan(supabaseClient: any, userId: string): Promise<string> {
   const { data } = await supabaseClient
     .from('licenses')
@@ -88,7 +81,6 @@ serve(async (req) => {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object
       const userId = session.client_reference_id || session.metadata?.user_id
-      const customerEmail = session.customer_details?.email
 
       if (!userId) {
         console.error('No userId in checkout session (client_reference_id or metadata.user_id)')

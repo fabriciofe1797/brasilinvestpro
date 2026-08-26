@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useUser, useAuth } from '@clerk/clerk-react';
 import { 
-  Brain, CheckCircle, ChevronRight, ChevronLeft, Target, 
+  Brain, CheckCircle, ChevronRight, Target, 
   TrendingUp, Shield, DollarSign, Clock, BookOpen, AlertTriangle,
   PieChart as PieIcon, ArrowRight, ShoppingBag, CloudUpload, Loader2,
   Zap, Compass, Wallet, Calendar, ToggleLeft, Activity
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { InvestorProfile, InvestmentPlan, generateInvestmentPlan } from '../services/aiAdvisor';
 import { formatCurrency, cn } from '../lib/utils';
 import { getAuthenticatedClient, ensureUserProfile } from '../services/database';
@@ -36,7 +36,7 @@ const AIAdvisor: React.FC = () => {
   const [savedPlans, setSavedPlans] = useState<SavedPlan[]>([]);
   const [planPersistedInCloud, setPlanPersistedInCloud] = useState<boolean | null>(null);
   const [cloudSaving, setCloudSaving] = useState(false);
-  const [cloudError, setCloudError] = useState<string | null>(null);
+  const [, setCloudError] = useState<string | null>(null);
   const [cloudSuccess, setCloudSuccess] = useState(false);
 
   const [profile, setProfile] = useState<InvestorProfile>({
@@ -180,7 +180,7 @@ const AIAdvisor: React.FC = () => {
             const rawProfile = data.profile_data as any;
             const missionsState = rawProfile.missions_state as PlanMission[] | undefined;
             const alertsState = rawProfile.alerts_state as PortfolioAlert[] | undefined;
-            const { missions_state, alerts_state, ...restProfile } = rawProfile;
+            const { missions_state: _missions_state, alerts_state: _alerts_state, ...restProfile } = rawProfile;
             setProfile(prev => ({
               ...prev,
               ...restProfile,
@@ -199,7 +199,7 @@ const AIAdvisor: React.FC = () => {
             setCurrentStep('result');
           }
         }
-      } catch (err) {
+      } catch {
         console.log('No existing profile found or error loading.');
       }
     };

@@ -90,7 +90,7 @@ async function fetchWithRetry(url: string, options: RequestInit = {}, maxRetries
         continue;
       }
       return r; // Retorna mesmo com erro HTTP para o caller tratar
-    } catch (e) {
+    } catch {
       if (attempt < maxRetries) {
         // Backoff exponencial: 1s, 2s
         await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
@@ -276,13 +276,6 @@ async function getMonthlyTransactionCount(userId: string) {
   return Number.isNaN(total) ? 0 : total;
 }
 
-function withinOnboarding(createdISO?: string | null) {
-  if (!createdISO) return false;
-  const created = new Date(createdISO).getTime();
-  const days30 = 30 * 24 * 60 * 60 * 1000;
-  return Date.now() - created <= days30;
-}
-
 async function ensureCanWriteTransaction(userId: string, ctx?: { assetId?: string; type?: "BUY" | "SELL"; date?: string }) {
   const lic = await fetchLicense(userId);
   const plan = ((lic?.plan_type as string) || "free") as PlanType;
@@ -311,7 +304,7 @@ async function ensureCanWriteTransaction(userId: string, ctx?: { assetId?: strin
   }
 
   // 1. Check Transaction limits
-  let monthlyLimit: number | null = PLAN_LIMITS[plan]?.maxTransactions ?? PLAN_LIMITS.free.maxTransactions;
+  const monthlyLimit: number | null = PLAN_LIMITS[plan]?.maxTransactions ?? PLAN_LIMITS.free.maxTransactions;
   if (monthlyLimit !== null && ctx?.type !== "SELL") {
     const count = await getMonthlyTransactionCount(userId);
     if (count >= monthlyLimit) {
@@ -320,7 +313,7 @@ async function ensureCanWriteTransaction(userId: string, ctx?: { assetId?: strin
   }
 
   // 2. Check Asset limits
-  let assetLimit: number | null = PLAN_LIMITS[plan]?.maxAssets ?? PLAN_LIMITS.free.maxAssets;
+  const assetLimit: number | null = PLAN_LIMITS[plan]?.maxAssets ?? PLAN_LIMITS.free.maxAssets;
   if (assetLimit !== null && ctx?.type === "BUY" && ctx.assetId) {
     // Check if user already has this asset in portfolio
     const r = await rest("GET", `/transactions?select=asset_ticker&user_id=eq.${encodeURIComponent(userId)}`);
@@ -1324,7 +1317,7 @@ Deno.serve(async (req) => {
         const brapiKey = Deno.env.get("BRAPI_API_KEY");
         const headers: Record<string, string> = {};
         if (brapiKey) headers["Authorization"] = `Bearer ${brapiKey}`;
-        const stockResults = await Promise.allSettled(
+        await Promise.allSettled(
           tickers.map(async (t) => {
             const r = await fetchWithRetry(`${BRAPI}/v2/stocks/quote?symbols=${t}`, { headers });
             if (!r?.ok) return null;

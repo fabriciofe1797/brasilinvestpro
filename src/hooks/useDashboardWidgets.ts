@@ -6,7 +6,6 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useAuth } from '@clerk/clerk-react';
 
 export interface WidgetConfig {
   id: string;
@@ -31,7 +30,6 @@ const EDGE_FN_URL = `${SUPABASE_URL}/functions/v1/app-proxy`;
 const DATA_KEY = 'dashboard_widgets';
 
 export const useDashboardWidgets = () => {
-  const { getToken } = useAuth();
   const [enabledWidgets, setEnabledWidgets] = useState<Record<string, boolean>>({});
   const [isLoaded, setIsLoaded] = useState(false);
   const [isSaving, setIsSaving] = useState(false);

@@ -8,13 +8,10 @@ import {
   RefreshCw,
   AlertTriangle,
   Clock,
-  DollarSign,
   Activity,
-  Filter,
   ChevronDown,
   ChevronUp,
   Star,
-  Briefcase,
 } from 'lucide-react';
 
 const InsiderMonitorPage: React.FC = () => {
@@ -251,7 +248,7 @@ const InsiderMonitorPage: React.FC = () => {
         {expandedSection === 'radar' && (
           <div className="px-6 pb-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {topSignals.map((s, i) => (
+              {topSignals.map((s) => (
                 <div key={s.ticker} className={`p-4 rounded-xl border ${signalBg(s.signal)}`}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-black text-white">{s.ticker}</span>

@@ -1,0 +1,26 @@
+{
+  "name": "BrasilInvest Pro",
+  "short_name": "BrasilInvest",
+  "description": "Plataforma inteligente de gestão de investimentos — renda passiva, dividendos e análises.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#030816",
+  "theme_color": "#030816",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

@@ -16,7 +16,7 @@ import {
   Bell,
   Info
 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { PieChart, Pie, ResponsiveContainer, Tooltip } from 'recharts';
 import { Link } from 'react-router-dom';
 import AddInvestmentModal from '../components/AddInvestmentModal';
 
@@ -679,7 +679,6 @@ const RebalancePage: React.FC = () => {
                const aporte = Number(contributionInput.replace(',', '.')) || 0;
                const isOnlyContrib = onlyContributions && aporte > 0;
                const hasBuys = buyTotal > 0;
-               const hasSells = sellTotal > 0;
                let panelAction: 'BUY' | 'SELL' | 'HOLD' = sug.action;
                let panelAmount = Math.abs(sug.difference);
 

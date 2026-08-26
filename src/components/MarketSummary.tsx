@@ -17,7 +17,6 @@ import { cn } from '../lib/utils';
 import { MOCK_ASSETS } from '../data/mockData';
 import { calculateClassicCeiling } from '../lib/formulas';
 import { useMarketOverview } from '../hooks/useMarketOverview';
-import type { Asset } from '../types';
 
 interface MarketSummaryProps {
   compact?: boolean;

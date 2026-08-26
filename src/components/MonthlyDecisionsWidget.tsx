@@ -1,5 +1,5 @@
 import { useMonthlyDecisions } from '../hooks/useMonthlyDecisions';
-import { ArrowUpRight, ArrowDownRight, TrendingUp, Scale, Info, DollarSign, Clock } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, TrendingUp, Scale } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { Link } from 'react-router-dom';
 

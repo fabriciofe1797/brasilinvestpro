@@ -19,6 +19,15 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
+      // Fronteira com APIs externas (BrAPI, CoinGecko, Supabase) ainda usa
+      // payloads nao tipados — any vira aviso ate a tipagem completa
+      '@typescript-eslint/no-explicit-any': 'warn',
+      // Blocos catch vazios sao padrao de fallback gracioso no projeto
+      'no-empty': 'warn',
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true },

@@ -87,7 +87,7 @@ export interface AssetScore {
 }
 
 export function calculateAssetScore(params: AssetScoreParams): AssetScore {
-  const { dividendYield, price, lastClose, pvp, pl, category, monthlyContribution = 1000 } = params;
+  const { dividendYield, price, lastClose, pvp, pl, category } = params;
   
   const reasons: string[] = [];
   let valuation = 50;

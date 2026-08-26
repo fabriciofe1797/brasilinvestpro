@@ -26,7 +26,7 @@ const TickerItemView: React.FC<{ item: TickerItem }> = ({ item }) => (
 );
 
 export default function MarketTicker({ variant = 'landing' }: MarketTickerProps) {
-  const { items, isLoading } = useMarketTicker();
+  const { items } = useMarketTicker();
 
   const isApp = variant === 'app';
 

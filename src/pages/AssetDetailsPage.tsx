@@ -1,15 +1,31 @@
 import React from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
+import { AreaChart, Area, XAxis, YAxis, Tooltip as RechartsTooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { useStore } from '../store/useStore';
 import { formatCurrency, formatPercent, calculateAssetScore } from '../lib/utils';
 import { calculateGrahamPrice, calculateBazinPrice, calculateYieldOnCost, calculateAllCeilingPrices } from '../lib/formulas';
-import { ArrowLeft, CheckCircle2, AlertTriangle, TrendingUp, Info, Target, Award, Shield, Zap } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, AlertTriangle, TrendingUp, Info, Target, Award, Shield, Zap, History, Banknote } from 'lucide-react';
 import { cn } from '../lib/utils';
 import AddInvestmentModal from '../components/AddInvestmentModal';
 import { useAuth } from '@clerk/clerk-react';
 import { getQuotesDetailed } from '../services/database';
+import { fetchAssetHistory, fetchAssetDividends, PricePoint, DividendEvent } from '../services/api';
 import FreshnessBadge from '../components/FreshnessBadge';
+import TermHint from '../components/TermHint';
 import type { QuoteSource } from '../types';
+
+const formatDateBR = (iso: string): string => {
+  const [y, m, d] = iso.split('T')[0].split('-');
+  return d && m && y ? `${d}/${m}/${y}` : iso;
+};
+
+const DIVIDEND_TYPE_LABELS: Record<string, string> = {
+  dividend: 'Dividendo',
+  'interest-on-capital': 'JCP',
+  'income-fund': 'Rendimento',
+  subscription: 'Subscrição',
+  'stock-dividend': 'Bonificação',
+};
 
 const AssetDetailsPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -18,6 +34,9 @@ const AssetDetailsPage: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = React.useState(false);
   const [quoteSource, setQuoteSource] = React.useState<QuoteSource>('mock');
   const [quoteUpdatedAt, setQuoteUpdatedAt] = React.useState<string | null>(null);
+  const [history, setHistory] = React.useState<PricePoint[]>([]);
+  const [dividends, setDividends] = React.useState<DividendEvent[]>([]);
+  const [loadingHistory, setLoadingHistory] = React.useState(true);
 
   const asset = assets.find(a => a.id === id);
   const position = portfolio.find(p => p.assetId === id);
@@ -44,6 +63,64 @@ const AssetDetailsPage: React.FC = () => {
     run();
   }, [asset, getToken]);
 
+  // Histórico de preço + dividendos reais (BrAPI, com fallback gracioso)
+  React.useEffect(() => {
+    if (!asset) return;
+    let cancelled = false;
+    setLoadingHistory(true);
+    Promise.all([
+      fetchAssetHistory(asset.ticker),
+      asset.category === 'Cripto' ? Promise.resolve([] as DividendEvent[]) : fetchAssetDividends(asset.ticker),
+    ]).then(([h, d]) => {
+      if (cancelled) return;
+      setHistory(h);
+      setDividends(d);
+      setLoadingHistory(false);
+    });
+    return () => { cancelled = true; };
+  }, [asset]);
+
+  // Métricas de dividendos dos últimos 12 meses
+  const dividendStats = React.useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setFullYear(cutoff.getFullYear() - 1);
+    const recent = dividends.filter(d => new Date(d.date) >= cutoff);
+    const totalPerShare = recent.reduce((acc, d) => acc + d.valuePerShare, 0);
+    return {
+      recent,
+      totalPerShare,
+      receivedLast12m: position ? totalPerShare * position.quantity : 0,
+    };
+  }, [dividends, position]);
+
+  // Dados do gráfico de preço (normaliza variação vs primeiro ponto)
+  const chartData = React.useMemo(() => {
+    if (history.length === 0) return [];
+    const base = history[0].close;
+    return history.map(p => ({
+      label: p.date.slice(0, 7),
+      preco: Number(p.close.toFixed(2)),
+      variacao: base > 0 ? Number((((p.close - base) / base) * 100).toFixed(2)) : 0,
+    }));
+  }, [history]);
+
+  // Ceiling Price (Preço Teto) - 3 métodos
+  // (hooks antes do early return para respeitar as regras de hooks)
+  const ceilingData = React.useMemo(() => (asset ? calculateAllCeilingPrices(asset) : null), [asset]);
+
+  // Score Inteligente
+  const score = React.useMemo(() => {
+    if (!asset) return null;
+    return calculateAssetScore({
+      dividendYield: asset.dividendYield,
+      price: asset.price,
+      lastClose: asset.lastClose,
+      pvp: asset.pvp,
+      pl: asset.pl,
+      category: asset.category,
+    });
+  }, [asset]);
+
   if (!asset) {
     return <Navigate to="/market" replace />;
   }
@@ -57,9 +134,6 @@ const AssetDetailsPage: React.FC = () => {
   
   const upsideGraham = grahamPrice ? ((grahamPrice - asset.price) / asset.price) * 100 : 0;
   const upsideBazin = ((bazinPrice - asset.price) / asset.price) * 100;
-
-  // Ceiling Price (Preço Teto) - 3 métodos
-  const ceilingData = React.useMemo(() => calculateAllCeilingPrices(asset), [asset]);
 
   // Checklist Logic
   const checklist = [
@@ -84,18 +158,6 @@ const AssetDetailsPage: React.FC = () => {
       detail: asset.pvp ? `P/VP: ${asset.pvp}` : 'N/A' 
     }
   ];
-
-  // Score Inteligente
-  const score = React.useMemo(() => {
-    return calculateAssetScore({
-      dividendYield: asset.dividendYield,
-      price: asset.price,
-      lastClose: asset.lastClose,
-      pvp: asset.pvp,
-      pl: asset.pl,
-      category: asset.category,
-    });
-  }, [asset]);
 
   const scoreColor = score.total >= 75 ? 'text-emerald-400' : score.total >= 55 ? 'text-blue-400' : score.total >= 35 ? 'text-amber-400' : 'text-red-400';
 
@@ -145,7 +207,108 @@ const AssetDetailsPage: React.FC = () => {
         
         {/* Main Info Card */}
         <div className="lg:col-span-2 space-y-6">
-          
+
+          {/* Histórico de Preço */}
+          <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <History className="w-5 h-5 text-blue-500" />
+                Histórico de Preço (12 meses)
+              </h3>
+              {history.length > 1 && (
+                <span className={cn(
+                  "text-xs font-black px-2 py-1 rounded-lg",
+                  chartData[chartData.length - 1].variacao >= 0 ? "text-emerald-400 bg-emerald-500/10" : "text-red-400 bg-red-500/10"
+                )}>
+                  {chartData[chartData.length - 1].variacao >= 0 ? '+' : ''}{chartData[chartData.length - 1].variacao}% no período
+                </span>
+              )}
+            </div>
+            {loadingHistory ? (
+              <div className="h-48 flex items-center justify-center text-gray-500 text-sm">Carregando histórico...</div>
+            ) : chartData.length > 1 ? (
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -16, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="priceGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#10b981" stopOpacity={0.35} />
+                        <stop offset="100%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                    <XAxis dataKey="label" tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} minTickGap={24} />
+                    <YAxis tick={{ fill: '#6b7280', fontSize: 10 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} width={64} />
+                    <RechartsTooltip
+                      formatter={(value, name) => [formatCurrency(Number(value), asset.currency), name === 'preco' ? 'Preço' : name]}
+                      contentStyle={{ background: '#030816', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, fontSize: 12 }}
+                      labelStyle={{ color: '#fff', fontWeight: 700 }}
+                    />
+                    <Area type="monotone" dataKey="preco" stroke="#10b981" strokeWidth={2} fill="url(#priceGrad)" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-24 flex items-center justify-center text-gray-500 text-sm bg-white/5 rounded-xl border border-dashed border-white/10">
+                Histórico indisponível para este ativo.
+              </div>
+            )}
+          </div>
+
+          {/* Dividendos Reais */}
+          {asset.category !== 'Cripto' && (
+            <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2 mb-4">
+                <Banknote className="w-5 h-5 text-emerald-500" />
+                Dividendos Reais (últimos 12 meses)
+              </h3>
+
+              {loadingHistory ? (
+                <div className="py-6 text-center text-gray-500 text-sm">Carregando proventos...</div>
+              ) : dividendStats.recent.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-5">
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <span className="text-xs text-gray-400 block mb-1">Por cota (12M)</span>
+                      <span className="text-xl font-bold text-emerald-400">{formatCurrency(dividendStats.totalPerShare, 'BRL')}</span>
+                    </div>
+                    <div className="bg-white/5 rounded-xl p-3">
+                      <span className="text-xs text-gray-400 block mb-1">Eventos (12M)</span>
+                      <span className="text-xl font-bold text-white">{dividendStats.recent.length}</span>
+                    </div>
+                    {position && (
+                      <div className="bg-white/5 rounded-xl p-3">
+                        <span className="text-xs text-gray-400 block mb-1">Você recebeu (est.)</span>
+                        <span className="text-xl font-bold text-emerald-400">{formatCurrency(dividendStats.receivedLast12m, 'BRL')}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2 max-h-56 overflow-y-auto pr-1">
+                    {dividendStats.recent.slice(0, 12).map((d, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            {DIVIDEND_TYPE_LABELS[d.type] || d.type}
+                          </span>
+                          <span className="text-sm text-gray-400">{formatDateBR(d.date)}</span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-bold text-white">{formatCurrency(d.valuePerShare, 'BRL')}</span>
+                          <span className="text-[10px] text-gray-500">/cota</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="py-6 text-center text-gray-500 text-sm bg-white/5 rounded-xl border border-dashed border-white/10">
+                  Histórico de proventos indisponível para este ativo.
+                </div>
+              )}
+            </div>
+          )}
+
           {/* My Position */}
           <div className="bg-[#0B1C17] border border-white/5 rounded-2xl p-6 shadow-lg">
             <div className="flex justify-between items-center mb-4">
@@ -172,7 +335,7 @@ const AssetDetailsPage: React.FC = () => {
                   <span className="text-xl font-bold text-white">{formatCurrency(position.averagePrice, 'BRL')}</span>
                 </div>
                 <div className="bg-white/5 rounded-xl p-3">
-                  <span className="text-xs text-gray-400 block mb-1">Yield on Cost</span>
+                  <span className="text-xs text-gray-400 block mb-1"><TermHint term="yoc">Yield on Cost</TermHint></span>
                   <div className="flex items-end gap-1">
                     <span className="text-xl font-bold text-emerald-400">{yieldOnCost.toFixed(2)}%</span>
                     <span className="text-[10px] text-gray-500 mb-1">vs {formatPercent(asset.dividendYield)} (Atual)</span>
@@ -205,7 +368,7 @@ const AssetDetailsPage: React.FC = () => {
                  <div className="absolute top-0 right-0 p-3 opacity-10">
                    <span className="text-4xl font-serif font-bold text-white">G</span>
                  </div>
-                 <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Método de Graham</h4>
+                 <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2"><TermHint term="graham">Método de Graham</TermHint></h4>
                  
                  {grahamPrice ? (
                    <>
@@ -224,7 +387,7 @@ const AssetDetailsPage: React.FC = () => {
                  <div className="absolute top-0 right-0 p-3 opacity-10">
                    <span className="text-4xl font-serif font-bold text-white">B</span>
                  </div>
-                 <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2">Método de Bazin (6%)</h4>
+                 <h4 className="text-sm font-medium text-gray-400 uppercase tracking-wider mb-2"><TermHint term="bazin">Método de Bazin (6%)</TermHint></h4>
                  
                  <div className="text-3xl font-bold text-white mb-1">{formatCurrency(bazinPrice, 'BRL')}</div>
                  <div className={cn("text-sm font-bold flex items-center gap-1", upsideBazin > 0 ? "text-emerald-400" : "text-red-400")}>
@@ -335,19 +498,19 @@ const AssetDetailsPage: React.FC = () => {
                 <span className="text-sm font-bold text-white">{formatCurrency(asset.lastClose, asset.currency)}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">P/VP</span>
+                <span className="text-xs text-gray-400 block mb-1"><TermHint term="pvp">P/VP</TermHint></span>
                 <span className="text-sm font-bold text-white">{asset.pvp?.toFixed(2) || 'N/A'}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">P/L</span>
+                <span className="text-xs text-gray-400 block mb-1"><TermHint term="pl">P/L</TermHint></span>
                 <span className="text-sm font-bold text-white">{asset.pl?.toFixed(1) || 'N/A'}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">Último Dividendo</span>
+                <span className="text-xs text-gray-400 block mb-1"><TermHint term="dividend">Último Dividendo</TermHint></span>
                 <span className="text-sm font-bold text-white">{formatCurrency(asset.lastDividend, asset.currency)}</span>
               </div>
               <div className="bg-white/5 rounded-xl p-3">
-                <span className="text-xs text-gray-400 block mb-1">Magic Number</span>
+                <span className="text-xs text-gray-400 block mb-1"><TermHint term="magicNumber">Magic Number</TermHint></span>
                 <span className="text-sm font-bold text-emerald-400">{asset.magicNumber}</span>
               </div>
             </div>

@@ -1,14 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { Target, TrendingUp, DollarSign, Calendar, ArrowRight, Sparkles } from 'lucide-react';
+import { TrendingUp, DollarSign, Calendar, ArrowRight, Sparkles } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { formatCurrency, formatPercent } from '../lib/utils';
-import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import { formatCurrency } from '../lib/utils';
 import { Link } from 'react-router-dom';
 
 const FinancialIndependenceSimulator: React.FC = () => {
-  const { portfolio, assets, settings } = useStore();
+  const { portfolio, assets } = useStore();
   const [monthlyExpenseTarget, setMonthlyExpenseTarget] = useState<number>(5000);
-  const [targetDate, setTargetDate] = useState<string>('');
 
   const monthlyIncomeBRL = useMemo(() => {
     return portfolio.reduce((acc, item) => {
@@ -26,8 +24,6 @@ const FinancialIndependenceSimulator: React.FC = () => {
 
   const projectedIncome = useMemo(() => {
     if (monthlyIncomeBRL <= 0) return 0;
-    const monthsToTarget = monthlyExpenseTarget / monthlyIncomeBRL;
-    const years = monthsToTarget * 20;
     
     // Projeção com aportes mensal (assumindo R$1000/mês)
     const monthlyContrib = 1000;
@@ -40,24 +36,6 @@ const FinancialIndependenceSimulator: React.FC = () => {
     }
     
     return months > 0 ? months : 'N/A';
-  }, [monthlyIncomeBRL, monthlyExpenseTarget]);
-
-  const chartData = useMemo(() => {
-    const data = [];
-    let income = monthlyIncomeBRL;
-    const monthlyContrib = 1000;
-    
-    for (let year = 0; year <= 10; year++) {
-      data.push({
-        year: `Ano ${year}`,
-        income: Math.round(income),
-        target: monthlyExpenseTarget
-      });
-      for (let m = 0; m < 12; m++) {
-        income += (monthlyContrib * 0.08) / 12;
-      }
-    }
-    return data;
   }, [monthlyIncomeBRL, monthlyExpenseTarget]);
 
   return (

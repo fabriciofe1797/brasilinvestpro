@@ -3,8 +3,8 @@ import { useStore } from '../store/useStore';
 import { useUser, useClerk, useAuth } from '@clerk/clerk-react';
 import { useDataSync } from '../hooks/useDataSync';
 import { 
-  Settings, Moon, Sun, DollarSign, User, LogOut, 
-  Globe, Shield, Bell, ChevronRight, RefreshCw, Zap, Sparkles, Calculator, AlertCircle
+  Moon, Sun, LogOut, 
+  Globe, Shield, Bell, RefreshCw, Zap, Sparkles, Calculator, AlertCircle
 } from 'lucide-react';
 import PlanLimitsCard from '../components/PlanLimitsCard';
 import { getPlanLimits } from '../services/billing';

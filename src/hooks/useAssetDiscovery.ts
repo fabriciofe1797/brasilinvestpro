@@ -11,7 +11,6 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import { useAuth } from '@clerk/clerk-react';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -73,7 +72,6 @@ const proxyFetch = async (body: Record<string, unknown>) => {
 };
 
 export const useAssetDiscovery = () => {
-  const { getToken } = useAuth();
   const mountedRef = useRef(true);
 
   // ─── State ──────────────────────────────────────────────────────────

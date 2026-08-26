@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { formatCurrency } from '../lib/utils';
-import { TrendingUp, RefreshCw, Calendar, PieChart as PieIcon, BarChart as BarChartIcon, Table as TableIcon, Zap, Sparkles } from 'lucide-react';
+import { TrendingUp, RefreshCw, BarChart as BarChartIcon, Table as TableIcon, Sparkles } from 'lucide-react';
 import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell
 } from 'recharts';
 import { cn } from '../lib/utils';

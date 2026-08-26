@@ -3,13 +3,13 @@ import { useStore } from '../store/useStore';
 import { formatCurrency, getMagicNumber, getMagicStatus } from '../lib/utils';
 import { 
   TrendingUp, Calendar, Lock, CheckCircle2, 
-  ArrowRight, Zap, Snowflake, Info, Sparkles, TrendingDown,
+  Zap, Snowflake, Info, Sparkles, TrendingDown,
   ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 const DividendsPage: React.FC = () => {
-  const { portfolio, assets, settings, transactions } = useStore();
+  const { portfolio, assets, transactions } = useStore();
   const [calendarDate, setCalendarDate] = useState(new Date());
 
   // 1. Enrich Portfolio with Dividend Data & Magic Number

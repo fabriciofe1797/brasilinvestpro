@@ -7,7 +7,6 @@ import MarketHub from './pages/MarketHub';
 import LandingPage from './pages/LandingPage';
 import DataSynchronizer from './components/DataSynchronizer';
 import RequirePlan from './components/RequirePlan';
-import { useStore } from './store/useStore';
 
 // Lazy-loaded pages for code splitting (reduce initial bundle)
 const Calculator = React.lazy(() => import('./pages/Calculator'));
@@ -41,6 +40,7 @@ const LifeMapDividendsPage = React.lazy(() => import('./pages/LifeMapDividendsPa
 const DecisionCockpitPage = React.lazy(() => import('./pages/DecisionCockpitPage'));
 const FIIsPage = React.lazy(() => import('./pages/FIIsPage'));
 const RankingsPage = React.lazy(() => import('./pages/RankingsPage'));
+const BenchmarksPage = React.lazy(() => import('./pages/BenchmarksPage'));
 
 // Loading fallback for lazy routes
 const PageLoader = () => (
@@ -159,6 +159,19 @@ function App() {
             <SignedIn>
               <Layout>
                 <RankingsPage />
+              </Layout>
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        } />
+
+        <Route path="/benchmarks" element={
+          <>
+            <SignedIn>
+              <Layout>
+                <BenchmarksPage />
               </Layout>
             </SignedIn>
             <SignedOut>

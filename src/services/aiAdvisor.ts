@@ -1,5 +1,4 @@
 import { MOCK_ASSETS } from '../data/mockData';
-import { Asset } from '../types';
 
 export interface InvestorProfile {
   riskTolerance: 'Conservador' | 'Moderado' | 'Agressivo';
@@ -73,7 +72,7 @@ const selectTacticalAssets = (
     budget: number, 
     profile: InvestorProfile
 ): AllocationRecommendation => {
-    let suggestions: RecommendedAsset[] = [];
+    const suggestions: RecommendedAsset[] = [];
     let rationale = '';
 
     // 1. Renda Fixa / Caixa
@@ -134,7 +133,7 @@ const selectTacticalAssets = (
         rationale = 'Seleção dos melhores Fundos Imobiliários com foco em P/VP justo e dividendos consistentes.';
         
         // Filter FIIs from Mock
-        let candidates = MOCK_ASSETS.filter(a => a.category.includes('FII'));
+        const candidates = MOCK_ASSETS.filter(a => a.category.includes('FII'));
         
         // Sort by Dividend Yield (Simple heuristic)
         candidates.sort((a, b) => b.dividendYield - a.dividendYield);

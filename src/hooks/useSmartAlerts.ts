@@ -4,7 +4,6 @@ import { PortfolioAlert } from '../types';
 import { calculateAssetScore } from '../lib/utils';
 
 const ALLOCATION_DRIFT_THRESHOLD = 0.10; // 10% drift triggers alert
-const DIVIDEND_DROP_THRESHOLD = 0.25; // 25% drop triggers alert
 const EXCHANGE_MOVE_THRESHOLD = 0.05; // 5% move triggers alert
 
 export function useSmartAlerts() {

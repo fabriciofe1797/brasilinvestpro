@@ -4,7 +4,6 @@ import { formatCurrency } from '../lib/utils';
 import {
   TrendingUp,
   TrendingDown,
-  Calendar,
   DollarSign,
   Target,
   BarChart3,

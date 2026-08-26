@@ -15,8 +15,6 @@ export const useMissionsGenerator = (): PlanMission[] => {
 
   return useMemo(() => {
     const generated: PlanMission[] = [];
-    const now = new Date();
-    const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
 
     // 1. Missão: Aporte mensal
     const hasContributionThisMonth = missions.some(

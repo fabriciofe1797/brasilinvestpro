@@ -50,6 +50,7 @@ export function getSourceLabel(source: QuoteSource): string {
     case 'awesomeapi': return 'AwesomeAPI';
     case 'awesomeapi-direct': return 'AwesomeAPI';
     case 'exchangerate': return 'ExchangeRate';
+    case 'bcb': return 'Banco Central';
     case 'manual': return 'Manual';
     case 'derived': return 'Calculado';
     case 'mock': return 'Estimado';
@@ -64,6 +65,7 @@ export function getSourceColor(source: QuoteSource): string {
     case 'awesomeapi': return 'text-green-400 bg-green-500/10 border-green-500/20';
     case 'awesomeapi-direct': return 'text-green-400 bg-green-500/10 border-green-500/20';
     case 'exchangerate': return 'text-teal-400 bg-teal-500/10 border-teal-500/20';
+    case 'bcb': return 'text-sky-400 bg-sky-500/10 border-sky-500/20';
     case 'manual': return 'text-gray-400 bg-gray-500/10 border-gray-500/20';
     case 'derived': return 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20';
     case 'mock': return 'text-amber-400 bg-amber-500/10 border-amber-500/20';

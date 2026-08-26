@@ -122,7 +122,7 @@ export const parseB3Csv = async (file: File): Promise<ExtractedTransaction[]> =>
   let qtyIdx = headerCols.findIndex(h => h.includes('quant') || h.includes('qtd') || h.includes('quantity'));
   let priceIdx = headerCols.findIndex(h => h.includes('preco') || h.includes('preço') || h.includes('price'));
   let valueIdx = headerCols.findIndex(h => h.includes('valor') || h.includes('total') || h.includes('value'));
-  let feeIdx = headerCols.findIndex(h => h.includes('taxa') || h.includes('fee') || h.includes('corretagem') || h.includes('emol'));
+  const feeIdx = headerCols.findIndex(h => h.includes('taxa') || h.includes('fee') || h.includes('corretagem') || h.includes('emol'));
 
   // Fallback: posicoes padrao do B3
   if (dateIdx === -1) dateIdx = 0;

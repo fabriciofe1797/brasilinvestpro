@@ -34,10 +34,10 @@ const SimulatorsPage: React.FC = () => {
   const [ipcaAnnual, setIpcaAnnual] = useState('0.04');
   const [ipcaFixed, setIpcaFixed] = useState('0.0');
   const [savings, setSavings] = useState<SavingsProduct[]>([]);
-  const [loadingSavings, setLoadingSavings] = useState(false);
+  const [, setLoadingSavings] = useState(false);
   const [selectedSavings, setSelectedSavings] = useState<SavingsProduct | null>(null);
-  const [ipcaCompounding, setIpcaCompounding] = useState<'annual' | 'monthly' | 'daily'>('annual');
-  const [selicCompounding, setSelicCompounding] = useState<'annual' | 'daily'>('annual');
+  const [ipcaCompounding] = useState<'annual' | 'monthly' | 'daily'>('annual');
+  const [selicCompounding] = useState<'annual' | 'daily'>('annual');
   const [preCompounding, setPreCompounding] = useState<'annual' | 'daily'>('annual');
 
   const parsedInitial = Number(initial) || 0;

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAlertEngine } from '../hooks/useAlertEngine';
-import { SmartAlert, SmartAlertType, AlertSeverity } from '../services/alertEngine';
+import { SmartAlertType, AlertSeverity } from '../services/alertEngine';
 import {
   Bell,
   CheckCircle2,

@@ -229,7 +229,7 @@ export interface PortfolioYieldOnCost {
 }
 
 // ─── Data Pipeline (Fase 5 — Confiança de Dados) ─────────────────────────────
-export type QuoteSource = 'brapi' | 'brapi-funds' | 'coingecko' | 'awesomeapi' | 'awesomeapi-direct' | 'exchangerate' | 'manual' | 'derived' | 'mock';
+export type QuoteSource = 'brapi' | 'brapi-funds' | 'coingecko' | 'awesomeapi' | 'awesomeapi-direct' | 'exchangerate' | 'bcb' | 'manual' | 'derived' | 'mock';
 export type FreshnessStatus = 'live' | 'delayed' | 'stale' | 'unavailable';
 
 export interface MarketQuote {

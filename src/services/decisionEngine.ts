@@ -51,7 +51,6 @@ export function generatePrescriptiveActions(
   const monthLabel = now.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthlyBudget = settings.monthlyContribution || 1000;
-  const exchangeRate = settings.exchangeRate || 6.2;
 
   // 1. Check if monthly contribution was made
   const hasContributionThisMonth = transactions.some(

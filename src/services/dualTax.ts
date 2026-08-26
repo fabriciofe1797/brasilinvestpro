@@ -85,19 +85,14 @@ const BR_STOCK_RATE = 0.15;
 const BR_FII_RATE = 0.20;
 const BR_CRYPTO_RATE = 0.15;
 const BR_FIXED_INCOME_RATE = 0.15; // Simplificado (regressiva 15-22.5%)
-const BR_DAYTRADE_RATE = 0.20;
-const BR_DIVIDEND_RATE = 0; // Isento no BR para PF
 
 // Portugal
 const PT_FLAT_RATE = 0.28;
 const PT_CRYPTO_HOLD_EXEMPTION = 365; // dias
 const PT_NHR_FLAT_RATE = 0.20;
-const PT_NHR_OLD_DIVIDEND_RATE = 0; // Regime antigo: 0%
-const PT_NHR_OLD_INTEREST_RATE = 0;
 
 // Tratado BR-PT
 const TREATY_DIVIDEND_WHT = 0.15; // 15% withholding no BR
-const TREATY_INTEREST_WHT = 0.15;
 const TREATY_CAPITAL_GAINS_RESIDENCE = true; // Tributado no país de residência
 
 // ─── Cálculo Brasil ──────────────────────────────────────────────────────────
@@ -406,7 +401,6 @@ export const calculateDualTax = (
     const treatyResult = calculateTreatyCredit(brResult.taxByCategory, ptResult.taxByCategory, config);
 
     const totalSales = Object.values(data.salesByCategory).reduce((s, d) => s + d.sales, 0);
-    const totalProfit = Object.values(data.salesByCategory).reduce((s, d) => s + d.profit, 0);
     const totalBurden = brResult.totalTax + treatyResult.netLiability;
     const effectiveRate = totalSales > 0 ? (totalBurden / totalSales) * 100 : 0;
 
@@ -441,8 +435,8 @@ export const calculateDualTax = (
 
 const getOptimizationSuggestions = (
   salesByCategory: Record<string, { sales: number; profit: number; dividends: number; holdingDays?: number }>,
-  brResult: { taxByCategory: CategoryTax[]; totalTax: number },
-  ptResult: { taxByCategory: CategoryTax[]; totalTax: number }
+  _brResult: { taxByCategory: CategoryTax[]; totalTax: number },
+  _ptResult: { taxByCategory: CategoryTax[]; totalTax: number }
 ): { suggestion: string; savings: number }[] => {
   const suggestions: { suggestion: string; savings: number }[] = [];
 

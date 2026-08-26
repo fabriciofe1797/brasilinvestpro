@@ -4,8 +4,22 @@ import { formatCurrency } from '../lib/utils';
 import {
   Calculator, TrendingDown, TrendingUp, AlertCircle,
   FileText, DollarSign, Calendar, Sparkles, Info, ChevronDown, ChevronUp,
-  Shield, Building2, Coins, Bitcoin
+  Shield, Building2, Coins, Bitcoin, Download
 } from 'lucide-react';
+
+/** Gera e baixa um CSV compatível com Excel pt-BR (BOM + separador ;) */
+const downloadCSV = (filename: string, rows: (string | number)[][]) => {
+  const csv = rows
+    .map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(';'))
+    .join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
 
 const TaxOptimizer: React.FC = () => {
   const { assetPositions, monthlyTax, summary } = useTaxOptimizer();
@@ -22,6 +36,46 @@ const TaxOptimizer: React.FC = () => {
     const [year, m] = month.split('-');
     const months = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
     return `${months[parseInt(m) - 1]}/${year}`;
+  };
+
+  // ─── Exportação para IRPF ─────────────────────────────────────────────────
+  const exportMonthlyCSV = () => {
+    const rows: (string | number)[][] = [
+      ['Relatório Fiscal AutoInvest', '', '', '', '', '', ''],
+      ['Gerado em', new Date().toLocaleString('pt-BR'), '', '', '', '', ''],
+      [],
+      ['Mês', 'Vendas (R$)', 'Resultado (R$)', 'Isenção Aplicada', 'Prejuízo Compensado (R$)', 'Base Tributável (R$)', 'IR Devido (R$)', 'Alíquota Efetiva (%)'],
+      ...monthlyTax.map(m => [
+        formatMonth(m.month),
+        m.salesTotal.toFixed(2),
+        m.profit.toFixed(2),
+        m.hasExemption ? 'Sim' : 'Não',
+        m.lossCarriedForward.toFixed(2),
+        m.taxableGain.toFixed(2),
+        m.taxDue.toFixed(2),
+        m.effectiveRate.toFixed(2),
+      ]),
+      [],
+      ['Total', summary.totalSales.toFixed(2), summary.totalProfit.toFixed(2), '', summary.totalLossCarried.toFixed(2), '', '', ''],
+    ];
+    downloadCSV(`relatorio-fiscal-${new Date().getFullYear()}.csv`, rows);
+  };
+
+  const exportPositionsCSV = () => {
+    const rows: (string | number)[][] = [
+      ['Posições e Preço Médio — AutoInvest', '', '', '', ''],
+      ['Gerado em', new Date().toLocaleString('pt-BR'), '', '', ''],
+      [],
+      ['Ativo', 'Categoria', 'Quantidade', 'Preço Médio (R$)', 'Custo Total (R$)'],
+      ...assetPositions.map(p => [
+        p.ticker,
+        p.category,
+        p.quantity,
+        p.averagePrice.toFixed(2),
+        p.totalCost.toFixed(2),
+      ]),
+    ];
+    downloadCSV(`posicoes-preco-medio-${new Date().getFullYear()}.csv`, rows);
   };
 
   return (
@@ -44,6 +98,16 @@ const TaxOptimizer: React.FC = () => {
           <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">
             Cálculo de IR com regras reais: isenção de R$20k (ações), alíquotas por tipo de ativo e carry-forward de prejuízos.
           </p>
+          <div className="flex flex-wrap gap-3">
+            <button type="button" onClick={exportMonthlyCSV} disabled={monthlyTax.length === 0}
+              className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-emerald-400 hover:bg-emerald-500/10 transition-all disabled:opacity-40 flex items-center gap-2">
+              <Download className="w-3 h-3" /> Exportar Relatório Mensal (CSV)
+            </button>
+            <button type="button" onClick={exportPositionsCSV} disabled={assetPositions.length === 0}
+              className="px-5 py-2.5 rounded-xl bg-white/5 border border-white/10 text-[10px] font-black uppercase tracking-widest text-blue-400 hover:bg-blue-500/10 transition-all disabled:opacity-40 flex items-center gap-2">
+              <Download className="w-3 h-3" /> Exportar Preço Médio (CSV)
+            </button>
+          </div>
         </div>
 
         {/* KPI Cards */}

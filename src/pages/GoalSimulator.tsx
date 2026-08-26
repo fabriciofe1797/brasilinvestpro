@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
 import { useGoalSimulator, Goal } from '../hooks/useGoalSimulator';
-import { formatCurrency, formatPercent } from '../lib/utils';
-import { Target, Plus, X, TrendingUp, Calendar, DollarSign, CheckCircle, AlertTriangle } from 'lucide-react';
+import { formatCurrency } from '../lib/utils';
+import { Plus, X, TrendingUp, Calendar, DollarSign, CheckCircle, AlertTriangle } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useStore } from '../store/useStore';
 
 const GoalSimulator: React.FC = () => {
-  const { goals, projections, addGoal, removeGoal } = useGoalSimulator();
+  const { projections, addGoal, removeGoal } = useGoalSimulator();
   const { settings } = useStore();
   const [isAdding, setIsAdding] = useState(false);
   const [newGoal, setNewGoal] = useState<Omit<Goal, 'id'>>({

@@ -14,7 +14,6 @@ import {
   Star,
   Shield,
   Calculator,
-  Users,
   Bell,
   FileText,
   BarChart2,
@@ -22,7 +21,6 @@ import {
   ChevronDown,
   Sparkles,
   Target,
-  Clock,
   Award,
 } from 'lucide-react';
 import {
@@ -33,7 +31,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts';
 import { cn } from '../lib/utils';
 import MarketTicker from '../components/MarketTicker';

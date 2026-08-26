@@ -5,13 +5,13 @@
  */
 
 import React from 'react';
-import { Clock, Wifi, WifiOff, AlertCircle } from 'lucide-react';
+import { Clock, Wifi, WifiOff } from 'lucide-react';
 import { 
   getFreshnessStatus, getFreshnessColor, getFreshnessLabel,
   getSourceLabel, getSourceColor, formatLastUpdated,
   getConfidenceColor, getConfidenceLabel,
 } from '../services/dataPipeline';
-import type { FreshnessStatus, QuoteSource } from '../types';
+import type { QuoteSource } from '../types';
 
 interface FreshnessBadgeProps {
   source: QuoteSource;

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { useStore } from '../store/useStore';
-import { generatePrescriptiveActions, type PrescriptiveAction } from '../services/decisionEngine';
+import { generatePrescriptiveActions } from '../services/decisionEngine';
 import { formatCurrency } from '../lib/utils';
 import { 
   TrendingUp, AlertTriangle, Target, ArrowRight, Shield, 

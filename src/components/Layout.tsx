@@ -2,12 +2,13 @@ import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, TrendingUp, Calculator, History, Menu, X,
-  Brain, Coins, Scale, FileInput, Receipt, Crown, LogOut, Settings, 
-  Sparkles, Navigation, GitCompare, Users, LineChart, Heart, Target, Shield,
+  Brain, Coins, Scale, FileInput, Receipt, Crown, Settings, 
+  Sparkles, Navigation, GitCompare, Users, LineChart, Heart, Target,
   BarChart3, Zap, Bell, MessageSquare, Eye, Link2, Globe2,
-  Compass, HeartHandshake, Rocket, Building2, Trophy
+  Compass, HeartHandshake, Rocket, Building2, Trophy, Percent
 } from 'lucide-react';
-import { UserButton, useAuth, useUser } from '@clerk/clerk-react';
+import { UserButton, useUser } from '@clerk/clerk-react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import NotificationCenter from './NotificationCenter';
 import UpgradePrompt from './UpgradePrompt';
@@ -20,21 +21,31 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
+type PlanLevel = 'free' | 'starter' | 'pro' | 'master' | 'elite';
+
+type NavItem =
+  | { type: 'divider' }
+  | { type?: undefined; icon: LucideIcon; label: string; path: string; plan: PlanLevel };
+
+const isDivider = (item: NavItem): item is Extract<NavItem, { type: 'divider' }> =>
+  item.type === 'divider';
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user } = useUser();
   const { settings } = useStore();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const order: Array<'free' | 'starter' | 'pro' | 'master' | 'elite'> = ['free', 'starter', 'pro', 'master', 'elite'];
+  const order: PlanLevel[] = ['free', 'starter', 'pro', 'master', 'elite'];
   const currentPlan = settings.plan ?? 'free';
 
-  const navItems = [
+  const navItems: NavItem[] = [
     // FREE - Todos os usuários
     { icon: LayoutDashboard, label: 'Dashboard', path: '/', plan: 'free' },
     { icon: TrendingUp, label: 'Mercado', path: '/market', plan: 'free' },
     { icon: Building2, label: 'FIIs', path: '/fiis', plan: 'free' },
     { icon: Trophy, label: 'Rankings', path: '/rankings', plan: 'free' },
+    { icon: Percent, label: 'Benchmarks', path: '/benchmarks', plan: 'free' },
     { icon: Calculator, label: 'Simulador', path: '/calculator', plan: 'free' },
     { icon: Settings, label: 'Config', path: '/settings', plan: 'free' },
     // Divider
@@ -95,23 +106,19 @@ const SidebarContent = () => (
         <nav className="flex-1 px-3 py-2 overflow-y-auto no-scrollbar relative z-10">
            {navItems.map((item, idx) => {
               // Divider
-              if (item.type === 'divider') {
+              if (isDivider(item)) {
                 return <div key={idx} className="my-3 border-t border-white/10" />;
               }
               
-              // @ts-ignore
-             const isActive = item.path === '/'
+              const isActive = item.path === '/'
                ? location.pathname === '/'
                : location.pathname.startsWith(item.path);
                
-              // @ts-ignore
-              const itemPlan = item.plan || 'free';
-              // @ts-ignore
+              const itemPlan = item.plan;
               const disabled = order.indexOf(currentPlan) < order.indexOf(itemPlan);
 
               // Determine badge color based on plan
-              // @ts-ignore
-              const planLabel = item.plan?.toUpperCase() || '';
+              const planLabel = item.plan.toUpperCase() || '';
               const badgeColor = itemPlan === 'starter' ? 'text-blue-400 bg-blue-500/10 border-blue-500/20' 
                 : itemPlan === 'pro' ? 'text-purple-400 bg-purple-500/10 border-purple-500/20'
                 : itemPlan === 'master' ? 'text-amber-400 bg-amber-500/10 border-amber-500/20'
@@ -119,9 +126,7 @@ const SidebarContent = () => (
 
               return (
                  <Link
-                    // @ts-ignore
                     key={item.path}
-                    // @ts-ignore
                     to={disabled ? '/premium' : item.path}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={cn(
@@ -133,9 +138,7 @@ const SidebarContent = () => (
                            : "text-gray-500 hover:text-white hover:bg-white/[0.02] border border-transparent"
                     )}
                  >
-                    {/* @ts-ignore */}
                     <item.icon className={cn("w-4 h-4 shrink-0", disabled ? "text-gray-800" : (isActive ? "text-emerald-400" : "text-gray-600 group-hover:text-emerald-400"))} />
-                    {/* @ts-ignore */}
                     <span className="relative z-10 truncate">{item.label}</span>
                     
                     {disabled && (

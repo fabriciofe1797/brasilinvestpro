@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
-import { Transaction, Asset } from '../types';
+import { Asset } from '../types';
 
 export interface TaxAsset {
   ticker: string;
@@ -38,15 +38,6 @@ export interface TaxResult {
 const STOCKS_EXEMPTION_LIMIT = 20000;
 /** Isenção para cripto: vendas ≤ R$35.000/mês */
 const CRYPTO_EXEMPTION_LIMIT = 35000;
-
-/** Alíquotas por tipo de ativo */
-function getTaxRate(category: string, isDayTrade: boolean): number {
-  if (isDayTrade) return 0.20; // 20% Day Trade
-  if (category.includes('FII')) return 0.20; // 20% FIIs
-  if (category === 'Renda Fixa' || category === 'Renda Fixa ETF') return 0.15; // Simplified: 15% (tabela regressiva para prazos longos)
-  if (category === 'Cripto') return 0.15; // 15% Cripto
-  return 0.15; // 15% Ações (swing trade)
-}
 
 /** Verifica se tem isenção no mês */
 function isExempt(category: string, monthlySales: number, isDayTrade: boolean): boolean {
