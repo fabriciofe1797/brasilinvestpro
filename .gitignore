@@ -34,3 +34,6 @@ nul
 con
 prn
 aux
+
+# Artefatos do Supabase CLI
+supabase/.temp
