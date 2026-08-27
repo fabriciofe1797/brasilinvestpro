@@ -483,20 +483,18 @@ if (nonCryptoForFetch.length) {
         const brapiKey2 = Deno.env.get("BRAPI_API_KEY");
         const fundHeaders: Record<string, string> = {};
         if (brapiKey2) fundHeaders["Authorization"] = `Bearer ${brapiKey2}`;
-        const fundUrl = `${BRAPI}/v2/funds/indicators?symbols=${encodeURIComponent(remaining.join(","))}`;
-        const fr = await fetchWithRetry(fundUrl, { headers: fundHeaders });
-        if (fr?.ok) {
-          const fd = await fr.json().catch(() => ({} as any));
-          // Nova BrAPI: retorna funds[]/fiis[] direto (antes era results[].data)
-          const fundResults = Array.isArray(fd?.funds) ? fd.funds
-            : Array.isArray(fd?.fiis) ? fd.fiis
-            : Array.isArray(fd?.results) ? fd.results : [];
-          for (const it of fundResults) {
-            const d = it?.data || it;
-            const sym = normalizeTicker(String(d?.symbol || d?.ticker || ""));
-            const price = Number(d?.regularMarketPrice ?? d?.price ?? 0);
+        // funds/indicators agora exige plano Pro na BrAPI; fallback: stocks/quote ticker a ticker
+        for (const t of remaining) {
+          try {
+            const fr = await fetchWithRetry(`${BRAPI}/v2/stocks/quote?symbols=${t}`, { headers: fundHeaders });
+            if (!fr?.ok) continue;
+            const fd = await fr.json().catch(() => ({} as any));
+            const first = Array.isArray(fd?.results) && fd.results.length > 0 ? fd.results[0] : null;
+            const d = first?.data;
+            const sym = normalizeTicker(String(d?.symbol || d?.shortName || t));
+            const price = Number(d?.regularMarketPrice ?? 0);
             if (sym && price > 0) bySymbol[sym] = { price, source: "brapi-funds", updatedAt: new Date().toISOString() };
-          }
+          } catch { /* ignora ticker */ }
         }
       } catch { /* funds fallback optional */ }
 
@@ -960,7 +958,7 @@ Deno.serve(async (req) => {
                       const jq = await rq.json().catch(() => ({} as any));
                       const first = Array.isArray(jq?.results) && jq.results.length > 0 ? jq.results[0] : null;
                       const q = first?.data || {};
-                      const avgVol = Number(q?.averageDailyVolume3Month ?? q?.avgVolume50d ?? 0);
+                      const avgVol = Number(q?.averageDailyVolume3Month ?? q?.avgVolume50d ?? q?.regularMarketVolume ?? 0);
                       if (avgVol && price > 0) liquidity = (avgVol * price) / 1000000;
                       const range = String(q?.fiftyTwoWeekRange || "");
                       const rangeMatch = range.match(/([\d.]+)\s*-\s*([\d.]+)/);
@@ -1069,20 +1067,8 @@ Deno.serve(async (req) => {
         const brapiKey = Deno.env.get("BRAPI_API_KEY");
         const headers: Record<string, string> = {};
         if (brapiKey) headers["Authorization"] = `Bearer ${brapiKey}`;
-        let url = `${BRAPI}/v2/funds/indicators?`;
-        const params: string[] = [];
-        if (symbols.length) params.push(`symbols=${encodeURIComponent(symbols.join(","))}`);
-        if (cnpjs.length) params.push(`cnpjs=${encodeURIComponent(cnpjs.join(","))}`);
-        url += params.join("&");
-        const r = await fetchWithRetry(url, { headers });
-        if (!r?.ok) return json({ ok: true, results: [] });
-        const data = await r.json().catch(() => ({} as any));
-        // Nova BrAPI: retorna funds[]/fiis[] direto (antes era results[].data)
-        const rawList = Array.isArray(data?.funds) ? data.funds
-          : Array.isArray(data?.fiis) ? data.fiis
-          : Array.isArray(data?.results) ? data.results : [];
-        const results = rawList.map((f: any) => {
-          const d = f?.data || f;
+
+        const mapFund = (d: any) => {
           const fundTypeVal = String(d?.assetType || d?.fundType || d?.type || "").toUpperCase();
           let mappedType = "fiagro";
           if (fundTypeVal.includes("FIDC")) mappedType = "fidc";
@@ -1096,13 +1082,50 @@ Deno.serve(async (req) => {
             fundType: mappedType,
             price: Number(d?.regularMarketPrice ?? d?.price ?? 0),
             navPerShare: Number(d?.navPerShare ?? d?.netAssetValuePerShare ?? d?.vpCota ?? 0),
-            patrimony: Number(d?.patrimony ?? d?.netAssets ?? d?.patrimonioLiquido ?? 0),
+            patrimony: Number(d?.equity ?? d?.patrimony ?? d?.netAssets ?? d?.patrimonioLiquido ?? 0),
             totalAssets: Number(d?.totalAssets ?? d?.ativos ?? 0),
-            shareholders: Number(d?.shareholders ?? d?.cotistas ?? d?.quotaHolders ?? 0),
+            shareholders: Number(d?.totalInvestors ?? d?.shareholders ?? d?.cotistas ?? d?.quotaHolders ?? 0),
             changePercent: Number(d?.regularMarketChangePercent ?? d?.pctChange ?? 0),
             currency: "BRL" as const,
           };
-        });
+        };
+
+        const results: any[] = [];
+        // FIIs: endpoint dedicado /v2/fii/indicators (max. 2 tickers por requisicao no plano gratuito)
+        for (let i = 0; i < symbols.length; i += 2) {
+          const chunk = symbols.slice(i, i + 2);
+          try {
+            const rf = await fetchWithRetry(`${BRAPI}/v2/fii/indicators?symbols=${encodeURIComponent(chunk.join(","))}`, { headers });
+            if (rf?.ok) {
+              const jf = await rf.json().catch(() => ({} as any));
+              const list = Array.isArray(jf?.fiis) ? jf.fiis : [];
+              for (const d of list) if (d) results.push(mapFund({ ...d, assetType: "fii" }));
+            }
+          } catch { /* ignora chunk */ }
+        }
+
+        // Restante (cnpjs ou tickers nao-FII): funds/indicators (exige plano Pro)
+        const found = new Set(results.map(r => r.symbol));
+        const restSymbols = symbols.filter(s => !found.has(s));
+        if (restSymbols.length || cnpjs.length) {
+          let url = `${BRAPI}/v2/funds/indicators?`;
+          const params: string[] = [];
+          if (restSymbols.length) params.push(`symbols=${encodeURIComponent(restSymbols.join(","))}`);
+          if (cnpjs.length) params.push(`cnpjs=${encodeURIComponent(cnpjs.join(","))}`);
+          url += params.join("&");
+          const r = await fetchWithRetry(url, { headers });
+          if (r?.ok) {
+            const data = await r.json().catch(() => ({} as any));
+            // Nova BrAPI: retorna funds[]/fiis[] direto (antes era results[].data)
+            const rawList = Array.isArray(data?.funds) ? data.funds
+              : Array.isArray(data?.fiis) ? data.fiis
+              : Array.isArray(data?.results) ? data.results : [];
+            for (const f of rawList) {
+              const d = f?.data || f;
+              if (d) results.push(mapFund(d));
+            }
+          }
+        }
         const response = { ok: true, results };
         setCache(cacheKey, response, 2 * 60 * 1000);
         return json(response);
@@ -1256,68 +1279,98 @@ Deno.serve(async (req) => {
           return "fiagro";
         };
 
-        // Chamada unica em batch com todos os tickers do tipo
-        const url = fundType === "fii"
-          ? `${BRAPI}/v2/fii/indicators?symbols=${encodeURIComponent(tickers.join(","))}`
-          : `${BRAPI}/v2/funds/indicators?symbols=${encodeURIComponent(tickers.join(","))}`;
-        const r = await fetchWithRetry(url, { headers });
-        let funds: any[] = [];
-        if (r?.ok) {
-          const j = await r.json().catch(() => ({} as any));
-          if (Array.isArray(j?.fiis)) funds = j.fiis;
-          else if (Array.isArray(j?.funds)) funds = j.funds;
-          else if (Array.isArray(j?.results)) funds = j.results.map((it: any) => it?.data || it);
+        // Limites do plano gratuito da BrAPI (testado em 2026-08):
+        // - fii/indicators: max. 2 tickers por requisicao;
+        // - funds/* (FIAGRO etc.): restrito ao plano Pro -> fallback via stocks/quote (1 por vez).
+        const results: any[] = [];
+        if (fundType === "fii") {
+          let funds: any[] = [];
+          for (let i = 0; i < tickers.length; i += 2) {
+            const chunk = tickers.slice(i, i + 2);
+            try {
+              const r = await fetchWithRetry(
+                `${BRAPI}/v2/fii/indicators?symbols=${encodeURIComponent(chunk.join(","))}`,
+                { headers }
+              );
+              if (r?.ok) {
+                const j = await r.json().catch(() => ({} as any));
+                const list = Array.isArray(j?.fiis) ? j.fiis
+                  : Array.isArray(j?.results) ? j.results.map((it: any) => it?.data || it) : [];
+                funds = funds.concat(list);
+              }
+            } catch { /* ignora chunk */ }
+          }
+          for (const d of funds) {
+            if (!d || !(d?.symbol || d?.ticker)) continue;
+            results.push({
+              ticker: String(d?.symbol || d?.ticker || ""),
+              name: String(d?.name || d?.longName || ""),
+              price: Number(d?.price ?? d?.regularMarketPrice ?? 0),
+              change: Number(d?.regularMarketChangePercent ?? 0),
+              logo: d?.logoURL || d?.logo || null,
+              fundType: "fii",
+              segmentType: String(d?.segmentType || ""),
+              dividendYield: asPct(d?.dividendYield12m ?? d?.dividendYield),
+              navPerShare: Number(d?.navPerShare ?? d?.vpCota ?? 0),
+              patrimonioLiquido: Number(d?.equity ?? d?.patrimony ?? d?.patrimonioLiquido ?? 0),
+              shareholders: Number(d?.totalInvestors ?? d?.shareholders ?? d?.cotistas ?? 0),
+              liquidezDiaria: 0,
+              variacao12m: undefined as number | undefined,
+              currency: "BRL",
+            });
+          }
+        } else {
+          // funds/indicators exige plano Pro; usa stocks/quote ticker a ticker
+          for (const t of tickers) {
+            try {
+              const r = await fetchWithRetry(`${BRAPI}/v2/stocks/quote?symbols=${t}`, { headers });
+              if (!r?.ok) continue;
+              const j = await r.json().catch(() => ({} as any));
+              const first = Array.isArray(j?.results) && j.results.length > 0 ? j.results[0] : null;
+              const d = first?.data;
+              if (!d) continue;
+              const price = Number(d?.regularMarketPrice ?? 0);
+              const vol = Number(d?.regularMarketVolume ?? 0);
+              results.push({
+                ticker: t,
+                name: String(d?.longName || d?.shortName || ""),
+                price,
+                change: Number(d?.regularMarketChangePercent ?? 0),
+                logo: d?.logourl || null,
+                fundType: mapAssetType(d?.assetType || fundType),
+                segmentType: "",
+                dividendYield: 0,
+                navPerShare: 0,
+                patrimonioLiquido: 0,
+                shareholders: 0,
+                liquidezDiaria: vol > 0 && price > 0 ? (vol * price) / 1000000 : 0,
+                variacao12m: undefined as number | undefined,
+                currency: "BRL",
+              });
+            } catch { /* ignora ticker */ }
+          }
         }
 
-        const results = funds
-          .filter((d: any) => d && (d?.symbol || d?.ticker))
-          .map((d: any) => ({
-            ticker: String(d?.symbol || d?.ticker || ""),
-            name: String(d?.name || d?.longName || ""),
-            price: Number(d?.price ?? d?.regularMarketPrice ?? 0),
-            change: Number(d?.regularMarketChangePercent ?? 0),
-            logo: d?.logoURL || d?.logo || null,
-            fundType: fundType === "fii" ? "fii" : mapAssetType(d?.assetType || d?.fundType || d?.type || fundType),
-            segmentType: String(d?.segmentType || ""),
-            dividendYield: asPct(d?.dividendYield12m ?? d?.dividendYield),
-            navPerShare: Number(d?.navPerShare ?? d?.vpCota ?? 0),
-            patrimonioLiquido: Number(d?.equity ?? d?.patrimony ?? d?.patrimonioLiquido ?? 0),
-            shareholders: Number(d?.totalInvestors ?? d?.shareholders ?? d?.cotistas ?? 0),
-            liquidezDiaria: 0,
-            variacao12m: undefined as number | undefined,
-            currency: "BRL",
-          }));
-
-        // Complemento opcional (variacao do dia, liquidez, variacao 12M)
-        // via stocks/quote em batch unico — nao bloqueia se falhar
-        if (results.length) {
+        // Complemento opcional para FIIs (variacao do dia, liquidez, variacao 12M)
+        // via stocks/quote ticker a ticker (plano gratuito = 1 por requisicao)
+        for (const f of results) {
+          if (f.fundType !== "fii" || f.liquidezDiaria > 0) continue;
           try {
-            const rq = await fetchWithRetry(
-              `${BRAPI}/v2/stocks/quote?symbols=${encodeURIComponent(results.map(f => f.ticker).join(","))}`,
-              { headers }
-            );
-            if (rq?.ok) {
-              const jq = await rq.json().catch(() => ({} as any));
-              const items = Array.isArray(jq?.results) ? jq.results : [];
-              const bySym = new Map<string, any>();
-              for (const it of items) {
-                const d = it?.data || it;
-                const s = String(d?.symbol || d?.ticker || "");
-                if (s) bySym.set(s, d);
-              }
-              for (const f of results) {
-                const q = bySym.get(f.ticker);
-                if (!q) continue;
-                if (!f.change) f.change = Number(q?.regularMarketChangePercent ?? 0);
-                const avgVol = Number(q?.averageDailyVolume3Month ?? q?.avgVolume50d ?? 0);
-                if (avgVol > 0 && f.price > 0) f.liquidezDiaria = (avgVol * f.price) / 1000000; // em milhoes
-                const range = String(q?.fiftyTwoWeekRange || "");
-                const rangeMatch = range.match(/([\d.]+)\s*-\s*([\d.]+)/);
-                if (rangeMatch && f.price > 0) {
-                  const low52 = parseFloat(rangeMatch[1]);
-                  if (low52 > 0) f.variacao12m = ((f.price - low52) / low52) * 100;
-                }
-              }
+            const rq = await fetchWithRetry(`${BRAPI}/v2/stocks/quote?symbols=${f.ticker}`, { headers });
+            if (!rq?.ok) continue;
+            const jq = await rq.json().catch(() => ({} as any));
+            const first = Array.isArray(jq?.results) && jq.results.length > 0 ? jq.results[0] : null;
+            const q = first?.data;
+            if (!q) continue;
+            if (!f.change) f.change = Number(q?.regularMarketChangePercent ?? 0);
+            if (!f.logo) f.logo = q?.logourl || null;
+            const vol = Number(q?.regularMarketVolume ?? 0);
+            if (vol > 0 && f.price > 0) f.liquidezDiaria = (vol * f.price) / 1000000; // em milhoes
+            const range = String(q?.fiftyTwoWeekRange || "");
+            const rangeMatch = range.match(/([\d.]+)\s*-\s*([\d.]+)/);
+            if (rangeMatch && f.price > 0) {
+              const low52 = parseFloat(rangeMatch[1]);
+              if (low52 > 0) f.variacao12m = ((f.price - low52) / low52) * 100;
             }
           } catch { /* complemento opcional, ignora falha */ }
         }
@@ -1372,30 +1425,25 @@ Deno.serve(async (req) => {
           })
         );
 
-        // Fallback: tickers sem preco via stocks -> tentar funds/indicators
+        // Fallback: tickers sem preco via stocks -> stocks/quote ticker a ticker
+        // (funds/indicators agora exige plano Pro na BrAPI)
         const missingTickers = tickers.filter(t => !prices[t]);
-        if (missingTickers.length > 0) {
+        for (const t of missingTickers) {
           try {
-            const fundUrl = `${BRAPI}/v2/funds/indicators?symbols=${encodeURIComponent(missingTickers.join(","))}`;
-            const fr = await fetchWithRetry(fundUrl, { headers });
-            if (fr?.ok) {
-              const fd = await fr.json().catch(() => ({} as any));
-              // Nova BrAPI: retorna funds[]/fiis[] direto (antes era results[].data)
-              const fundResults = Array.isArray(fd?.funds) ? fd.funds
-                : Array.isArray(fd?.fiis) ? fd.fiis
-                : Array.isArray(fd?.results) ? fd.results : [];
-              for (const it of fundResults) {
-                const d = it?.data || it;
-                const sym = String(d?.symbol || d?.ticker || "");
-                const price = Number(d?.regularMarketPrice ?? d?.price ?? 0);
-                const change = Number(d?.regularMarketChangePercent ?? 0);
-                if (sym && price > 0) {
-                  prices[sym] = price;
-                  changes[sym] = change;
-                }
-              }
+            const fr = await fetchWithRetry(`${BRAPI}/v2/stocks/quote?symbols=${t}`, { headers });
+            if (!fr?.ok) continue;
+            const fd = await fr.json().catch(() => ({} as any));
+            const first = Array.isArray(fd?.results) && fd.results.length > 0 ? fd.results[0] : null;
+            const d = first?.data;
+            if (!d) continue;
+            const sym = String(d?.symbol || d?.shortName || t);
+            const price = Number(d?.regularMarketPrice ?? 0);
+            const change = Number(d?.regularMarketChangePercent ?? 0);
+            if (sym && price > 0) {
+              prices[sym] = price;
+              changes[sym] = change;
             }
-          } catch { /* funds fallback optional */ }
+          } catch { /* ignora ticker */ }
         }
       }
 
