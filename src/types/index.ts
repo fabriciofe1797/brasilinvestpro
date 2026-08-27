@@ -103,6 +103,7 @@ export interface Asset {
   patrimonioLiquido?: number; // Em milhoes (opcional, para FIIs)
   liquidezDiaria?: number; // Em milhoes (opcional, para FIIs)
   variacao12m?: number; // % variacao 12 meses (opcional)
+  change?: number; // % variacao do dia (opcional)
   fundType?: FundType; // Tipo do fundo estruturado (FIAGRO, FIDC, FIP, FI-Infra)
   cnpj?: string; // CNPJ do fundo
   navPerShare?: number; // VP/cota para fundos

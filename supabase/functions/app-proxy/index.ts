@@ -1255,7 +1255,7 @@ Deno.serve(async (req) => {
         fidc: ["JURO11", "CRED11", "RBDD11", "RVIR11", "RBRF11"],
         fip: ["BRIA11", "TOP11", "TEPP11", "SHPH11", "XPLG11"],
       };
-      const tickers = popularFunds[fundType] || popularFunds.fiagro;
+      void popularFunds; // catalogo agora vem do quote/list; lista mantida apenas como referencia
 
       try {
         const brapiKey = Deno.env.get("BRAPI_API_KEY");
@@ -1279,100 +1279,67 @@ Deno.serve(async (req) => {
           return "fiagro";
         };
 
-        // Limites do plano gratuito da BrAPI (testado em 2026-08):
-        // - fii/indicators: max. 2 tickers por requisicao;
-        // - funds/* (FIAGRO etc.): restrito ao plano Pro -> fallback via stocks/quote (1 por vez).
+        // Plano gratuito da BrAPI (testado em 2026-08):
+        // - /api/quote/list com subType=fii|fi-agro retorna o CATALOGO COMPLETO (preco, variacao do dia, volume) em qualquer plano;
+        // - fundamentais (DY, P/VP, patrimonio) sao Pro-only, exceto as "amostras" da BrAPI —
+        //   enriquecemos o top 10 por volume via fii/indicators (max. 2 tickers por requisicao).
+        const subTypeMap: Record<string, string> = { fii: "fii", fiagro: "fi-agro", fiinfra: "fi-infra", fidc: "fidc", fip: "fip" };
+        const subType = subTypeMap[fundType] || "fi-agro";
+        const r = await fetchWithRetry(
+          `${BRAPI}/quote/list?subType=${subType}&limit=500&sortBy=volume&sortOrder=desc`,
+          { headers }
+        );
+        if (!r?.ok) return json({ ok: true, results: [] });
+        const jl = await r.json().catch(() => ({} as any));
+        const stocks = Array.isArray(jl?.stocks) ? jl.stocks : [];
         const results: any[] = [];
+        for (const s of stocks) {
+          const ticker = String(s?.stock || "");
+          if (!ticker) continue;
+          const price = Number(s?.close ?? 0);
+          const vol = Number(s?.volume ?? 0);
+          results.push({
+            ticker,
+            name: String(s?.name || ticker),
+            price,
+            change: Number(s?.change ?? 0),
+            logo: s?.logo || null,
+            fundType: fundType === "fii" ? "fii" : mapAssetType(fundType),
+            segmentType: "",
+            dividendYield: 0,
+            navPerShare: 0,
+            patrimonioLiquido: 0, // em milhoes
+            shareholders: 0,
+            liquidezDiaria: vol > 0 && price > 0 ? (vol * price) / 1000000 : 0, // em milhoes
+            variacao12m: undefined as number | undefined,
+            currency: "BRL",
+          });
+        }
+
+        // Fundamentais gratuitos (amostras da BrAPI): top 10 por volume, chunks de 2
         if (fundType === "fii") {
-          let funds: any[] = [];
-          for (let i = 0; i < tickers.length; i += 2) {
-            const chunk = tickers.slice(i, i + 2);
+          const top = results.slice(0, 10);
+          for (let i = 0; i < top.length; i += 2) {
+            const chunk = top.slice(i, i + 2).map(f => f.ticker);
             try {
-              const r = await fetchWithRetry(
+              const ri = await fetchWithRetry(
                 `${BRAPI}/v2/fii/indicators?symbols=${encodeURIComponent(chunk.join(","))}`,
                 { headers }
               );
-              if (r?.ok) {
-                const j = await r.json().catch(() => ({} as any));
-                const list = Array.isArray(j?.fiis) ? j.fiis
-                  : Array.isArray(j?.results) ? j.results.map((it: any) => it?.data || it) : [];
-                funds = funds.concat(list);
+              if (!ri?.ok) continue;
+              const ji = await ri.json().catch(() => ({} as any));
+              const list = Array.isArray(ji?.fiis) ? ji.fiis : [];
+              for (const d of list) {
+                const f = results.find(x => x.ticker === String(d?.symbol || ""));
+                if (!f) continue;
+                f.segmentType = String(d?.segmentType || "");
+                f.dividendYield = asPct(d?.dividendYield12m ?? d?.dividendYield);
+                f.navPerShare = Number(d?.navPerShare ?? 0);
+                f.patrimonioLiquido = Number(d?.equity ?? 0) / 1000000; // reais -> milhoes
+                f.shareholders = Number(d?.totalInvestors ?? 0);
               }
             } catch { /* ignora chunk */ }
           }
-          for (const d of funds) {
-            if (!d || !(d?.symbol || d?.ticker)) continue;
-            results.push({
-              ticker: String(d?.symbol || d?.ticker || ""),
-              name: String(d?.name || d?.longName || ""),
-              price: Number(d?.price ?? d?.regularMarketPrice ?? 0),
-              change: Number(d?.regularMarketChangePercent ?? 0),
-              logo: d?.logoURL || d?.logo || null,
-              fundType: "fii",
-              segmentType: String(d?.segmentType || ""),
-              dividendYield: asPct(d?.dividendYield12m ?? d?.dividendYield),
-              navPerShare: Number(d?.navPerShare ?? d?.vpCota ?? 0),
-              patrimonioLiquido: Number(d?.equity ?? d?.patrimony ?? d?.patrimonioLiquido ?? 0),
-              shareholders: Number(d?.totalInvestors ?? d?.shareholders ?? d?.cotistas ?? 0),
-              liquidezDiaria: 0,
-              variacao12m: undefined as number | undefined,
-              currency: "BRL",
-            });
-          }
-        } else {
-          // funds/indicators exige plano Pro; usa stocks/quote ticker a ticker
-          for (const t of tickers) {
-            try {
-              const r = await fetchWithRetry(`${BRAPI}/v2/stocks/quote?symbols=${t}`, { headers });
-              if (!r?.ok) continue;
-              const j = await r.json().catch(() => ({} as any));
-              const first = Array.isArray(j?.results) && j.results.length > 0 ? j.results[0] : null;
-              const d = first?.data;
-              if (!d) continue;
-              const price = Number(d?.regularMarketPrice ?? 0);
-              const vol = Number(d?.regularMarketVolume ?? 0);
-              results.push({
-                ticker: t,
-                name: String(d?.longName || d?.shortName || ""),
-                price,
-                change: Number(d?.regularMarketChangePercent ?? 0),
-                logo: d?.logourl || null,
-                fundType: mapAssetType(d?.assetType || fundType),
-                segmentType: "",
-                dividendYield: 0,
-                navPerShare: 0,
-                patrimonioLiquido: 0,
-                shareholders: 0,
-                liquidezDiaria: vol > 0 && price > 0 ? (vol * price) / 1000000 : 0,
-                variacao12m: undefined as number | undefined,
-                currency: "BRL",
-              });
-            } catch { /* ignora ticker */ }
-          }
-        }
-
-        // Complemento opcional para FIIs (variacao do dia, liquidez, variacao 12M)
-        // via stocks/quote ticker a ticker (plano gratuito = 1 por requisicao)
-        for (const f of results) {
-          if (f.fundType !== "fii" || f.liquidezDiaria > 0) continue;
-          try {
-            const rq = await fetchWithRetry(`${BRAPI}/v2/stocks/quote?symbols=${f.ticker}`, { headers });
-            if (!rq?.ok) continue;
-            const jq = await rq.json().catch(() => ({} as any));
-            const first = Array.isArray(jq?.results) && jq.results.length > 0 ? jq.results[0] : null;
-            const q = first?.data;
-            if (!q) continue;
-            if (!f.change) f.change = Number(q?.regularMarketChangePercent ?? 0);
-            if (!f.logo) f.logo = q?.logourl || null;
-            const vol = Number(q?.regularMarketVolume ?? 0);
-            if (vol > 0 && f.price > 0) f.liquidezDiaria = (vol * f.price) / 1000000; // em milhoes
-            const range = String(q?.fiftyTwoWeekRange || "");
-            const rangeMatch = range.match(/([\d.]+)\s*-\s*([\d.]+)/);
-            if (rangeMatch && f.price > 0) {
-              const low52 = parseFloat(rangeMatch[1]);
-              if (low52 > 0) f.variacao12m = ((f.price - low52) / low52) * 100;
-            }
-          } catch { /* complemento opcional, ignora falha */ }
         }
 
         const response = { ok: true, results };
