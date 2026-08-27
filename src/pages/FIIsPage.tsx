@@ -79,11 +79,17 @@ const FIIsPage: React.FC = () => {
         
         // Mapeia FIIs
         if (fiiResult?.ok && Array.isArray(fiiResult.results)) {
+          const segToCategory = (s: string | undefined): 'FII Tijolo' | 'FII Papel' | 'FII Agro' => {
+            const v = String(s || '').toLowerCase();
+            if (v.includes('papel') || v.includes('paper') || v.includes('receb')) return 'FII Papel';
+            if (v.includes('agro')) return 'FII Agro';
+            return 'FII Tijolo';
+          };
           const mapped: Asset[] = fiiResult.results.map((r: any) => ({
             id: r.ticker,
             ticker: r.ticker,
             name: r.name,
-            category: 'FII Tijolo', // Default, pode ser refinado
+            category: segToCategory(r.segmentType),
             price: r.price || 0,
             dividendYield: r.dividendYield || 0,
             pvp: r.navPerShare && r.price ? r.price / r.navPerShare : undefined,
