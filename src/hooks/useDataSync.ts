@@ -237,7 +237,11 @@ export const useDataSync = () => {
         const localTxs = useStore.getState().transactions;
         const sameTx = (a: Transaction, b: Transaction) =>
           a.assetId === b.assetId && a.type === b.type && a.date === b.date &&
-          Math.abs(a.quantity - b.quantity) < 1e-9 && Math.abs(a.price - b.price) < 1e-6;
+          Math.abs(a.quantity - b.quantity) < 1e-9 &&
+          // Tolerância relativa: o banco pode devolver preços com deriva de
+          // ponto flutuante (ex.: 371319.000002) — sem isso, o merge reenvia
+          // a mesma transação e cria duplicatas na nuvem
+          Math.abs(a.price - b.price) <= Math.max(0.01, Math.abs(a.price) * 1e-6);
         const localOnly = localTxs.filter(l => !dbTransactions.some(c => sameTx(c, l)));
         const merged = [...dbTransactions, ...localOnly];
         hardSetTransactions(merged);
@@ -267,5 +271,5 @@ export const useDataSync = () => {
     }
   }, [isSignedIn, user, getToken, isSyncing, hasSynced, syncTransactions, mergeAssets, setPlan, updateExchangeRate, hardSetTransactions, getQuotesDetailed, updateAssetsWithQuotes, loadFromSupabase]);
 
-  return { sync, isSyncing };
+  return { sync, isSyncing, hasSynced };
 };

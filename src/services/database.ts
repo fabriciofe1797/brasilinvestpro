@@ -22,16 +22,32 @@ export interface ExchangeRatesResponse {
   };
 }
 
+// Cache de clients por token: evita criar uma nova instância Supabase/GoTrueClient
+// a cada chamada (o console era inundado de "Multiple GoTrueClient instances")
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const clientCache = new Map<string, any>();
+
 export const getAuthenticatedClient = (token: string) => {
   if (!supabaseUrl || !supabaseAnonKey) throw new Error("Supabase config missing");
-  
-  return createClient(supabaseUrl, supabaseAnonKey, {
+
+  const cached = clientCache.get(token);
+  if (cached) return cached;
+
+  const client = createClient(supabaseUrl, supabaseAnonKey, {
     global: {
       headers: {
         Authorization: `Bearer ${token}`
       }
+    },
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
     }
   });
+  if (clientCache.size >= 10) clientCache.clear();
+  clientCache.set(token, client);
+  return client;
 };
 
 /**

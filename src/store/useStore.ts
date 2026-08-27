@@ -364,8 +364,8 @@ export const useStore = create<AppState>()(
 
   syncTransactions: (transactions) => 
     set(() => {
-      console.warn('🔄 DEBUG: Syncing Transactions:', transactions.length, transactions);
-      // Rebuild portfolio from scratch based on transaction history
+      console.debug('🔄 Syncing Transactions:', transactions.length);
+      // Rebuild Portfolio from scratch based on transaction history
       // 1. Sort transactions by date ascending to ensure correct PM calculation
       const sortedTx = [...transactions].sort((a, b) => 
         new Date(a.date).getTime() - new Date(b.date).getTime()
@@ -374,18 +374,31 @@ export const useStore = create<AppState>()(
       const calculatedPortfolio: PortfolioItem[] = [];
       // Enrich SELL transactions with realized P/L
       const enrichedTx: Transaction[] = [];
+      // Contabilidade líquida (igual à da nuvem): vendas sem lastro geram um
+      // "déficit" que é abatido das próximas compras — o saldo local fica
+      // sempre igual ao saldo real do inventário do backend
+      const deficit = new Map<string, number>();
 
       sortedTx.forEach(tx => {
         const existingIndex = calculatedPortfolio.findIndex(p => p.assetId === tx.assetId);
-        console.warn(`📊 Processing TX: ${tx.assetId} | Type: ${tx.type} | Qtd: ${tx.quantity}`);
-        
+
         if (tx.type === 'BUY') {
+          // Abate primeiro o déficit de vendas excedentes passadas deste ativo
+          const owed = deficit.get(tx.assetId) || 0;
+          const absorbed = Math.min(owed, tx.quantity);
+          if (absorbed > 0) deficit.set(tx.assetId, owed - absorbed);
+          const remaining = tx.quantity - absorbed;
+          if (remaining <= 0) {
+            enrichedTx.push(tx);
+            return;
+          }
+
           if (existingIndex >= 0) {
             const current = calculatedPortfolio[existingIndex];
             const currentTotalValue = current.quantity * current.averagePrice;
-            const txTotalValue = (tx.quantity * tx.price) + tx.fees;
+            const txTotalValue = (remaining * tx.price) + tx.fees;
             
-            const newQuantity = current.quantity + tx.quantity;
+            const newQuantity = current.quantity + remaining;
             const newAveragePrice = (currentTotalValue + txTotalValue) / newQuantity;
 
             calculatedPortfolio[existingIndex] = {
@@ -393,21 +406,20 @@ export const useStore = create<AppState>()(
               quantity: newQuantity,
               averagePrice: newAveragePrice
             };
-            console.warn(`   -> Updated Position: ${newQuantity} cotas @ ${newAveragePrice}`);
           } else {
-             const averagePrice = ((tx.quantity * tx.price) + tx.fees) / tx.quantity;
+             const averagePrice = ((remaining * tx.price) + tx.fees) / remaining;
              calculatedPortfolio.push({
                assetId: tx.assetId,
-               quantity: tx.quantity,
+               quantity: remaining,
                averagePrice
              });
-             console.warn(`   -> New Position: ${tx.quantity} cotas @ ${averagePrice}`);
           }
           enrichedTx.push(tx);
         } else if (tx.type === 'SELL') {
           // Calculate realized P/L
           let realizedPnl = tx.realizedPnl ?? null;
           let costBasis = tx.costBasis ?? null;
+          const held = existingIndex >= 0 ? calculatedPortfolio[existingIndex].quantity : 0;
           if (existingIndex >= 0) {
             const current = calculatedPortfolio[existingIndex];
             costBasis = current.averagePrice * tx.quantity;
@@ -425,11 +437,16 @@ export const useStore = create<AppState>()(
               };
             }
           }
+          // Parte da venda sem lastro local → registra como déficit a abater de compras futuras
+          const oversold = tx.quantity - held;
+          if (oversold > 0) {
+            deficit.set(tx.assetId, (deficit.get(tx.assetId) || 0) + oversold);
+          }
           enrichedTx.push({ ...tx, realizedPnl, costBasis });
         }
       });
       
-      console.warn('✅ Final Portfolio:', calculatedPortfolio);
+      console.debug('✅ Final Portfolio:', calculatedPortfolio);
 
       return {
         transactions: enrichedTx,

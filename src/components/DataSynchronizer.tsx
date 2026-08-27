@@ -5,7 +5,7 @@ import { useAuth } from '@clerk/clerk-react';
 
 const DataSynchronizer: React.FC = () => {
   const { settings } = useStore();
-  const { sync, isSyncing } = useDataSync();
+  const { sync, isSyncing, hasSynced } = useDataSync();
   const { isSignedIn } = useAuth();
   const wasSyncingRef = useRef(false);
   const retryCountRef = useRef(0);
@@ -30,16 +30,16 @@ const DataSynchronizer: React.FC = () => {
   }, [isSignedIn, sync]);
 
   // Retry sync if previous attempt finished but may have failed
-  // (hasSynced check inside sync() prevents duplicate successful syncs)
+  // (só re-tenta enquanto o sync ainda não tiver sido concluído com sucesso)
   React.useEffect(() => {
-    if (wasSyncingRef.current && !isSyncing && isSignedIn && retryCountRef.current < MAX_RETRIES) {
+    if (wasSyncingRef.current && !isSyncing && isSignedIn && !hasSynced && retryCountRef.current < MAX_RETRIES) {
       retryCountRef.current += 1;
       const delay = retryCountRef.current * 3000; // 3s, 6s, 9s
       const timer = setTimeout(() => sync(), delay);
       return () => clearTimeout(timer);
     }
     wasSyncingRef.current = isSyncing;
-  }, [isSyncing, isSignedIn, sync]);
+  }, [isSyncing, isSignedIn, hasSynced, sync]);
 
   return null;
 };

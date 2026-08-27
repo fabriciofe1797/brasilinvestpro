@@ -5,7 +5,6 @@ import Layout from './components/Layout';
 import Dashboard from './pages/Dashboard';
 import MarketHub from './pages/MarketHub';
 import LandingPage from './pages/LandingPage';
-import DataSynchronizer from './components/DataSynchronizer';
 import RequirePlan from './components/RequirePlan';
 import i18n from './i18n';
 import { useStore } from './store/useStore';
@@ -613,7 +612,6 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       </Suspense>
-      <DataSynchronizer />
     </BrowserRouter>
   );
 }
