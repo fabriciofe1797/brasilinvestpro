@@ -13,7 +13,8 @@ import {
   Lock,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { openPaymentLink } from '../services/billing';
+import { openPaymentLink, formatBRL, PLAN_CATALOG, type Plan as BillingPlan } from '../services/billing';
+import { useAuth } from '@clerk/clerk-react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
 
@@ -67,10 +68,10 @@ const getPlans = (t: (key: string, options?: Record<string, unknown>) => string)
     id: 'starter',
     tag: t('plans.silverTag'),
     title: t('plans.starterTitle'),
-    priceMonthly: 'R$ 24,99',
-    priceAnnual: 'R$ 20,82',
-    rawMonthly: 24.99,
-    rawAnnual: 20.82,
+    priceMonthly: formatBRL(PLAN_CATALOG.starter.monthly),
+    priceAnnual: formatBRL(PLAN_CATALOG.starter.annual),
+    rawMonthly: PLAN_CATALOG.starter.monthly,
+    rawAnnual: PLAN_CATALOG.starter.annual,
     desc: t('plans.starterDesc'),
     roi: t('plans.starterRoi'),
     roiColor: 'text-blue-400',
@@ -84,10 +85,10 @@ const getPlans = (t: (key: string, options?: Record<string, unknown>) => string)
     id: 'pro',
     tag: t('plans.popularTag'),
     title: t('plans.proTitle'),
-    priceMonthly: 'R$ 39,99',
-    priceAnnual: 'R$ 33,25',
-    rawMonthly: 39.99,
-    rawAnnual: 33.25,
+    priceMonthly: formatBRL(PLAN_CATALOG.pro.monthly),
+    priceAnnual: formatBRL(PLAN_CATALOG.pro.annual),
+    rawMonthly: PLAN_CATALOG.pro.monthly,
+    rawAnnual: PLAN_CATALOG.pro.annual,
     desc: t('plans.proDesc'),
     roi: t('plans.proRoi'),
     roiColor: 'text-emerald-400',
@@ -102,10 +103,10 @@ const getPlans = (t: (key: string, options?: Record<string, unknown>) => string)
     id: 'master',
     tag: t('plans.platinumTag'),
     title: t('plans.masterTitle'),
-    priceMonthly: 'R$ 50,00',
-    priceAnnual: 'R$ 41,66',
-    rawMonthly: 50,
-    rawAnnual: 41.66,
+    priceMonthly: formatBRL(PLAN_CATALOG.master.monthly),
+    priceAnnual: formatBRL(PLAN_CATALOG.master.annual),
+    rawMonthly: PLAN_CATALOG.master.monthly,
+    rawAnnual: PLAN_CATALOG.master.annual,
     desc: t('plans.masterDesc'),
     roi: t('plans.masterRoi'),
     roiColor: 'text-cyan-400',
@@ -119,10 +120,10 @@ const getPlans = (t: (key: string, options?: Record<string, unknown>) => string)
     id: 'elite',
     tag: t('plans.diamondTag'),
     title: t('plans.eliteTitle'),
-    priceMonthly: 'R$ 99,99',
-    priceAnnual: 'R$ 83,25',
-    rawMonthly: 99.99,
-    rawAnnual: 83.25,
+    priceMonthly: formatBRL(PLAN_CATALOG.elite.monthly),
+    priceAnnual: formatBRL(PLAN_CATALOG.elite.annual),
+    rawMonthly: PLAN_CATALOG.elite.monthly,
+    rawAnnual: PLAN_CATALOG.elite.annual,
     desc: t('plans.eliteDesc'),
     roi: t('plans.eliteRoi'),
     roiColor: 'text-purple-400',
@@ -251,6 +252,13 @@ const PlanCard = ({
             className="w-full py-3 rounded-xl border border-white/10 text-gray-600 text-sm font-bold cursor-default"
           >
             {t('plans.currentPlan')}
+          </button>
+        ) : plan.isFree ? (
+          <button
+            disabled
+            className="w-full py-3 rounded-xl border border-white/10 text-gray-600 text-sm font-bold cursor-default"
+          >
+            {t('plans.freeCta')}
           </button>
         ) : (
           <>
@@ -397,10 +405,12 @@ const TrustBar = () => {
 // ─── Main component ───────────────────────────────────────────────────────────
 
 const PremiumPlans: React.FC = () => {
-  const { setPlan } = useStore();
+  const { setPlan, settings } = useStore();
+  const { userId } = useAuth();
   const { t } = useTranslation();
   const [isAnnual, setIsAnnual] = useState(false);
   const plans = getPlans(t);
+  const currentPlan = settings.plan ?? 'free';
 
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
@@ -464,8 +474,11 @@ const PremiumPlans: React.FC = () => {
               key={plan.id}
               plan={plan}
               isAnnual={isAnnual}
-              isCurrent={plan.isFree}
-              onAction={() => plan.paymentKey && openPaymentLink(plan.paymentKey as any)}
+              isCurrent={currentPlan === (plan.isFree ? 'free' : plan.id)}
+              onAction={() =>
+                plan.paymentKey &&
+                openPaymentLink(plan.paymentKey as BillingPlan, isAnnual ? 'annual' : 'monthly', userId ?? undefined)
+              }
               onDev={() => plan.storeKey && setPlan(plan.storeKey as any)}
             />
           ))}

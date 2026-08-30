@@ -1333,6 +1333,7 @@
     "orAnnual": "ou {{price}}/mês no anual",
     "currentPlan": "Plano Atual",
     "startNow": "Começar Agora",
+    "freeCta": "Plano Gratuito",
     "devActivate": "⚙ Ativar (Dev)",
     "free": "Grátis",
     "cmpMaxAssets": "Número máximo de ativos",

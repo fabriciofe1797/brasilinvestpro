@@ -9,11 +9,11 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
 
 const cryptoProvider = Stripe.createSubtleCryptoProvider()
 
-// Mapeamento de Price IDs do Stripe para planos internos
-// ATENCAO: Substituir pelos Price IDs reais do Stripe Dashboard
+// Mapeamento de Price IDs do Stripe para planos internos (fallback)
+// Preferência: lookup_key/nickname do Price no formato "<plano>_<intervalo>"
+// (ex.: starter_monthly, pro_annual, elite_annual) — definir ao criar o Price no Stripe
 const PRICE_TO_PLAN: Record<string, string> = {
   // Exemplo: 'price_1NqQ...': 'starter',
-  // Os keys devem ser os Price IDs reais criados no Stripe
 }
 
 // Ordem dos planos para determinar from_plan
@@ -90,12 +90,19 @@ serve(async (req) => {
         })
       }
 
-      // Determinar plano via metadata ou price ID
+      // Determinar plano/intervalo: lookup_key do Price ("pro_monthly"/"elite_annual"),
+      // depois mapa PRICE_TO_PLAN, depois metadata.plan
       let plan = session.metadata?.plan || 'starter'
+      let interval: 'monthly' | 'annual' = 'monthly'
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id)
-      const priceId = lineItems.data[0]?.price?.id
-      if (priceId && PRICE_TO_PLAN[priceId]) {
-        plan = PRICE_TO_PLAN[priceId]
+      const price = lineItems.data[0]?.price
+      const lookup = String(price?.lookup_key || price?.nickname || '').toLowerCase()
+      const lookupMatch = lookup.match(/^(free|starter|pro|master|elite)[_-](monthly|annual)$/)
+      if (lookupMatch) {
+        plan = lookupMatch[1]
+        interval = lookupMatch[2] as 'monthly' | 'annual'
+      } else if (price?.id && PRICE_TO_PLAN[price.id]) {
+        plan = PRICE_TO_PLAN[price.id]
       }
 
       // Validar plano
@@ -105,7 +112,8 @@ serve(async (req) => {
 
       const startDate = new Date().toISOString()
       const endDate = new Date()
-      endDate.setMonth(endDate.getMonth() + 1)
+      if (interval === 'annual') endDate.setFullYear(endDate.getFullYear() + 1)
+      else endDate.setMonth(endDate.getMonth() + 1)
 
       // Obter plano atual para registro de mudanca
       const currentPlan = await getCurrentPlan(supabaseClient, userId)
@@ -120,6 +128,7 @@ serve(async (req) => {
           payment_status: 'active',
           last_payment_date: startDate,
           auto_renew_flag: true,
+          billing_interval: interval,
         })
 
       if (licenseError) throw licenseError
@@ -152,11 +161,17 @@ serve(async (req) => {
       }
 
       const currentPlan = await getCurrentPlan(supabaseClient, userId)
-      const priceId = subscription.items?.data?.[0]?.price?.id
+      const item = subscription.items?.data?.[0]
+      const priceId = item?.price?.id
       let plan = currentPlan
-      if (priceId && PRICE_TO_PLAN[priceId]) {
+      const lookupSub = String(item?.price?.lookup_key || item?.price?.nickname || '').toLowerCase()
+      const lookupMatchSub = lookupSub.match(/^(free|starter|pro|master|elite)[_-](monthly|annual)$/)
+      if (lookupMatchSub) {
+        plan = lookupMatchSub[1]
+      } else if (priceId && PRICE_TO_PLAN[priceId]) {
         plan = PRICE_TO_PLAN[priceId]
       }
+      const interval = item?.price?.recurring?.interval === 'year' ? 'annual' : 'monthly'
 
       const paymentStatus = status === 'active' ? 'active' : status === 'past_due' ? 'past_due' : 'active'
       const endDate = subscription.current_period_end
@@ -172,6 +187,7 @@ serve(async (req) => {
           payment_status: paymentStatus,
           last_payment_date: new Date().toISOString(),
           auto_renew_flag: !subscription.cancel_at_period_end,
+          billing_interval: interval,
         })
 
       if (error) throw error

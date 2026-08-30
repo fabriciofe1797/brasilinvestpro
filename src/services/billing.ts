@@ -1,25 +1,51 @@
 import type { UserSettings } from '../types';
-export type Plan = NonNullable<UserSettings['plan']> extends string ? Exclude<NonNullable<UserSettings['plan']>, 'free'> : 'starter' | 'pro' | 'master' | 'elite';
 
-export function getPaymentLink(plan: Plan): string | null {
-  const links: Record<Plan, string | undefined> = {
-    starter: import.meta.env.VITE_STRIPE_LINK_STARTER,
-    pro: import.meta.env.VITE_STRIPE_LINK_PRO,
-    master: import.meta.env.VITE_STRIPE_LINK_MASTER,
-    elite: import.meta.env.VITE_STRIPE_LINK_ELITE,
-  };
-  return links[plan] || null;
+export type Plan = 'starter' | 'pro' | 'master' | 'elite';
+export type BillingInterval = 'monthly' | 'annual';
+
+// ─── Catálogo único de planos ────────────────────────────────────────────────
+// Fonte de verdade de preços (BRL) e limites aplicados pelo app.
+// A página de planos (PremiumPlans) e a aplicação de limites
+// (AddInvestmentModal, ImportNotes, SettingsPage) leem daqui —
+// nunca duplicar estes valores em outro lugar.
+export const PLAN_CATALOG: Record<
+  'free' | Plan,
+  { monthly: number; annual: number; assets: number | null; transactions: number | null }
+> = {
+  free:    { monthly: 0,     annual: 0,     assets: 5,    transactions: 20   },
+  starter: { monthly: 24.99, annual: 20.82, assets: 15,   transactions: 200  },
+  pro:     { monthly: 39.99, annual: 33.25, assets: 30,   transactions: 1000 },
+  master:  { monthly: 50,    annual: 41.66, assets: 50,   transactions: 5000 },
+  elite:   { monthly: 99.99, annual: 83.25, assets: null, transactions: null },
+};
+
+export function formatBRL(value: number): string {
+  return `R$ ${value.toFixed(2).replace('.', ',')}`;
 }
 
-export function openPaymentLink(plan: Plan, userId?: string) {
-  const url = getPaymentLink(plan);
+export function getPaymentLink(plan: Plan, interval: BillingInterval = 'monthly'): string | null {
+  const env = import.meta.env as Record<string, string | undefined>;
+  const base = plan.toUpperCase();
+  const url =
+    interval === 'annual'
+      ? env[`VITE_STRIPE_LINK_${base}_ANNUAL`]
+      : env[`VITE_STRIPE_LINK_${base}`];
+  return url || null;
+}
+
+export function openPaymentLink(plan: Plan, interval: BillingInterval = 'monthly', userId?: string) {
+  const url = getPaymentLink(plan, interval);
   if (!url) {
-    alert('Link de pagamento não configurado. Defina as variáveis VITE_STRIPE_LINK_* no .env');
+    alert(
+      interval === 'annual'
+        ? 'Link de pagamento anual não configurado. Defina as variáveis VITE_STRIPE_LINK_*_ANNUAL no .env'
+        : 'Link de pagamento não configurado. Defina as variáveis VITE_STRIPE_LINK_* no .env',
+    );
     return;
   }
-  
+
   // Append client_reference_id for secure webhook attribution if userId is provided
-  const finalUrl = userId 
+  const finalUrl = userId
     ? `${url}${url.includes('?') ? '&' : '?'}client_reference_id=${encodeURIComponent(userId)}`
     : url;
 
@@ -27,26 +53,9 @@ export function openPaymentLink(plan: Plan, userId?: string) {
 }
 
 export function getPlanLimits(plan: NonNullable<UserSettings['plan']>) {
+  const entry = PLAN_CATALOG[plan];
   return {
-    assets:
-      plan === 'free'
-        ? 3
-        : plan === 'starter'
-        ? 10
-        : plan === 'pro'
-        ? 25
-        : plan === 'master'
-        ? 50
-        : null,
-    transactions:
-      plan === 'free'
-        ? 20
-        : plan === 'starter'
-        ? 200
-        : plan === 'pro'
-        ? 1000
-        : plan === 'master'
-        ? 1000
-        : null,
+    assets: entry.assets,
+    transactions: entry.transactions,
   } as { assets: number | null; transactions: number | null };
 }
