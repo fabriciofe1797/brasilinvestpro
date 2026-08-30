@@ -15,7 +15,8 @@ export interface ExchangeRatesResponse {
   EUR: number;
   USD: number;
   source: string;
-  updatedAt: string;
+  updatedAt: string;          // momento da consulta bem-sucedida (usado para frescor)
+  sourceUpdatedAt?: string;   // ultimo timestamp de mercado informado pela fonte
   changes: {
     EUR: number | null;
     USD: number | null;
@@ -209,26 +210,34 @@ export const getQuotesDetailed = async (tickers: string[], token: string): Promi
 };
 
 export const getExchangeRates = async (token: string): Promise<ExchangeRatesResponse | null> => {
-  // Try edge function first (AwesomeAPI via Supabase)
+  // Try edge function first (AwesomeAPI via Supabase, com fallbacks server-side)
   try {
     const client = getAuthenticatedClient(token);
     const { data, error } = await client.functions.invoke(EDGE_FUNCTION_NAME, {
       body: { action: 'get_exchange_rates' }
     });
     if (!error && data?.ok) {
-      return {
-        EUR: Number(data.rates?.EURBRL ?? 0),
-        USD: Number(data.rates?.USDBRL ?? 0),
-        source: String(data.source || 'awesomeapi'),
-        updatedAt: String(data.updatedAt || new Date().toISOString()),
-        changes: {
-          EUR: data.changes?.EURBRL != null ? Number(data.changes.EURBRL) : null,
-          USD: data.changes?.USDBRL != null ? Number(data.changes.USDBRL) : null,
-        }
-      };
+      const eurRate = Number(data.rates?.EURBRL ?? 0);
+      if (eurRate > 0) {
+        console.debug('[getExchangeRates] edge function ok — fonte:', data.source);
+        return {
+          EUR: eurRate,
+          USD: Number(data.rates?.USDBRL ?? 0),
+          source: String(data.source || 'awesomeapi'),
+          updatedAt: String(data.updatedAt || new Date().toISOString()),
+          sourceUpdatedAt: data.sourceUpdatedAt ? String(data.sourceUpdatedAt) : undefined,
+          changes: {
+            EUR: data.changes?.EURBRL != null ? Number(data.changes.EURBRL) : null,
+            USD: data.changes?.USDBRL != null ? Number(data.changes.USDBRL) : null,
+          }
+        };
+      }
+      console.warn('[getExchangeRates] edge function retornou taxa invalida:', data);
+    } else {
+      console.warn('[getExchangeRates] edge function falhou:', error || data?.error, '— tentando fallback direto');
     }
-  } catch { /* continue to fallback */ }
-  
+  } catch (err) { console.warn('[getExchangeRates] erro na edge function:', err); }
+
   // Fallback 1: AwesomeAPI direto (sem auth necessaria para consulta basica)
   try {
     const response = await fetch('https://economia.awesomeapi.com.br/last/EUR-BRL,USD-BRL');
@@ -237,11 +246,15 @@ export const getExchangeRates = async (token: string): Promise<ExchangeRatesResp
       const eur = data?.EURBRL;
       const usd = data?.USDBRL;
       if (eur?.bid && usd?.bid) {
+        console.debug('[getExchangeRates] fallback direto AwesomeAPI ok');
         return {
           EUR: Number(eur.bid),
           USD: Number(usd.bid),
           source: 'awesomeapi-direct',
-          updatedAt: eur.create_date ? new Date(eur.create_date).toISOString() : new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          sourceUpdatedAt: eur.create_date && !Number.isNaN(Date.parse(eur.create_date))
+            ? new Date(eur.create_date).toISOString()
+            : undefined,
           changes: {
             EUR: eur.pctChange != null ? Number(eur.pctChange) : null,
             USD: usd.pctChange != null ? Number(usd.pctChange) : null,
@@ -249,23 +262,54 @@ export const getExchangeRates = async (token: string): Promise<ExchangeRatesResp
         };
       }
     }
-  } catch { /* continue to fallback 2 */ }
+    console.warn('[getExchangeRates] AwesomeAPI direto falhou (HTTP', response.status, ')');
+  } catch (err) { console.warn('[getExchangeRates] AwesomeAPI direto erro:', err); }
 
-  // Fallback 2: exchangerate.host
+  // Fallback 2: open.er-api.com (atualizacao diaria, sem chave)
   try {
-    const response = await fetch('https://api.exchangerate.host/latest?base=EUR&symbols=BRL,USD');
+    const response = await fetch('https://open.er-api.com/v6/latest/EUR');
     const json = await response.json();
-    if (json.rates?.BRL) {
+    const eurBrl = Number(json?.rates?.BRL);
+    const eurUsd = Number(json?.rates?.USD);
+    if (json?.result === 'success' && eurBrl > 0) {
+      console.debug('[getExchangeRates] fallback open.er-api.com ok');
       return {
-        EUR: json.rates.BRL,
-        USD: json.rates.USD || json.rates.BRL / 5.5,
-        source: 'exchangerate.host',
+        EUR: eurBrl,
+        USD: eurUsd > 0 ? eurBrl / eurUsd : 0,
+        source: 'exchangerate',
         updatedAt: new Date().toISOString(),
+        sourceUpdatedAt: json.time_last_update_utc && !Number.isNaN(Date.parse(json.time_last_update_utc))
+          ? new Date(json.time_last_update_utc).toISOString()
+          : undefined,
         changes: { EUR: null, USD: null }
       };
     }
-  } catch { /* all fallbacks failed */ }
-  
+    console.warn('[getExchangeRates] open.er-api.com retornou payload invalido');
+  } catch (err) { console.warn('[getExchangeRates] open.er-api.com erro:', err); }
+
+  // Fallback 3: frankfurter.app (taxas de referencia do BCE, sem chave)
+  try {
+    const response = await fetch('https://api.frankfurter.app/latest?from=EUR&to=BRL,USD');
+    const json = await response.json();
+    const eurBrl = Number(json?.rates?.BRL);
+    const eurUsd = Number(json?.rates?.USD);
+    if (eurBrl > 0) {
+      console.debug('[getExchangeRates] fallback frankfurter.app (BCE) ok');
+      return {
+        EUR: eurBrl,
+        USD: eurUsd > 0 ? eurBrl / eurUsd : 0,
+        source: 'ecb',
+        updatedAt: new Date().toISOString(),
+        sourceUpdatedAt: json.date && !Number.isNaN(Date.parse(json.date))
+          ? new Date(`${json.date}T17:00:00Z`).toISOString()
+          : undefined,
+        changes: { EUR: null, USD: null }
+      };
+    }
+    console.warn('[getExchangeRates] frankfurter.app retornou payload invalido');
+  } catch (err) { console.warn('[getExchangeRates] frankfurter.app erro:', err); }
+
+  console.error('[getExchangeRates] todas as fontes de cambio falharam');
   return null;
 };
 

@@ -161,6 +161,7 @@ export interface UserSettings {
   exchangeRate: number; // EUR to BRL
   exchangeRateSource?: string;
   exchangeRateUpdatedAt?: string;
+  exchangeRateSourceUpdatedAt?: string; // ultimo timestamp de mercado informado pela fonte
   exchangeRateChangePct?: number;
   monthlyContribution: number;
   targetDividend: number;
@@ -231,7 +232,7 @@ export interface PortfolioYieldOnCost {
 }
 
 // ─── Data Pipeline (Fase 5 — Confiança de Dados) ─────────────────────────────
-export type QuoteSource = 'brapi' | 'brapi-funds' | 'coingecko' | 'awesomeapi' | 'awesomeapi-direct' | 'exchangerate' | 'bcb' | 'manual' | 'derived' | 'mock';
+export type QuoteSource = 'brapi' | 'brapi-funds' | 'coingecko' | 'awesomeapi' | 'awesomeapi-direct' | 'exchangerate' | 'ecb' | 'bcb' | 'manual' | 'derived' | 'mock';
 export type FreshnessStatus = 'live' | 'delayed' | 'stale' | 'unavailable';
 
 export interface MarketQuote {

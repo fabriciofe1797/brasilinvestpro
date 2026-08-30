@@ -170,6 +170,7 @@ export const useDataSync = () => {
           updateExchangeRate(rates.EUR, {
             source: rates.source || 'api',
             updatedAt: rates.updatedAt,
+            sourceUpdatedAt: rates.sourceUpdatedAt,
             changePct: rates.changes.EUR ?? undefined,
           });
         }

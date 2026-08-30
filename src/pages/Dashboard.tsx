@@ -49,8 +49,11 @@ const Dashboard: React.FC = () => {
   const mainTotalValue = mainCurrency === 'EUR' ? totalValueBRL / settings.exchangeRate : totalValueBRL;
   const secCurrency = mainCurrency === 'EUR' ? 'BRL' : 'EUR';
   const secTotalValue = mainCurrency === 'EUR' ? totalValueBRL : totalValueBRL / settings.exchangeRate;
-  const exchangeRateLabel = settings.exchangeRateUpdatedAt
-    ? new Date(settings.exchangeRateUpdatedAt).toLocaleString(i18n.language, {
+  // Label de mercado: prefere o ultimo timestamp de mercado da fonte;
+  // cai no horario da consulta quando a fonte nao informa (ex.: fallbacks diarios)
+  const marketTimestamp = settings.exchangeRateSourceUpdatedAt || settings.exchangeRateUpdatedAt;
+  const exchangeRateLabel = marketTimestamp
+    ? new Date(marketTimestamp).toLocaleString(i18n.language, {
         day: '2-digit',
         month: '2-digit',
         hour: '2-digit',
@@ -432,14 +435,13 @@ const Dashboard: React.FC = () => {
                           </td>
                           <td className="px-8 py-6" title={t('dashboard.snowballHint')}>
                              {magicNumber > 0 ? (
-                                <div className="w-32">
-                                   <div className="flex justify-between items-center mb-1">
-                                      <span className="text-[10px] font-mono font-bold text-gray-400">
-                                         {t('dashboard.snowballUnits', { atual: asset.quantity, meta: magicNumber })}
+                                <div className="w-28">
+                                   <div className="flex items-center gap-1.5 mb-1">
+                                      <span className="font-mono text-xs font-black text-white whitespace-nowrap">
+                                         {Number.isInteger(asset.quantity) ? asset.quantity : asset.quantity.toFixed(1)}
+                                         <span className="text-gray-600 text-[10px] font-bold ml-1">/ {magicNumber}</span>
                                       </span>
-                                      <span className={`text-[10px] font-black ${snowballDone ? 'text-emerald-400' : 'text-cyan-400'}`}>
-                                         {snowballPct.toFixed(0)}%
-                                      </span>
+                                      {snowballDone && <CheckCircle className="w-3 h-3 text-emerald-400 flex-shrink-0" />}
                                    </div>
                                    <div className="h-1.5 rounded-full bg-white/5 border border-white/5 overflow-hidden">
                                       <div

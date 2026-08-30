@@ -51,6 +51,7 @@ export function getSourceLabel(source: QuoteSource): string {
     case 'awesomeapi': return i18n.t('freshness.srcAwesomeApi');
     case 'awesomeapi-direct': return i18n.t('freshness.srcAwesomeApi');
     case 'exchangerate': return i18n.t('freshness.srcExchangeRate');
+    case 'ecb': return i18n.t('freshness.srcEcb');
     case 'bcb': return i18n.t('freshness.srcBcb');
     case 'manual': return i18n.t('freshness.srcManual');
     case 'derived': return i18n.t('freshness.srcDerived');
@@ -66,6 +67,7 @@ export function getSourceColor(source: QuoteSource): string {
     case 'awesomeapi': return 'text-green-400 bg-green-500/10 border-green-500/20';
     case 'awesomeapi-direct': return 'text-green-400 bg-green-500/10 border-green-500/20';
     case 'exchangerate': return 'text-teal-400 bg-teal-500/10 border-teal-500/20';
+    case 'ecb': return 'text-sky-400 bg-sky-500/10 border-sky-500/20';
     case 'bcb': return 'text-sky-400 bg-sky-500/10 border-sky-500/20';
     case 'manual': return 'text-gray-400 bg-gray-500/10 border-gray-500/20';
     case 'derived': return 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20';

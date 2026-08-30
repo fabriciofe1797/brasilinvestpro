@@ -537,32 +537,114 @@ if (nonCryptoForFetch.length) {
   return final;
 }
 
-async function fetchExchangeRates() {
-  const apiKey = Deno.env.get("AWESOME_API_KEY");
-  const headers: Record<string, string> = {};
-  if (apiKey) headers["x-api-key"] = apiKey;
-  const r = await fetch(`${AWESOME}/EUR-BRL,USD-BRL`, { headers });
-  if (!r.ok) throw new Error("exchange_rates_fetch_failed");
-  const data = await r.json().catch(() => ({} as Record<string, any>));
-  const eur = data?.EURBRL;
-  const usd = data?.USDBRL;
-  const updatedAt =
-    eur?.create_date && !Number.isNaN(Date.parse(eur.create_date))
-      ? new Date(eur.create_date).toISOString()
-      : new Date().toISOString();
+interface ExchangeRatesResult {
+  source: string;
+  updatedAt: string;        // momento da consulta bem-sucedida (usado para frescor)
+  sourceUpdatedAt: string;  // ultimo timestamp de mercado informado pela fonte (antigo em weekend/feriado)
+  rates: { EURBRL: number; USDBRL: number };
+  changes: { EURBRL: number | null; USDBRL: number | null };
+}
 
-  return {
-    source: "awesomeapi",
-    updatedAt,
-    rates: {
-      EURBRL: Number(eur?.bid ?? 0),
-      USDBRL: Number(usd?.bid ?? 0),
-    },
-    changes: {
-      EURBRL: eur?.pctChange != null ? Number(eur.pctChange) : null,
-      USDBRL: usd?.pctChange != null ? Number(usd.pctChange) : null,
+async function fetchExchangeRates(): Promise<ExchangeRatesResult> {
+  // Cache server-side: multiplos clientes no mesmo periodo nao sobrecarregam as fontes
+  const cached = getCached<ExchangeRatesResult>("exchange_rates");
+  if (cached) {
+    console.log("[fetchExchangeRates] Cache hit");
+    return cached;
+  }
+
+  const fetchedAt = new Date().toISOString();
+
+  // Fonte primaria: AwesomeAPI (com retry + backoff)
+  try {
+    const apiKey = Deno.env.get("AWESOME_API_KEY");
+    const headers: Record<string, string> = {};
+    if (apiKey) headers["x-api-key"] = apiKey;
+    const r = await fetchWithRetry(`${AWESOME}/EUR-BRL,USD-BRL`, { headers });
+    if (r?.ok) {
+      const data = await r.json().catch(() => ({} as Record<string, any>));
+      const eur = data?.EURBRL;
+      const usd = data?.USDBRL;
+      const eurBid = Number(eur?.bid);
+      const usdBid = Number(usd?.bid);
+      if (eurBid > 0 && usdBid > 0) {
+        const result: ExchangeRatesResult = {
+          source: "awesomeapi",
+          updatedAt: fetchedAt,
+          sourceUpdatedAt:
+            eur?.create_date && !Number.isNaN(Date.parse(eur.create_date))
+              ? new Date(eur.create_date).toISOString()
+              : fetchedAt,
+          rates: { EURBRL: eurBid, USDBRL: usdBid },
+          changes: {
+            EURBRL: eur?.pctChange != null ? Number(eur.pctChange) : null,
+            USDBRL: usd?.pctChange != null ? Number(usd.pctChange) : null,
+          },
+        };
+        setCache("exchange_rates", result, CACHE_TTL.exchange);
+        return result;
+      }
+      console.warn("[fetchExchangeRates] AwesomeAPI payload invalido:", JSON.stringify(data).slice(0, 200));
+    } else {
+      console.warn("[fetchExchangeRates] AwesomeAPI HTTP", r?.status ?? "null", "— tentando fallbacks");
     }
-  };
+  } catch (e) {
+    console.warn("[fetchExchangeRates] AwesomeAPI erro:", e);
+  }
+
+  // Fallback 1: frankfurter.app (taxas de referencia do BCE, sem chave)
+  try {
+    const r = await fetchWithRetry("https://api.frankfurter.app/latest?from=EUR&to=BRL,USD");
+    if (r?.ok) {
+      const data = await r.json().catch(() => ({} as Record<string, any>));
+      const eurBrl = Number(data?.rates?.BRL);
+      const eurUsd = Number(data?.rates?.USD);
+      if (eurBrl > 0) {
+        const result: ExchangeRatesResult = {
+          source: "ecb",
+          updatedAt: fetchedAt,
+          sourceUpdatedAt: data?.date && !Number.isNaN(Date.parse(data.date))
+            ? new Date(`${data.date}T17:00:00Z`).toISOString()
+            : fetchedAt,
+          rates: { EURBRL: eurBrl, USDBRL: eurUsd > 0 ? eurBrl / eurUsd : 0 },
+          changes: { EURBRL: null, USDBRL: null },
+        };
+        setCache("exchange_rates", result, CACHE_TTL.exchange);
+        return result;
+      }
+    }
+    console.warn("[fetchExchangeRates] frankfurter.app falhou — tentando proximo fallback");
+  } catch (e) {
+    console.warn("[fetchExchangeRates] frankfurter.app erro:", e);
+  }
+
+  // Fallback 2: open.er-api.com (atualizacao diaria, sem chave)
+  try {
+    const r = await fetchWithRetry("https://open.er-api.com/v6/latest/EUR");
+    if (r?.ok) {
+      const data = await r.json().catch(() => ({} as Record<string, any>));
+      const eurBrl = Number(data?.rates?.BRL);
+      const eurUsd = Number(data?.rates?.USD);
+      if (data?.result === "success" && eurBrl > 0) {
+        const result: ExchangeRatesResult = {
+          source: "exchangerate",
+          updatedAt: fetchedAt,
+          sourceUpdatedAt: data?.time_last_update_utc && !Number.isNaN(Date.parse(data.time_last_update_utc))
+            ? new Date(data.time_last_update_utc).toISOString()
+            : fetchedAt,
+          rates: { EURBRL: eurBrl, USDBRL: eurUsd > 0 ? eurBrl / eurUsd : 0 },
+          changes: { EURBRL: null, USDBRL: null },
+        };
+        setCache("exchange_rates", result, CACHE_TTL.exchange);
+        return result;
+      }
+    }
+    console.warn("[fetchExchangeRates] open.er-api.com falhou");
+  } catch (e) {
+    console.warn("[fetchExchangeRates] open.er-api.com erro:", e);
+  }
+
+  throw new Error("exchange_rates_all_sources_failed");
 }
 
 Deno.serve(async (req) => {
@@ -1651,8 +1733,13 @@ Deno.serve(async (req) => {
     }
 
     if (action === "get_exchange_rates") {
-      const exchange = await fetchExchangeRates();
-      return json({ ok: true, ...exchange });
+      try {
+        const exchange = await fetchExchangeRates();
+        return json({ ok: true, ...exchange });
+      } catch (e) {
+        console.error("[get_exchange_rates] todas as fontes falharam:", e);
+        return json({ ok: false, error: "exchange_rates_all_sources_failed" }, 200);
+      }
     }
 
     if (action === "get_savings_products") {

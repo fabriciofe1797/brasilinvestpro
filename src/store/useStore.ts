@@ -26,7 +26,7 @@ interface AppState {
   addTransaction: (transaction: Omit<Transaction, 'id' | 'total'>) => boolean;
   setBaseCurrency: (currency: 'EUR' | 'BRL') => void;
   setLanguage: (language: 'pt-BR' | 'en' | 'es') => void;
-  updateExchangeRate: (rate: number, meta?: { source?: string; updatedAt?: string; changePct?: number }) => void;
+  updateExchangeRate: (rate: number, meta?: { source?: string; updatedAt?: string; sourceUpdatedAt?: string; changePct?: number }) => void;
   updateAllocationTargets: (targets: AllocationTarget[]) => void;
   updateCustodyRate: (rate: number) => void;
   updateSelicCustodyThreshold: (threshold: number) => void;
@@ -315,13 +315,14 @@ export const useStore = create<AppState>()(
     set((state) => ({ settings: { ...state.settings, language } }));
   },
 
-  updateExchangeRate: (rate, meta) => 
+  updateExchangeRate: (rate, meta) =>
     set((state) => ({
       settings: {
         ...state.settings,
         exchangeRate: rate,
         exchangeRateSource: meta?.source ?? state.settings.exchangeRateSource,
         exchangeRateUpdatedAt: meta?.updatedAt ?? state.settings.exchangeRateUpdatedAt,
+        exchangeRateSourceUpdatedAt: meta?.sourceUpdatedAt ?? state.settings.exchangeRateSourceUpdatedAt,
         exchangeRateChangePct: meta?.changePct ?? state.settings.exchangeRateChangePct,
       }
     })),

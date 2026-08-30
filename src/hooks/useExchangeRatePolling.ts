@@ -27,53 +27,78 @@ export const useExchangeRatePolling = () => {
   const [history, setHistory] = useState<ExchangeRatePoint[]>([]);
   const [isPolling, setIsPolling] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mountedRef = useRef(true);
+  const fetchRateRef = useRef<() => Promise<void>>(async () => {});
 
   const fetchRate = useCallback(async () => {
     if (!isSignedIn) return;
+    let succeeded = false;
     try {
       const token = await getToken({ template: 'supabase' });
-      if (!token) return;
+      if (!token) {
+        console.warn('[useExchangeRatePolling] Sem token Clerk — pulando consulta');
+        return;
+      }
 
       const rates = await getExchangeRates(token);
-      if (!rates || !rates.EUR || rates.EUR <= 0) return;
+      if (!rates || !rates.EUR || rates.EUR <= 0) {
+        console.warn('[useExchangeRatePolling] Resposta invalida ou vazia das fontes de cambio:', rates);
+      } else {
+        succeeded = true;
+        console.debug('[useExchangeRatePolling] Taxa EUR/BRL atualizada:', rates.EUR, '| fonte:', rates.source);
 
-      // Atualiza o store global
-      updateExchangeRate(rates.EUR, {
-        source: rates.source || 'awesomeapi',
-        updatedAt: rates.updatedAt,
-        changePct: rates.changes.EUR ?? undefined,
-      });
-
-      // Adiciona ponto ao historico local
-      if (mountedRef.current) {
-        const point: ExchangeRatePoint = {
-          rate: rates.EUR,
-          timestamp: rates.updatedAt || new Date().toISOString(),
-          changePct: rates.changes.EUR ?? null,
+        // Atualiza o store global
+        updateExchangeRate(rates.EUR, {
           source: rates.source || 'awesomeapi',
-        };
-        setHistory(prev => {
-          // Evita duplicatas no mesmo minuto
-          const last = prev[prev.length - 1];
-          if (last) {
-            const lastTime = new Date(last.timestamp).getTime();
-            const newTime = new Date(point.timestamp).getTime();
-            if (Math.abs(newTime - lastTime) < 60_000) {
-              // Substitui o ultimo ponto se muito proximo
-              return [...prev.slice(0, -1), point];
-            }
-          }
-          const next = [...prev, point];
-          return next.length > MAX_HISTORY_POINTS
-            ? next.slice(-MAX_HISTORY_POINTS)
-            : next;
+          updatedAt: rates.updatedAt,
+          sourceUpdatedAt: rates.sourceUpdatedAt,
+          changePct: rates.changes.EUR ?? undefined,
         });
+
+        // Adiciona ponto ao historico local
+        if (mountedRef.current) {
+          const point: ExchangeRatePoint = {
+            rate: rates.EUR,
+            timestamp: rates.updatedAt || new Date().toISOString(),
+            changePct: rates.changes.EUR ?? null,
+            source: rates.source || 'awesomeapi',
+          };
+          setHistory(prev => {
+            // Evita duplicatas no mesmo minuto
+            const last = prev[prev.length - 1];
+            if (last) {
+              const lastTime = new Date(last.timestamp).getTime();
+              const newTime = new Date(point.timestamp).getTime();
+              if (Math.abs(newTime - lastTime) < 60_000) {
+                // Substitui o ultimo ponto se muito proximo
+                return [...prev.slice(0, -1), point];
+              }
+            }
+            const next = [...prev, point];
+            return next.length > MAX_HISTORY_POINTS
+              ? next.slice(-MAX_HISTORY_POINTS)
+              : next;
+          });
+        }
       }
-    } catch {
-      // Silencioso — o proximo polling tentara novamente
+    } catch (err) {
+      console.warn('[useExchangeRatePolling] Erro na consulta de cambio:', err);
+    }
+
+    // Retry unico em 30s quando falha, para nao esperar o proximo ciclo de 5 min
+    if (!succeeded && mountedRef.current && isSignedIn && !retryTimeoutRef.current) {
+      console.debug('[useExchangeRatePolling] Agendando retry em 30s');
+      retryTimeoutRef.current = setTimeout(() => {
+        retryTimeoutRef.current = null;
+        if (mountedRef.current) void fetchRateRef.current();
+      }, 30_000);
     }
   }, [isSignedIn, getToken, updateExchangeRate]);
+
+  useEffect(() => {
+    fetchRateRef.current = fetchRate;
+  }, [fetchRate]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -91,6 +116,10 @@ export const useExchangeRatePolling = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
+      }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
       }
       setIsPolling(false);
     };
