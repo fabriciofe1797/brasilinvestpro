@@ -136,7 +136,19 @@ async function upsertPrices(prices: Record<string, number>) {
   }
 }
 
-serve(async () => {
+serve(async (req) => {
+  // Autenticacao obrigatoria: funcao grava precos no catalogo compartilhado (assets/asset_prices).
+  // Sem o CRON_SECRET qualquer pessoa poderia corromper os precos de todos os usuarios (OWASP A07).
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const authHeader = req.headers.get("authorization") ?? "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "");
+  if (!cronSecret || bearer !== cronSecret) {
+    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   try {
     const all = await getTickers();
     if (all.length === 0) {
@@ -156,7 +168,8 @@ serve(async () => {
     await upsertPrices(combined);
     return new Response(JSON.stringify({ ok: true, updated: Object.keys(combined).length }));
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return new Response(JSON.stringify({ ok: false, error: msg }), { status: 500 });
+    // Log interno rico, resposta generica ao cliente (OWASP A05/A09)
+    console.error("[refresh-prices] internal error:", e);
+    return new Response(JSON.stringify({ ok: false, error: "internal_error" }), { status: 500 });
   }
 });

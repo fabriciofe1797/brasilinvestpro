@@ -61,12 +61,27 @@ const ImportNotes: React.FC = () => {
     setSuccessCount(0);
     const allTransactions: ExtractedTransaction[] = [];
 
+    // Validacao defensiva de upload: limite de tamanho por arquivo (OWASP A04)
+    const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+    const ALLOWED_MIME = ['application/pdf', 'text/csv'];
+
     for (const file of files) {
       const name = file.name.toLowerCase();
       const isPdf = name.endsWith('.pdf');
       const isCsv = name.endsWith('.csv');
 
       if (!isPdf && !isCsv) {
+        setError(t('importNotes.errFileTypes'));
+        continue;
+      }
+
+      if (file.size > MAX_FILE_SIZE) {
+        setError(t('importNotes.errFileTypes'));
+        continue;
+      }
+
+      // Checa MIME quando o navegador informar (extensao sozinha pode ser falsificada)
+      if (file.type && !ALLOWED_MIME.includes(file.type)) {
         setError(t('importNotes.errFileTypes'));
         continue;
       }

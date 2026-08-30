@@ -294,8 +294,9 @@ serve(async (req) => {
     })
 
   } catch (err) {
-    console.error('Webhook error:', err.message)
-    return new Response(JSON.stringify({ error: err.message }), {
+    // Log interno rico, resposta generica (OWASP A05/A09) — nunca vazar detalhes internos para o caller
+    console.error('Webhook error:', err)
+    return new Response(JSON.stringify({ error: 'webhook_processing_failed' }), {
       status: 400,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })

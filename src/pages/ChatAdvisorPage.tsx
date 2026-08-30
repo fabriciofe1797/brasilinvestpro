@@ -34,11 +34,22 @@ const ChatAdvisorPage: React.FC = () => {
     sendMessage(suggestion);
   };
 
+  // Escapa HTML antes de injetar qualquer tag de formatacao (OWASP A03/XSS)
+  const escapeHtml = (s: string) =>
+    s
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+
   // Render message content with basic markdown-like formatting
   const renderContent = (content: string) => {
     return content.split('\n').map((line, i) => {
+      // Primeiro escapa todo o HTML do conteudo (fonte nao confiavel: respostas de IA/usuario)
+      const escaped = escapeHtml(line);
       // Bold text
-      const formatted = line.replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-bold">$1</strong>');
+      const formatted = escaped.replace(/\*\*(.+?)\*\*/g, '<strong class="text-white font-bold">$1</strong>');
       // Italic text
       const italicFormatted = formatted.replace(/_(.+?)_/g, '<em class="text-gray-400 italic">$1</em>');
       // Inline code

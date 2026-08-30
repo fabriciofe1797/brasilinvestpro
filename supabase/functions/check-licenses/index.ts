@@ -1,14 +1,27 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-serve(async (_req) => {
+serve(async (req) => {
+  // Autenticacao obrigatoria: apenas o scheduler (ou operador com CRON_SECRET) pode executar
+  // esta funcao DESTRUTIVA (downgrade de planos). Sem isso qualquer pessoa na internet poderia
+  // derrubar todos os planos pagos para "free" (OWASP A07).
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const authHeader = req.headers.get("authorization") ?? "";
+  const bearer = authHeader.replace(/^Bearer\s+/i, "");
+  if (!cronSecret || bearer !== cronSecret) {
+    return new Response(JSON.stringify({ ok: false, error: "unauthorized" }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const client = createClient(url, key);
   const now = new Date();
   const today = now.toISOString();
   const { data: licenses, error } = await client.from("licenses").select("*");
-  if (error) return new Response(JSON.stringify({ ok: false, error }), { status: 500 });
+  if (error) return new Response(JSON.stringify({ ok: false, error: "license_query_failed" }), { status: 500 });
 
   const msDay = 24 * 60 * 60 * 1000;
   const toQueue: Array<{ user_id: string; template: string; metadata: Record<string, any> }> = [];

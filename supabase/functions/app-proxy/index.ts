@@ -1,9 +1,9 @@
 type PlanType = "free" | "starter" | "pro" | "master" | "elite";
 const PLAN_LIMITS: Record<PlanType, { maxTransactions: number | null; maxAssets: number | null }> = {
-  free: { maxTransactions: 20, maxAssets: 3 },
-  starter: { maxTransactions: 200, maxAssets: 10 },
-  pro: { maxTransactions: 1000, maxAssets: 25 },
-  master: { maxTransactions: 1000, maxAssets: 50 },
+  free: { maxTransactions: 20, maxAssets: 5 },
+  starter: { maxTransactions: 200, maxAssets: 15 },
+  pro: { maxTransactions: 1000, maxAssets: 30 },
+  master: { maxTransactions: 5000, maxAssets: 50 },
   elite: { maxTransactions: null, maxAssets: null },
 };
 
@@ -13,7 +13,6 @@ if (!url) throw new Error("missing_supabase_url");
 if (!key) throw new Error("missing_service_role_key");
 const clerkJwksUrl = Deno.env.get("CLERK_JWKS_URL");
 const clerkIssuer = Deno.env.get("CLERK_ISSUER");
-const clerkSecretKey = Deno.env.get("CLERK_SECRET_KEY");
 
 const BRAPI = "https://brapi.dev/api";
 const COINGECKO = "https://api.coingecko.com/api/v3";
@@ -23,19 +22,20 @@ const AWESOME = "https://economia.awesomeapi.com.br/last";
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX = 60;
 const RATE_LIMIT_WINDOW_MS = 60_000;
+const MAX_TICKERS = 50;
 
-function checkRateLimit(userId: string): { allowed: boolean; remaining: number } {
+function checkRateLimit(key: string, max: number = RATE_LIMIT_MAX): { allowed: boolean; remaining: number } {
   const now = Date.now();
-  const entry = rateLimitMap.get(userId);
+  const entry = rateLimitMap.get(key);
   if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(userId, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return { allowed: true, remaining: RATE_LIMIT_MAX - 1 };
+    rateLimitMap.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return { allowed: true, remaining: max - 1 };
   }
-  if (entry.count >= RATE_LIMIT_MAX) {
+  if (entry.count >= max) {
     return { allowed: false, remaining: 0 };
   }
   entry.count++;
-  return { allowed: true, remaining: RATE_LIMIT_MAX - entry.count };
+  return { allowed: true, remaining: max - entry.count };
 }
 
 // Cache in-memory com TTL para dados de mercado
@@ -182,19 +182,8 @@ async function verifyToken(req: Request) {
 
   let valid = false;
 
-  if (alg === "HS256") {
-    // HS256 = HMAC-SHA256 (simetrico) — usa a Clerk secret key
-    if (!clerkSecretKey) throw new Error("missing_clerk_secret_for_hs256");
-    const encoder = new TextEncoder();
-    const cryptoKey = await crypto.subtle.importKey(
-      "raw",
-      encoder.encode(clerkSecretKey),
-      { name: "HMAC", hash: "SHA-256" },
-      false,
-      ["verify"]
-    );
-    valid = await crypto.subtle.verify("HMAC", cryptoKey, signature, signingInput);
-  } else if (alg === "RS256" || alg === "ES256") {
+  // Apenas algoritmos assimetricos via JWKS — evita confusao de algoritmo (HS256 removido)
+  if (alg === "RS256" || alg === "ES256") {
     // RS256 (RSA) ou ES256 (ECDSA) — usa JWKS (chave publica)
     const jwk = await getJwk(header.kid);
     console.log(`[verifyToken] kty=${jwk.kty}`);
@@ -653,11 +642,15 @@ async function fetchExchangeRates(): Promise<ExchangeRatesResult> {
 }
 
 Deno.serve(async (req) => {
-  const origin = req.headers.get("origin") ?? "*";
+  const origin = req.headers.get("origin") ?? "";
+  // CORS restrito aos dominios oficiais (OWASP A05)
+  const ALLOWED_ORIGINS = (Deno.env.get("ALLOWED_ORIGINS") ?? "https://brasilinvestpro.vercel.app,http://localhost:5173")
+    .split(",").map((s) => s.trim()).filter(Boolean);
   const corsHeaders: Record<string, string> = {
-    "Access-Control-Allow-Origin": origin,
+    "Access-Control-Allow-Origin": ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+    Vary: "Origin",
   };
 
   if (req.method === "OPTIONS") {
@@ -676,6 +669,14 @@ Deno.serve(async (req) => {
   try {
     const body_peek = (await req.clone().json().catch(() => ({}))) as { action?: string };
     const action_peek = body_peek.action as string | undefined;
+
+    // Rate limit por IP+acao para endpoints publicos (OWASP A04)
+    if (action_peek) {
+      const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
+      if (!checkRateLimit(`pub:${ip}:${action_peek}`, 30).allowed) {
+        return json({ ok: false, error: "rate_limit_exceeded", retryAfter: 60 }, 429);
+      }
+    }
 
     // get_promo_status nao precisa de autenticacao (contagem agregada da promo de lancamento)
     if (action_peek === "get_promo_status") {
@@ -1456,8 +1457,8 @@ Deno.serve(async (req) => {
     // Diferente de get_quotes, aceita crypto IDs e retorna dados completos
     if (action_peek === "get_watchlist_quotes") {
       const body_s = (await req.clone().json().catch(() => ({}))) as { tickers?: string[]; cryptoIds?: string[] };
-      const tickers = Array.isArray(body_s.tickers) ? body_s.tickers.map(String).filter(Boolean) : [];
-      const cryptoIds = Array.isArray(body_s.cryptoIds) ? body_s.cryptoIds.map(String).filter(Boolean) : [];
+      const tickers = Array.isArray(body_s.tickers) ? body_s.tickers.map(String).filter(Boolean).slice(0, MAX_TICKERS) : [];
+      const cryptoIds = Array.isArray(body_s.cryptoIds) ? body_s.cryptoIds.map(String).filter(Boolean).slice(0, MAX_TICKERS) : [];
 
       if (!tickers.length && !cryptoIds.length) {
         return json({ ok: true, prices: {}, changes: {} });
@@ -1702,7 +1703,7 @@ Deno.serve(async (req) => {
 
     if (action === "get_quotes") {
       const tickersInput = body.tickers;
-      const tickers = Array.isArray(tickersInput) ? (tickersInput as unknown[]).map((t) => String(t)).filter(Boolean) : [];
+      const tickers = Array.isArray(tickersInput) ? (tickersInput as unknown[]).map((t) => String(t)).filter(Boolean).slice(0, MAX_TICKERS) : [];
       if (!tickers.length) {
         return json({ ok: true, prices: {}, sources: {}, updatedAt: {}, changes: {} });
       }
@@ -2079,16 +2080,20 @@ Deno.serve(async (req) => {
           body: JSON.stringify(payload),
         });
         if (!r.ok) {
-          const errText = await r.text().catch(() => "fetch_error");
-          return json({ ok: false, error: `user_data_upsert_failed:${errText}` }, 200);
+          console.error("[upsert_user_data] failed:", await r.text().catch(() => "fetch_error"));
+          return json({ ok: false, error: "user_data_upsert_failed" }, 200);
         }
       }
       return json({ ok: true });
     }
 
     if (action === "upsert_asset") {
+      // Escrita no catalogo compartilhado: restrita a administradores (OWASP A01/BOLA)
+      const adminIds = (Deno.env.get("ADMIN_USER_IDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+      if (!adminIds.includes(sub)) return json({ ok: false, error: "forbidden" }, 403);
       const a = body.asset as Record<string, unknown>;
-      if (!a || typeof a.ticker !== "string") return json({ ok: false, error: "invalid_asset" }, 400);
+      if (!a || typeof a.ticker !== "string" || !/^[A-Z0-9]{1,10}$/.test(a.ticker)) return json({ ok: false, error: "invalid_asset" }, 400);
+      if (a.price != null && (typeof a.price !== "number" || !Number.isFinite(a.price) || a.price <= 0)) return json({ ok: false, error: "invalid_price" }, 400);
       const dbAsset = {
         ticker: a.ticker,
         name: a.name ?? null,
@@ -2104,15 +2109,17 @@ Deno.serve(async (req) => {
         body: JSON.stringify(dbAsset)
       });
       if (!r.ok) {
-        const errText = await r.text().catch(() => "fetch_error");
-        return json({ ok: false, error: errText }, 200);
+        console.error("[upsert_asset] failed:", await r.text().catch(() => "fetch_error"));
+        return json({ ok: false, error: "asset_upsert_failed" }, 200);
       }
       return json({ ok: true });
     }
 
     return json({ ok: false, error: "unknown_action" }, 200);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return json({ ok: false, error: msg }, 200);
+    // Log interno rico, resposta generica ao cliente (OWASP A05/A09)
+    const trace = crypto.randomUUID();
+    console.error(`internal_error trace=${trace}`, e);
+    return json({ ok: false, error: "internal_error", trace }, 500);
   }
 });
