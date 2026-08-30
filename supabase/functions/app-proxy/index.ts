@@ -387,7 +387,7 @@ async function fetchB3Quotes(tickers: string[]): Promise<Record<string, number>>
   }
 }
 
-async function fetchBrapiQuotes(tickers: string[]): Promise<Record<string, number>> {
+async function fetchBrapiQuotes(tickers: string[]): Promise<Record<string, { price: number; changePct: number | null }>> {
   if (!tickers.length) return {};
   const apiKey = Deno.env.get("BRAPI_API_KEY");
   const headers: Record<string, string> = {};
@@ -403,29 +403,30 @@ async function fetchBrapiQuotes(tickers: string[]): Promise<Record<string, numbe
       for (const it of items) {
         const sym = String(it?.symbol || it?.requestedSymbol || "");
         const price = Number(it?.data?.regularMarketPrice ?? it?.data?.price ?? it?.data?.close ?? 0);
-        if (sym && price > 0) return { sym, price };
+        const chg = Number(it?.data?.regularMarketChangePercent ?? NaN);
+        if (sym && price > 0) return { sym, price, changePct: Number.isFinite(chg) ? chg : null };
       }
       return null;
     })
   );
 
-  const out: Record<string, number> = {};
+  const out: Record<string, { price: number; changePct: number | null }> = {};
   for (const result of results) {
     if (result.status === 'fulfilled' && result.value) {
-      out[result.value.sym] = result.value.price;
+      out[result.value.sym] = { price: result.value.price, changePct: result.value.changePct };
     }
   }
   return out;
 }
 
-type QuoteWithSource = { price: number; source: "b3" | "brapi" | "coingecko"; updatedAt: string };
+type QuoteWithSource = { price: number; source: "b3" | "brapi" | "brapi-funds" | "coingecko"; updatedAt: string; changePct?: number | null };
 
 async function fetchCryptoQuotesByTicker(tickers: string[]): Promise<Record<string, QuoteWithSource>> {
   const map: Record<string, string> = { BTC: "bitcoin", ETH: "ethereum", SOL: "solana", USDC: "usd-coin" };
   const ids = Array.from(new Set(tickers.map((t) => map[t]).filter(Boolean)));
   if (!ids.length) return {};
   const list = ids.join(",");
-  const r = await fetch(`${COINGECKO}/simple/price?ids=${list}&vs_currencies=brl&include_last_updated_at=true`);
+  const r = await fetch(`${COINGECKO}/simple/price?ids=${list}&vs_currencies=brl&include_last_updated_at=true&include_24hr_change=true`);
   if (!r.ok) return {};
   const j = await r.json().catch(() => ({} as any));
   const out: Record<string, QuoteWithSource> = {};
@@ -433,6 +434,7 @@ async function fetchCryptoQuotesByTicker(tickers: string[]): Promise<Record<stri
     if (!tickers.includes(ticker)) continue;
     const price = (j as any)?.[id]?.brl;
     const lastUpdatedAt = (j as any)?.[id]?.last_updated_at;
+    const change24h = (j as any)?.[id]?.brl_24h_change;
     if (typeof price === "number" && price > 0) {
       out[ticker] = {
         price,
@@ -440,6 +442,7 @@ async function fetchCryptoQuotesByTicker(tickers: string[]): Promise<Record<stri
         updatedAt: typeof lastUpdatedAt === "number"
           ? new Date(lastUpdatedAt * 1000).toISOString()
           : new Date().toISOString(),
+        changePct: typeof change24h === "number" ? Math.round(change24h * 100) / 100 : null,
       };
     }
   }
@@ -471,7 +474,7 @@ if (nonCryptoForFetch.length) {
     // PRIORITY 1: BrAPI (free, stable for Brazilian stocks)
     const br = await fetchBrapiQuotes(nonCryptoForFetch);
     for (const [t, p] of Object.entries(br)) {
-      if (typeof p === "number" && p > 0) bySymbol[normalizeTicker(t)] = { price: p, source: "brapi", updatedAt: new Date().toISOString() };
+      if (typeof p?.price === "number" && p.price > 0) bySymbol[normalizeTicker(t)] = { price: p.price, source: "brapi", updatedAt: new Date().toISOString(), changePct: p.changePct ?? null };
     }
     
     // PRIORITY 2: B3 API (only if configured and brapi returned nothing)
@@ -493,7 +496,8 @@ if (nonCryptoForFetch.length) {
             const d = first?.data;
             const sym = normalizeTicker(String(d?.symbol || d?.shortName || t));
             const price = Number(d?.regularMarketPrice ?? 0);
-            if (sym && price > 0) bySymbol[sym] = { price, source: "brapi-funds", updatedAt: new Date().toISOString() };
+            const chg = Number(d?.regularMarketChangePercent ?? NaN);
+            if (sym && price > 0) bySymbol[sym] = { price, source: "brapi-funds", updatedAt: new Date().toISOString(), changePct: Number.isFinite(chg) ? chg : null };
           } catch { /* ignora ticker */ }
         }
       } catch { /* funds fallback optional */ }
@@ -531,6 +535,7 @@ if (nonCryptoForFetch.length) {
         price: aliased.price,
         source: (aliased.source === "brapi" ? "brapi" : aliased.source) as QuoteWithSource["source"],
         updatedAt: aliased.updatedAt,
+        changePct: aliased.changePct ?? null,
       };
     }
   }
@@ -1685,11 +1690,11 @@ Deno.serve(async (req) => {
       const tickersInput = body.tickers;
       const tickers = Array.isArray(tickersInput) ? (tickersInput as unknown[]).map((t) => String(t)).filter(Boolean) : [];
       if (!tickers.length) {
-        return json({ ok: true, prices: {}, sources: {}, updatedAt: {} });
+        return json({ ok: true, prices: {}, sources: {}, updatedAt: {}, changes: {} });
       }
       // Cache key baseado nos tickers ordenados
       const cacheKey = "quotes_" + [...tickers].sort().join(",");
-      const cached = getCached<{ ok: boolean; prices: Record<string, number>; sources: Record<string, string>; updatedAt: Record<string, string> }>(cacheKey);
+      const cached = getCached<{ ok: boolean; prices: Record<string, number>; sources: Record<string, string>; updatedAt: Record<string, string>; changes: Record<string, number | null> }>(cacheKey);
       if (cached) {
         console.log(`[get_quotes] Cache hit para ${tickers.length} tickers`);
         return json(cached);
@@ -1700,6 +1705,7 @@ Deno.serve(async (req) => {
       const prices: Record<string, number> = {};
       const sources: Record<string, string> = {};
       const updatedAt: Record<string, string> = {};
+      const changes: Record<string, number | null> = {};
       for (const orig of tickers) {
         const n = normalsMap[orig];
         const info = detailed[n];
@@ -1707,6 +1713,7 @@ Deno.serve(async (req) => {
           prices[orig] = info.price;
           sources[orig] = info.source;
           updatedAt[orig] = info.updatedAt;
+          changes[orig] = info.changePct ?? null;
         }
       }
       const entries = Object.entries(prices);
@@ -1727,7 +1734,7 @@ Deno.serve(async (req) => {
           return json({ ok: false, error: `upsert_assets_failed:${errText}` }, 200);
         }
       }
-      const response = { ok: true, prices, sources, updatedAt };
+      const response = { ok: true, prices, sources, updatedAt, changes };
       setCache(cacheKey, response, CACHE_TTL.quotes);
       return json(response);
     }

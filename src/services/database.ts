@@ -9,6 +9,7 @@ export interface QuoteDetailsResponse {
   prices: Record<string, number>;
   sources: Record<string, string>;
   updatedAt: Record<string, string>;
+  changes: Record<string, number>;
 }
 
 export interface ExchangeRatesResponse {
@@ -189,7 +190,7 @@ export const getQuotes = async (tickers: string[], token: string): Promise<Recor
 };
 
 export const getQuotesDetailed = async (tickers: string[], token: string): Promise<QuoteDetailsResponse> => {
-  if (!tickers.length) return { prices: {}, sources: {}, updatedAt: {} };
+  if (!tickers.length) return { prices: {}, sources: {}, updatedAt: {}, changes: {} };
   const client = getAuthenticatedClient(token);
   console.log('🔍 getQuotesDetailed - requesting tickers:', tickers);
   const { data, error } = await client.functions.invoke(EDGE_FUNCTION_NAME, {
@@ -198,14 +199,15 @@ export const getQuotesDetailed = async (tickers: string[], token: string): Promi
   if (error || !data?.ok) {
     console.error('❌ Failed to fetch detailed quotes:', error || data?.error);
     console.error('❌ Full response data:', data);
-    return { prices: {}, sources: {}, updatedAt: {} };
+    return { prices: {}, sources: {}, updatedAt: {}, changes: {} };
   }
   console.log('✅ getQuotesDetailed - response prices:', data.prices);
   console.log('✅ getQuotesDetailed - response sources:', data.sources);
   return {
     prices: (data.prices as Record<string, number>) || {},
     sources: (data.sources as Record<string, string>) || {},
-    updatedAt: (data.updatedAt as Record<string, string>) || {}
+    updatedAt: (data.updatedAt as Record<string, string>) || {},
+    changes: (data.changes as Record<string, number>) || {}
   };
 };
 

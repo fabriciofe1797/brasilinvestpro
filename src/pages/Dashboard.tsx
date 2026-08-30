@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { formatCurrency } from '../lib/utils';
 import { cn } from '../lib/utils';
-import { Wallet, TrendingUp, ArrowRight, Plus, CheckCircle, Bell, RefreshCw, AlertTriangle } from 'lucide-react';
+import { Wallet, TrendingUp, TrendingDown, ArrowRight, Plus, CheckCircle, Bell, RefreshCw, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import AddInvestmentModal from '../components/AddInvestmentModal';
 import LanguageSwitcher from '../components/LanguageSwitcher';
@@ -370,9 +370,15 @@ const Dashboard: React.FC = () => {
                  <h3 className="text-lg font-black text-white uppercase tracking-tighter underline decoration-emerald-500 decoration-2 underline-offset-4">{t('dashboard.topAssetsTitle')}</h3>
                  <p className="text-[10px] text-gray-500 font-bold uppercase mt-1">{t('dashboard.topAssetsSubtitle')}</p>
               </div>
-              <Link to="/market" className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
-                 {t('dashboard.marketIntelligence')} <ArrowRight className="w-3 h-3" />
-              </Link>
+              <div className="flex items-center gap-4 flex-wrap justify-end">
+                 <FreshnessBadge
+                    source={metrics.portfolioQuoteSource ?? 'mock'}
+                    lastUpdatedAt={metrics.portfolioQuoteUpdatedAt}
+                 />
+                 <Link to="/market" className="text-[10px] font-black text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                    {t('dashboard.marketIntelligence')} <ArrowRight className="w-3 h-3" />
+                 </Link>
+              </div>
            </div>
            
            <div className="overflow-x-auto">
@@ -380,13 +386,13 @@ const Dashboard: React.FC = () => {
                  <thead>
                     <tr className="text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-white/5 px-8">
                        <th className="px-8 py-6">{t('dashboard.colAsset')}</th>
-                       <th className="px-8 py-6">{t('dashboard.colStatus')}</th>
+                       <th className="px-8 py-6">{t('dashboard.colChange')}</th>
                        <th className="px-8 py-6 text-right">{t('dashboard.colPrice')}</th>
                        <th className="px-8 py-6 text-right">{t('dashboard.colProfitLoss')}</th>
                        <th className="px-8 py-6 text-right">{t('dashboard.colDividendYield')}</th>
                        <th className="px-8 py-6">{t('dashboard.colSnowball')}</th>
                        <th className="px-8 py-6 text-right">{t('dashboard.colWeight')}</th>
-                       <th className="px-8 py-6 text-right">{t('dashboard.colConfidence')}</th>
+                       <th className="px-8 py-6 text-right">{t('dashboard.colMonthlyIncome')}</th>
                     </tr>
                  </thead>
                  <tbody className="divide-y divide-white/[0.02]">
@@ -409,17 +415,17 @@ const Dashboard: React.FC = () => {
                              </div>
                           </td>
                           <td className="px-8 py-6">
-                             <div className="w-24 h-6 text-emerald-400/40">
-                                <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
-                                   <path 
-                                      d={asset.profitLoss >= 0 
-                                        ? "M0 25 L 10 22 L 20 23 L 30 18 L 40 20 L 50 15 L 60 16 L 70 10 L 80 12 L 90 5 L 100 8"
-                                        : "M0 5 L 10 8 L 20 7 L 30 12 L 40 10 L 50 15 L 60 14 L 70 20 L 80 18 L 90 25 L 100 22"
-                                      } 
-                                      fill="none" stroke="currentColor" strokeWidth="2"
-                                   />
-                                </svg>
-                             </div>
+                             {asset.changePct !== null ? (
+                                <div
+                                  className={`flex items-center gap-1 text-xs font-black whitespace-nowrap ${asset.changePct >= 0 ? 'text-emerald-400' : 'text-red-400'}`}
+                                  title={t('dashboard.changeHint')}
+                                >
+                                   {asset.changePct >= 0 ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                                   {asset.changePct >= 0 ? '+' : ''}{asset.changePct.toFixed(2)}%
+                                </div>
+                             ) : (
+                                <span className="text-gray-600 font-black text-xs">---</span>
+                             )}
                           </td>
                           <td className="px-8 py-6 text-right text-white font-mono text-sm leading-none">
                              {formatCurrency(asset.currentPrice, 'BRL')}
@@ -457,12 +463,11 @@ const Dashboard: React.FC = () => {
                           <td className="px-8 py-6 text-right text-gray-400 font-black text-sm">
                              {asset.weight.toFixed(1)}%
                           </td>
-                          <td className="px-8 py-6 text-right">
-                             <FreshnessBadge 
-                               source={asset.quoteSource} 
-                               lastUpdatedAt={asset.quoteUpdatedAt} 
-                               compact 
-                             />
+                          <td className="px-8 py-6 text-right" title={t('dashboard.monthlyIncomeHint')}>
+                             <span className="font-mono text-xs font-black text-white whitespace-nowrap">
+                                {formatCurrency(asset.monthlyIncome, 'BRL')}
+                             </span>
+                             <span className="text-[10px] text-gray-600 font-bold ml-1">/{t('dashboard.monthShort')}</span>
                           </td>
                        </tr>
                        );

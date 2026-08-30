@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
+import { getFreshnessStatus } from '../services/dataPipeline';
 import type { QuoteSource } from '../types';
 
 export interface AssetMetric {
@@ -16,6 +17,8 @@ export interface AssetMetric {
   profitLossPct: number;    // % P/L
   dividendYield: number;
   weight: number;           // % of total portfolio
+  monthlyIncome: number;    // renda mensal estimada (R$/mes)
+  changePct: number | null; // variacao do dia (fallback: 12 meses)
   quoteSource: QuoteSource;
   quoteUpdatedAt: string | null;
 }
@@ -30,6 +33,8 @@ export interface PortfolioMetrics {
   assets: AssetMetric[];
   categoryBreakdown: { category: string; value: number; weight: number }[];
   dataConfidence: 'high' | 'medium' | 'low';
+  portfolioQuoteSource: QuoteSource | null;  // fonte da cotacao mais recente entre os ativos
+  portfolioQuoteUpdatedAt: string | null;    // timestamp da cotacao mais recente entre os ativos
 }
 
 /**
@@ -88,8 +93,10 @@ export const usePortfolioMetrics = (): PortfolioMetrics => {
         profitLossPct,
         dividendYield: asset?.dividendYield || 0,
         weight,
-        quoteSource: 'mock' as QuoteSource,
-        quoteUpdatedAt: null,
+        monthlyIncome: (currentPrice * ((asset?.dividendYield || 0) / 100) * item.quantity) / 12,
+        changePct: asset?.change ?? asset?.variacao12m ?? null,
+        quoteSource: asset?.quoteSource ?? ('mock' as QuoteSource),
+        quoteUpdatedAt: asset?.quoteUpdatedAt ?? null,
       };
     });
 
@@ -109,6 +116,19 @@ export const usePortfolioMetrics = (): PortfolioMetrics => {
       }))
       .sort((a, b) => b.weight - a.weight);
 
+    // Metadados de cotacao a nivel de portfolio: timestamp mais recente entre os ativos e sua fonte
+    let portfolioQuoteUpdatedAt: string | null = null;
+    let portfolioQuoteSource: QuoteSource | null = null;
+    assetMetrics.forEach(a => {
+      if (a.quoteUpdatedAt && (!portfolioQuoteUpdatedAt || a.quoteUpdatedAt > portfolioQuoteUpdatedAt)) {
+        portfolioQuoteUpdatedAt = a.quoteUpdatedAt;
+        portfolioQuoteSource = a.quoteSource;
+      }
+    });
+    const freshness = getFreshnessStatus(portfolioQuoteUpdatedAt);
+    const dataConfidence: 'high' | 'medium' | 'low' =
+      freshness === 'live' ? 'high' : freshness === 'delayed' ? 'medium' : 'low';
+
     return {
       totalInvested,
       totalMarketValue,
@@ -118,7 +138,9 @@ export const usePortfolioMetrics = (): PortfolioMetrics => {
       monthlyIncome,
       assets: assetMetrics,
       categoryBreakdown,
-      dataConfidence: 'low' as const, // Default: store doesn't track quote metadata yet
+      dataConfidence,
+      portfolioQuoteSource,
+      portfolioQuoteUpdatedAt,
     };
   }, [portfolio, assets, transactions]);
 };

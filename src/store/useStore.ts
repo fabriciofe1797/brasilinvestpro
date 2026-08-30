@@ -31,7 +31,7 @@ interface AppState {
   updateCustodyRate: (rate: number) => void;
   updateSelicCustodyThreshold: (threshold: number) => void;
   updateAssetPrice: (ticker: string, price: number, lastClose?: number) => void;
-  updateAssetsWithQuotes: (quotes: { ticker: string; price: number; source: QuoteSource; updatedAt: string }[]) => void;
+  updateAssetsWithQuotes: (quotes: { ticker: string; price: number; source: QuoteSource; updatedAt: string; change?: number | null }[]) => void;
   setTransactions: (transactions: Transaction[]) => void;
   setPortfolio: (portfolio: PortfolioItem[]) => void;
   syncTransactions: (transactions: Transaction[]) => void;
@@ -355,7 +355,8 @@ export const useStore = create<AppState>()(
           price: quote.price, 
           lastClose: quote.price,
           quoteSource: quote.source,
-          quoteUpdatedAt: quote.updatedAt
+          quoteUpdatedAt: quote.updatedAt,
+          change: quote.change ?? asset.change
         };
       })
     })),

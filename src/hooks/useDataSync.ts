@@ -182,13 +182,15 @@ export const useDataSync = () => {
         let livePrices: Record<string, number> = {};
         let liveSources: Record<string, string> = {};
         let liveUpdatedAt: Record<string, string> = {};
+        let liveChanges: Record<string, number> = {};
         
         if (tickers.length > 0) {
           try {
-            const { prices, sources, updatedAt } = await getQuotesDetailed(tickers, token);
+            const { prices, sources, updatedAt, changes } = await getQuotesDetailed(tickers, token);
             livePrices = prices;
             liveSources = sources;
             liveUpdatedAt = updatedAt;
+            liveChanges = changes;
           } catch { /* use db prices if api fails */ }
         }
         
@@ -207,7 +209,8 @@ export const useDataSync = () => {
             pl: a.pl ?? undefined,
             currency: a.currency || 'BRL',
             quoteSource: (liveSources[a.ticker] as QuoteSource) || 'mock',
-            quoteUpdatedAt: liveUpdatedAt[a.ticker] || null
+            quoteUpdatedAt: liveUpdatedAt[a.ticker] || null,
+            change: liveChanges[a.ticker] ?? undefined
         }));
         mergeAssets(mappedAssets);
         
@@ -218,7 +221,8 @@ export const useDataSync = () => {
             ticker: t,
             price: livePrices[t],
             source: (liveSources[t] as QuoteSource) || 'mock',
-            updatedAt: liveUpdatedAt[t] || new Date().toISOString()
+            updatedAt: liveUpdatedAt[t] || new Date().toISOString(),
+            change: liveChanges[t] ?? undefined
           }));
         
         if (quotesForUpdate.length > 0) {
