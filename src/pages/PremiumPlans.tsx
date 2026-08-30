@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   CheckCircle2,
   Crown,
@@ -13,7 +13,8 @@ import {
   Lock,
 } from 'lucide-react';
 import { useStore } from '../store/useStore';
-import { openPaymentLink, formatBRL, PLAN_CATALOG, type Plan as BillingPlan } from '../services/billing';
+import { openPaymentLink, formatBRL, PLAN_CATALOG, FOUNDER_PROMO, founderMonthly, isFounderPromoActive, type Plan as BillingPlan } from '../services/billing';
+import { getPromoStatus } from '../services/database';
 import { useAuth } from '@clerk/clerk-react';
 import { cn } from '../lib/utils';
 import { useTranslation } from 'react-i18next';
@@ -159,12 +160,14 @@ const PlanCard = ({
   plan,
   isAnnual,
   isCurrent,
+  founder,
   onAction,
   onDev,
 }: {
   plan: Plan;
   isAnnual: boolean;
   isCurrent: boolean;
+  founder: boolean;
   onAction: () => void;
   onDev: () => void;
 }) => {
@@ -195,10 +198,20 @@ const PlanCard = ({
       {/* Header */}
       <div className="mt-3 mb-5">
         <h3 className="text-lg font-black text-white mb-2">{plan.title}</h3>
-        <div className="flex items-baseline gap-1">
-          <span className="text-3xl font-black text-white">{displayPrice}</span>
-          {!plan.isFree && <span className="text-gray-500 text-xs">{t('plans.perMonth')}</span>}
-        </div>
+        {founder && !plan.isFree ? (
+          <div className="flex items-baseline gap-2" title={t('plans.promoBadge')}>
+            <span className="text-3xl font-black text-emerald-400">
+              {formatBRL(founderMonthly(plan.id as BillingPlan))}
+            </span>
+            <span className="text-sm text-gray-600 line-through font-bold">{displayPrice}</span>
+            <span className="text-gray-500 text-xs">{t('plans.perMonth')}</span>
+          </div>
+        ) : (
+          <div className="flex items-baseline gap-1">
+            <span className="text-3xl font-black text-white">{displayPrice}</span>
+            {!plan.isFree && <span className="text-gray-500 text-xs">{t('plans.perMonth')}</span>}
+          </div>
+        )}
         {isAnnual && !plan.isFree && (
           <div className="text-[10px] text-emerald-400 font-bold mt-1 flex items-center gap-1">
             <Zap className="w-2.5 h-2.5" /> {t('plans.twoMonthsFree')}
@@ -271,7 +284,7 @@ const PlanCard = ({
                   : 'bg-white/5 text-white hover:bg-white/10 border border-white/10 active:scale-95',
               )}
             >
-              {plan.btnText ?? t('plans.startNow')}
+              {plan.btnText ?? (founder ? t('plans.promoCta') : t('plans.startNow'))}
               <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
             </button>
             {/* Dev mode — only visible in development */}
@@ -412,6 +425,21 @@ const PremiumPlans: React.FC = () => {
   const plans = getPlans(t);
   const currentPlan = settings.plan ?? 'free';
 
+  // Promoção Membro Fundador: janela ativa + elegibilidade (conta free)
+  const promoActive = isFounderPromoActive();
+  const founderEligible = promoActive && currentPlan === 'free';
+  const [promoClaimed, setPromoClaimed] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!promoActive) return;
+    let alive = true;
+    getPromoStatus().then(s => { if (alive) setPromoClaimed(s?.claimed ?? null); });
+    return () => { alive = false; };
+  }, [promoActive]);
+
+  const daysLeft = Math.max(0, Math.ceil((new Date(FOUNDER_PROMO.endDate).getTime() - Date.now()) / 86400000));
+  const remaining = promoClaimed !== null ? Math.max(0, FOUNDER_PROMO.maxSlots - promoClaimed) : null;
+
   return (
     <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-24">
 
@@ -461,6 +489,25 @@ const PremiumPlans: React.FC = () => {
         </div>
       </div>
 
+      {/* ── Banner Membro Fundador ── */}
+      {founderEligible && (
+        <div className="max-w-[900px] mx-auto px-4">
+          <div className="glass-emerald border border-emerald-500/30 rounded-2xl px-6 py-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-center">
+            <span className="inline-flex items-center gap-1.5 bg-emerald-400 text-[#020617] px-3 py-1 rounded-full text-[10px] font-black tracking-widest uppercase">
+              <Crown className="w-3 h-3" /> {t('plans.promoBadge')}
+            </span>
+            <span className="text-sm font-black text-white">{t('plans.promoTitle')}</span>
+            <span className="text-xs text-emerald-300 font-bold">{t('plans.promoEndsIn', { days: daysLeft })}</span>
+            {remaining !== null && (
+              <span className="text-xs text-gray-400 font-bold">
+                {t('plans.promoSlots', { remaining, total: FOUNDER_PROMO.maxSlots })}
+              </span>
+            )}
+            <span className="w-full text-[10px] text-gray-500">{t('plans.promoTerms')}</span>
+          </div>
+        </div>
+      )}
+
       {/* ── Cards ── */}
       <div className="relative">
         {/* Glow behind featured card */}
@@ -475,9 +522,15 @@ const PremiumPlans: React.FC = () => {
               plan={plan}
               isAnnual={isAnnual}
               isCurrent={currentPlan === (plan.isFree ? 'free' : plan.id)}
+              founder={founderEligible && !plan.isFree}
               onAction={() =>
                 plan.paymentKey &&
-                openPaymentLink(plan.paymentKey as BillingPlan, isAnnual ? 'annual' : 'monthly', userId ?? undefined)
+                openPaymentLink(
+                  plan.paymentKey as BillingPlan,
+                  founderEligible && !plan.isFree
+                    ? { interval: 'monthly', userId: userId ?? undefined, promo: 'founder' }
+                    : { interval: isAnnual ? 'annual' : 'monthly', userId: userId ?? undefined },
+                )
               }
               onDev={() => plan.storeKey && setPlan(plan.storeKey as any)}
             />

@@ -677,6 +677,20 @@ Deno.serve(async (req) => {
     const body_peek = (await req.clone().json().catch(() => ({}))) as { action?: string };
     const action_peek = body_peek.action as string | undefined;
 
+    // get_promo_status nao precisa de autenticacao (contagem agregada da promo de lancamento)
+    if (action_peek === "get_promo_status") {
+      try {
+        const r = await rest("GET", "/licenses?select=user_id&promo=eq.founder", {
+          headers: { Prefer: "count=exact", Range: "0-0" },
+        });
+        const range = r.headers.get("content-range") ?? "0-0/0";
+        const claimed = Number(range.split("/")[1] ?? 0);
+        return json({ ok: true, claimed: Number.isFinite(claimed) ? claimed : 0 });
+      } catch {
+        return json({ ok: false, error: "promo_status_failed" });
+      }
+    }
+
     // get_ticker_data nao precisa de autenticacao (dados publicos de mercado)
     if (action_peek === "get_ticker_data") {
       // Verificar cache primeiro

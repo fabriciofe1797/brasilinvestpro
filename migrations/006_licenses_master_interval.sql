@@ -8,3 +8,6 @@ alter table licenses add constraint licenses_plan_type_check
 
 -- mensal | anual (preenchido pelo stripe-webhook no checkout/renovação)
 alter table licenses add column if not exists billing_interval text;
+
+-- promoção aplicada na compra ('founder' = Membro Fundador); preenchido pelo stripe-webhook
+alter table licenses add column if not exists promo text;

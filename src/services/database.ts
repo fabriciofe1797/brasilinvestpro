@@ -52,6 +52,34 @@ export const getAuthenticatedClient = (token: string) => {
   return client;
 };
 
+// Client anônimo para ações públicas do app-proxy (sem JWT Clerk)
+let anonClient: ReturnType<typeof createClient> | null = null;
+const getAnonClient = () => {
+  if (!supabaseUrl || !supabaseAnonKey) throw new Error("Supabase config missing");
+  if (!anonClient) {
+    anonClient = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    });
+  }
+  return anonClient;
+};
+
+/**
+ * Contagem de vagas já usadas pela promoção Membro Fundador (ação pública).
+ * Retorna null em caso de falha (a UI oculta o contador nesse caso).
+ */
+export const getPromoStatus = async (): Promise<{ claimed: number } | null> => {
+  try {
+    const { data, error } = await getAnonClient().functions.invoke(EDGE_FUNCTION_NAME, {
+      body: { action: 'get_promo_status' },
+    });
+    if (error || !data?.ok) return null;
+    return { claimed: Number(data.claimed) || 0 };
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Ensures the user profile exists in Supabase.
  * If not, creates it using the ID from the token.

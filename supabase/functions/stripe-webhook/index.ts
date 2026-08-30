@@ -90,17 +90,19 @@ serve(async (req) => {
         })
       }
 
-      // Determinar plano/intervalo: lookup_key do Price ("pro_monthly"/"elite_annual"),
+      // Determinar plano/intervalo/promo: lookup_key do Price ("pro_monthly"/"elite_annual"/"pro_monthly_founder"),
       // depois mapa PRICE_TO_PLAN, depois metadata.plan
       let plan = session.metadata?.plan || 'starter'
       let interval: 'monthly' | 'annual' = 'monthly'
+      let promo: string | null = null
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id)
       const price = lineItems.data[0]?.price
       const lookup = String(price?.lookup_key || price?.nickname || '').toLowerCase()
-      const lookupMatch = lookup.match(/^(free|starter|pro|master|elite)[_-](monthly|annual)$/)
+      const lookupMatch = lookup.match(/^(free|starter|pro|master|elite)[_-](monthly|annual)(?:[_-](founder))?$/)
       if (lookupMatch) {
         plan = lookupMatch[1]
         interval = lookupMatch[2] as 'monthly' | 'annual'
+        promo = lookupMatch[3] === 'founder' ? 'founder' : null
       } else if (price?.id && PRICE_TO_PLAN[price.id]) {
         plan = PRICE_TO_PLAN[price.id]
       }
@@ -108,6 +110,25 @@ serve(async (req) => {
       // Validar plano
       if (!PLAN_ORDER.includes(plan)) {
         plan = 'starter'
+      }
+
+      // Elegibilidade Membro Fundador (server-side): sem plano pago prévio e sem promo anterior
+      if (promo === 'founder') {
+        const { data: priorPaid } = await supabaseClient
+          .from('plan_changes')
+          .select('id')
+          .eq('user_id', userId)
+          .neq('to_plan', 'free')
+          .limit(1)
+        const { data: licRow } = await supabaseClient
+          .from('licenses')
+          .select('promo')
+          .eq('user_id', userId)
+          .maybeSingle()
+        if ((priorPaid && priorPaid.length > 0) || licRow?.promo === 'founder') {
+          console.warn(`Founder promo denied (not eligible): user ${userId}`)
+          promo = null
+        }
       }
 
       const startDate = new Date().toISOString()
@@ -129,6 +150,7 @@ serve(async (req) => {
           last_payment_date: startDate,
           auto_renew_flag: true,
           billing_interval: interval,
+          promo,
         })
 
       if (licenseError) throw licenseError
