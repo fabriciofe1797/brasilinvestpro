@@ -42,6 +42,7 @@ const DecisionCockpitPage = React.lazy(() => import('./pages/DecisionCockpitPage
 const FIIsPage = React.lazy(() => import('./pages/FIIsPage'));
 const RankingsPage = React.lazy(() => import('./pages/RankingsPage'));
 const BenchmarksPage = React.lazy(() => import('./pages/BenchmarksPage'));
+const AdminPage = React.lazy(() => import('./pages/AdminPage'));
 
 // Loading fallback for lazy routes
 const PageLoader = () => (
@@ -600,6 +601,20 @@ function App() {
             <SignedIn>
               <Layout>
                 <SettingsPage />
+              </Layout>
+            </SignedIn>
+            <SignedOut>
+              <RedirectToSignIn />
+            </SignedOut>
+          </>
+        } />
+
+        {/* Painel administrativo (gate adicional por userId dentro da página) */}
+        <Route path="/admin" element={
+          <>
+            <SignedIn>
+              <Layout>
+                <AdminPage />
               </Layout>
             </SignedIn>
             <SignedOut>

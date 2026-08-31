@@ -1,4 +1,6 @@
+type Action = string;
 type PlanType = "free" | "starter" | "pro" | "master" | "elite";
+const ADMIN_PLANS: PlanType[] = ["free", "starter", "pro", "master", "elite"];
 const PLAN_LIMITS: Record<PlanType, { maxTransactions: number | null; maxAssets: number | null }> = {
   free: { maxTransactions: 20, maxAssets: 5 },
   starter: { maxTransactions: 200, maxAssets: 15 },
@@ -13,6 +15,11 @@ if (!url) throw new Error("missing_supabase_url");
 if (!key) throw new Error("missing_service_role_key");
 const clerkJwksUrl = Deno.env.get("CLERK_JWKS_URL");
 const clerkIssuer = Deno.env.get("CLERK_ISSUER");
+
+// Autorizacao do painel admin: lista de ids Clerk separados por virgula (secret ADMIN_USER_IDS).
+// O enforcement real e server-side aqui; o frontend usa a mesma lista apenas para UX.
+const adminUserIds = (Deno.env.get("ADMIN_USER_IDS") ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+const isAdminUser = (userId: string) => adminUserIds.includes(userId);
 
 const BRAPI = "https://brapi.dev/api";
 const COINGECKO = "https://api.coingecko.com/api/v3";
@@ -1557,6 +1564,196 @@ Deno.serve(async (req) => {
 
     if (action === "whoami") {
       return json({ ok: true, sub });
+    }
+
+    // ─── Painel Admin (somente ids em ADMIN_USER_IDS) ─────────────────────────
+
+    if (action === "admin_overview") {
+      if (!isAdminUser(sub)) return json({ ok: false, error: "forbidden" }, 403);
+      const licR = await rest("GET", "/licenses?select=user_id,plan_type,payment_status,start_date,end_date,billing_interval,promo");
+      if (!licR.ok) {
+        const errText = await licR.text().catch(() => "fetch_error");
+        return json({ ok: false, error: `admin_licenses_fetch_failed:${errText}` }, 200);
+      }
+      const licenses = await licR.json();
+      const profR = await rest("GET", "/profiles?select=id", { headers: { Prefer: "count=exact", Range: "0-0" } });
+      let totalProfiles = 0;
+      if (profR.ok) {
+        const m = (profR.headers.get("content-range") ?? "").match(/\/(\d+)$/);
+        totalProfiles = m ? Number(m[1]) : 0;
+      }
+      const pcR = await rest("GET", "/plan_changes?select=*&order=changed_at.desc&limit=20");
+      const recentPlanChanges = pcR.ok ? ((await pcR.json()) ?? []) : [];
+      return json({ ok: true, licenses: licenses ?? [], totalProfiles, recentPlanChanges });
+    }
+
+    if (action === "admin_list_users") {
+      if (!isAdminUser(sub)) return json({ ok: false, error: "forbidden" }, 403);
+      const payload = (body.payload ?? {}) as { query?: string; plan?: string; limit?: number; offset?: number };
+      const limit = Math.min(Math.max(Math.floor(Number(payload.limit) || 25), 1), 100);
+      const offset = Math.max(Math.floor(Number(payload.offset) || 0), 0);
+      const q = sanitizeString(payload.query, 100);
+      const planFilter = ADMIN_PLANS.includes(payload.plan as PlanType) ? (payload.plan as PlanType) : null;
+
+      // Filtro por plano: resolve ids a partir de licenses (usuarios sem linha sao free)
+      let planQuery = "";
+      if (planFilter) {
+        const licR = await rest("GET", "/licenses?select=user_id,plan_type");
+        if (!licR.ok) {
+          const errText = await licR.text().catch(() => "fetch_error");
+          return json({ ok: false, error: `admin_licenses_fetch_failed:${errText}` }, 200);
+        }
+        const allLic = (await licR.json()) as Array<{ user_id: string; plan_type: string }>;
+        const ids = (allLic ?? []).filter((l) => l.plan_type === planFilter).map((l) => String(l.user_id));
+        if (planFilter === "free") {
+          const licensed = (allLic ?? []).map((l) => `"${encodeURIComponent(String(l.user_id))}"`).join(",");
+          planQuery = licensed ? `&id=not.in.(${licensed})` : "";
+        } else {
+          if (ids.length === 0) return json({ ok: true, users: [], total: 0 });
+          planQuery = `&id=in.(${ids.map((id) => `"${encodeURIComponent(id)}"`).join(",")})`;
+        }
+      }
+
+      let profPath = "/profiles?select=id,email,created_at&order=created_at.desc";
+      if (q) profPath += `&or=(id.ilike.*${encodeURIComponent(q)}*,email.ilike.*${encodeURIComponent(q)}*)`;
+      profPath += planQuery;
+      const profR = await rest("GET", profPath, {
+        headers: { Prefer: "count=exact", Range: `${offset}-${offset + limit - 1}` },
+      });
+      if (!profR.ok) {
+        const errText = await profR.text().catch(() => "fetch_error");
+        return json({ ok: false, error: `admin_profiles_fetch_failed:${errText}` }, 200);
+      }
+      const profiles = (await profR.json()) as Array<{ id: string; email: string | null; created_at: string }>;
+      const rangeM = (profR.headers.get("content-range") ?? "").match(/\/(\d+)$/);
+      const total = rangeM ? Number(rangeM[1]) : (Array.isArray(profiles) ? profiles.length : 0);
+
+      // Mescla com licenses da pagina (sem linha = free)
+      const ids = (Array.isArray(profiles) ? profiles : []).map((p) => String(p.id));
+      const licMap = new Map<string, Record<string, unknown>>();
+      if (ids.length) {
+        const inList = ids.map((id) => `"${encodeURIComponent(id)}"`).join(",");
+        const licR = await rest("GET", `/licenses?select=*&user_id=in.(${inList})`);
+        if (licR.ok) {
+          for (const row of ((await licR.json()) as Array<Record<string, unknown>>) ?? []) {
+            licMap.set(String(row.user_id), row);
+          }
+        }
+      }
+      const users = (Array.isArray(profiles) ? profiles : []).map((p) => {
+        const lic = licMap.get(String(p.id));
+        return {
+          id: p.id,
+          email: p.email,
+          created_at: p.created_at,
+          plan: (lic?.plan_type as string) || "free",
+          payment_status: lic ? ((lic.payment_status as string) || "active") : "active",
+          end_date: (lic?.end_date as string) ?? null,
+          billing_interval: (lic?.billing_interval as string) ?? null,
+          promo: (lic?.promo as string) ?? null,
+        };
+      });
+      return json({ ok: true, users, total });
+    }
+
+    if (action === "admin_get_user") {
+      if (!isAdminUser(sub)) return json({ ok: false, error: "forbidden" }, 403);
+      const payload = (body.payload ?? {}) as { user_id?: string };
+      const userId = sanitizeString(payload.user_id, 128);
+      if (!userId) return json({ ok: false, error: "invalid_user_id" }, 200);
+      const enc = encodeURIComponent(userId);
+      const profR = await rest("GET", `/profiles?select=*&id=eq.${enc}`);
+      if (!profR.ok) {
+        const errText = await profR.text().catch(() => "fetch_error");
+        return json({ ok: false, error: `admin_profile_fetch_failed:${errText}` }, 200);
+      }
+      const profRows = await profR.json();
+      const profile = Array.isArray(profRows) ? profRows[0] ?? null : profRows;
+      let license: Record<string, unknown> | null = null;
+      try {
+        license = await fetchLicense(userId);
+      } catch {
+        license = null;
+      }
+      const txR = await rest("GET", `/transactions?select=id&user_id=eq.${enc}`, {
+        headers: { Prefer: "count=exact", Range: "0-0" },
+      });
+      let transactionsCount = 0;
+      if (txR.ok) {
+        const m = (txR.headers.get("content-range") ?? "").match(/\/(\d+)$/);
+        transactionsCount = m ? Number(m[1]) : 0;
+      }
+      const pcR = await rest("GET", `/plan_changes?select=*&user_id=eq.${enc}&order=changed_at.desc&limit=20`);
+      const planChanges = pcR.ok ? ((await pcR.json()) ?? []) : [];
+      return json({ ok: true, user: { profile, license, transactionsCount, planChanges } });
+    }
+
+    if (action === "admin_set_plan") {
+      if (!isAdminUser(sub)) return json({ ok: false, error: "forbidden" }, 403);
+      const payload = (body.payload ?? {}) as { user_id?: string; plan?: string; days?: number; reason?: string };
+      const userId = sanitizeString(payload.user_id, 128);
+      const reason = sanitizeString(payload.reason, 200);
+      const plan = ADMIN_PLANS.includes(payload.plan as PlanType) ? (payload.plan as PlanType) : null;
+      const days = Number.isFinite(Number(payload.days)) ? Math.floor(Number(payload.days)) : NaN;
+      if (!userId) return json({ ok: false, error: "invalid_user_id" }, 200);
+      if (!plan) return json({ ok: false, error: "invalid_plan" }, 200);
+      if (!Number.isFinite(days) || days < 1 || days > 3650) return json({ ok: false, error: "invalid_days" }, 200);
+      if (!reason) return json({ ok: false, error: "invalid_reason" }, 200);
+      const enc = encodeURIComponent(userId);
+
+      // 1) Plano anterior (usuarios sem linha em licenses sao free)
+      let prev: Record<string, unknown> | null = null;
+      try {
+        prev = await fetchLicense(userId);
+      } catch {
+        prev = null;
+      }
+      const fromPlan = (prev?.plan_type as string) || "free";
+
+      // 2) Upsert da licenca (mesmo padrao do upgrade manual via SQL)
+      const now = new Date();
+      const endDate = new Date(now.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+      if (prev) {
+        const patchBody: Record<string, unknown> = { plan_type: plan, end_date: endDate, updated_at: now.toISOString() };
+        if (plan !== "free") {
+          patchBody.payment_status = "active";
+          patchBody.start_date = now.toISOString();
+          patchBody.last_payment_date = now.toISOString();
+        }
+        const r = await rest("PATCH", `/licenses?user_id=eq.${enc}`, { body: JSON.stringify(patchBody) });
+        if (!r.ok) {
+          const errText = await r.text().catch(() => "update_error");
+          return json({ ok: false, error: `admin_license_update_failed:${errText}` }, 200);
+        }
+      } else {
+        const insertBody: Record<string, unknown> = {
+          user_id: userId,
+          plan_type: plan,
+          start_date: now.toISOString(),
+          end_date: endDate,
+          payment_status: plan !== "free" ? "active" : "expired",
+          updated_at: now.toISOString(),
+        };
+        if (plan !== "free") insertBody.last_payment_date = now.toISOString();
+        const r = await rest("POST", "/licenses?on_conflict=user_id", {
+          headers: { Prefer: "resolution=merge-duplicates" },
+          body: JSON.stringify(insertBody),
+        });
+        if (!r.ok) {
+          const errText = await r.text().catch(() => "insert_error");
+          return json({ ok: false, error: `admin_license_insert_failed:${errText}` }, 200);
+        }
+      }
+
+      // 3) Auditoria (admin_id registra quem fez a alteracao)
+      const pc = await rest("POST", "/plan_changes", {
+        body: JSON.stringify({ user_id: userId, from_plan: fromPlan, to_plan: plan, reason, admin_id: sub }),
+      });
+      if (!pc.ok) {
+        const errText = await pc.text().catch(() => "insert_error");
+        return json({ ok: false, error: `admin_audit_insert_failed:${errText}` }, 200);
+      }
+      return json({ ok: true, fromPlan, toPlan: plan, end_date: endDate });
     }
 
     if (action === "get_transactions") {

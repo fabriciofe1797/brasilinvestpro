@@ -5,7 +5,7 @@ import {
   Brain, Coins, Scale, FileInput, Receipt, Crown, Settings, 
   Sparkles, Navigation, GitCompare, Users, LineChart, Heart, Target,
   BarChart3, Zap, Bell, MessageSquare, Eye, Link2, Globe2,
-  Compass, HeartHandshake, Rocket, Building2, Trophy, Percent
+  Compass, HeartHandshake, Rocket, Building2, Trophy, Percent, Shield
 } from 'lucide-react';
 import { UserButton, useUser } from '@clerk/clerk-react';
 import { useTranslation } from 'react-i18next';
@@ -18,6 +18,7 @@ import { useStore } from '../store/useStore';
 import DataSynchronizer from './DataSynchronizer';
 import MarketTicker from './MarketTicker';
 import LanguageSwitcher from './LanguageSwitcher';
+import { isAdminId } from '../services/admin';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -88,6 +89,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     // ELITE
     { icon: Globe2, label: t('layout.nav.dualTax'), path: '/dual-tax', plan: 'elite' },
   ];
+
+  // Item restrito ao administrador (autorização real no backend via ADMIN_USER_IDS)
+  if (isAdminId(user?.id)) {
+    navItems.push({ type: 'divider' });
+    navItems.push({ icon: Shield, label: 'Admin', path: '/admin', plan: 'free' });
+  }
 
 const SidebarContent = () => (
     <div className="flex flex-col h-full bg-[#030816] border-r border-white/[0.03] shadow-2xl relative overflow-hidden">
